@@ -10,4 +10,6 @@ public class TeacherAcademicInfo : BaseEntity
     public TeachingPosition TeachingPosition { get; set; }
     public TypeOfContract TypeOfContract { get; set; }
     public State State { get; set; }
+    public string TeacherId { get; set; }
+    public Teacher Teacher { get; set; }
 }

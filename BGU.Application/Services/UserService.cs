@@ -53,16 +53,21 @@ public class UserService(
         {
             UserName = appUser.UserName,
             Email = appUser.Email,
-            Name = "Test",
-            Surname = "test",
-            MiddleName = "test",
+            Name = appUser.Name,
+            Surname = appUser.Surname,
+            MiddleName = appUser.MiddleName,
             Pin = appUser.PinCode,
-            Gender = 'M',
+            Gender = appUser.Gender,
             BornDate = DateTime.UtcNow,
         };
         await userManager.CreateAsync(user, appUser.PassWord);
         await userManager.AddToRoleAsync(user, nameof(Roles.Student));
-
+        var student = new Student
+        {
+            AppUserId = user.Id,
+            StudentAcademicInfo = new StudentAcademicInfo()
+        };
+        await studentRepository.CreateAsync(student);
         var token = await GenerateJwtToken(user);
         return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, null);
     }
@@ -93,7 +98,7 @@ public class UserService(
         }
 
         var students =
-            await studentRepository.FindAsync(s => s.AppUserId == userId,
+            await studentRepository.FindAsync(s => s.AppUserId == userId ,
                 s => s
                     .Include(m => m.StudentAcademicInfo)
                     .ThenInclude(a => a.AdmissionYear)
@@ -120,7 +125,7 @@ public class UserService(
     private async Task<string> GenerateJwtToken(AppUser user)
     {
         var roles = await userManager.GetRolesAsync(user);
-    
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
@@ -129,8 +134,8 @@ public class UserService(
             new(ClaimTypes.NameIdentifier, user.Id)
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-    
-    
+
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -141,11 +146,11 @@ public class UserService(
             Issuer = config["Jwt:Issuer"],
             Audience = config["Jwt:Audience"]
         };
-    
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
         var jwt = tokenHandler.WriteToken(token);
-    
+
         return jwt;
     }
 }

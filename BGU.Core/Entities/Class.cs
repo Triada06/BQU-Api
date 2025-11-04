@@ -11,4 +11,4 @@ public class Class : BaseEntity
 
     public string ClassTimeId { get; set; }
     public ClassTime ClassTime { get; set; }
-}
+}   

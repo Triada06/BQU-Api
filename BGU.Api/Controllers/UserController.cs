@@ -15,7 +15,7 @@ namespace BGU.Api.Controllers;
 
 [Authorize(Roles = "Student,Teacher,Dean")]
 [ApiController]
-public class UserController(IUserService userService, RoleManager<IdentityRole> roleManager) : ControllerBase
+public class UserController(IUserService userService) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost(ApiEndPoints.User.SignIn)]
@@ -37,24 +37,7 @@ public class UserController(IUserService userService, RoleManager<IdentityRole> 
         return Ok(data);
     }
 
-    [AllowAnonymous]
-    [HttpPost(ApiEndPoints.User.SignUp)]
-    public async Task<IActionResult> SignUp([FromBody] AppUserSignUpDto request)
-    {
-        var res = await userService.SignUpAsync(request);
-        return Ok(res);
-    }
+    
 
-    // [AllowAnonymous]
-    // [HttpPost("api/addroles")]
-    // public async Task<IActionResult> CreateRole()
-    // {
-    //     foreach (var role in Enum.GetValues<Roles>())
-    //     {
-    //         if (!await roleManager.RoleExistsAsync(role.ToString()))
-    //             await roleManager.CreateAsync(new IdentityRole(role.ToString()));
-    //     }
-    //
-    //     return Ok();
-    // }
+  
 }
