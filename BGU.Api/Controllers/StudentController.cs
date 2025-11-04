@@ -7,5 +7,4 @@ namespace BGU.Api.Controllers;
 [Authorize(Roles = "Teacher,Dean")]
 public class StudentController : ControllerBase
 {
-
 }

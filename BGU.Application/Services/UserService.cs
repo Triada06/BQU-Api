@@ -98,7 +98,7 @@ public class UserService(
         }
 
         var students =
-            await studentRepository.FindAsync(s => s.AppUserId == userId ,
+            await studentRepository.FindAsync(s => s.AppUserId == userId,
                 s => s
                     .Include(m => m.StudentAcademicInfo)
                     .ThenInclude(a => a.AdmissionYear)

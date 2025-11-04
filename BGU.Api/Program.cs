@@ -19,8 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 
-
-
 // Configure OpenAPI with JWT authentication
 builder.Services.AddOpenApi(options =>
 {

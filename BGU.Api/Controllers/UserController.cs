@@ -36,8 +36,4 @@ public class UserController(IUserService userService) : ControllerBase
         var data = await userService.GetMe(userId);
         return Ok(data);
     }
-
-    
-
-  
 }

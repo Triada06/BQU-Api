@@ -12,7 +12,7 @@ public class AppUserSignInDtoValidator : AbstractValidator<AppUserSignInDto>
 {
     public AppUserSignInDtoValidator()
     {
-        RuleFor(m=>m.Email)
+        RuleFor(m => m.Email)
             .NotNull().WithMessage("Email can't be null")
             .NotEmpty().WithMessage("Email format is invalid.");
         RuleFor(model => model.PassWord)

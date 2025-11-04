@@ -5,7 +5,9 @@ namespace BGU.Api.Filters;
 
 public class ResponseStatusCodeFilter : IActionFilter
 {
-    public void OnActionExecuting(ActionExecutingContext context) { }
+    public void OnActionExecuting(ActionExecutingContext context)
+    {
+    }
 
     public void OnActionExecuted(ActionExecutedContext context)
     {
@@ -13,7 +15,7 @@ public class ResponseStatusCodeFilter : IActionFilter
         {
             var valueType = objectResult.Value.GetType();
             var statusCodeProperty = valueType.GetProperty("StatusCode");
-            
+
             if (statusCodeProperty != null)
             {
                 var statusCode = statusCodeProperty.GetValue(objectResult.Value);

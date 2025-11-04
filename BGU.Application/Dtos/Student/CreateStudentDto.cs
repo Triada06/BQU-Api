@@ -14,7 +14,7 @@ public record CreateStudentDto(
     string SpecializationId,
     string GroupId,
     string AdmissionYearId,
-    EducationLanguage EducationLanguage, 
-    FormOfEducation FormOfEducation, 
+    EducationLanguage EducationLanguage,
+    FormOfEducation FormOfEducation,
     int DecreeNumber,
     double AdmissionScore);

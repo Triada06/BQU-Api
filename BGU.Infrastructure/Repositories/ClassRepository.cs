@@ -4,7 +4,6 @@ using BGU.Infrastructure.Repositories.Interfaces;
 
 namespace BGU.Infrastructure.Repositories;
 
-public class ClassRepository(AppDbContext context):  BaseRepository<Class>(context), IClassRepository
+public class ClassRepository(AppDbContext context) : BaseRepository<Class>(context), IClassRepository
 {
-    
 }

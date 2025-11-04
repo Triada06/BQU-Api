@@ -5,8 +5,8 @@ namespace BGU.Application.Services.Interfaces;
 
 public interface IAdminService
 {
-    
     Task<ApiResult<StudentCreatedDto>> CreateStudentAsync(CreateStudentDto dto);
+
     Task<List<BulkImportResult>> BulkImportStudentsAsync(List<CreateStudentDto> students);
     // Task CrateStudent(StudetnCreateDto);
     // Task UpdateStudent(StudetnUpdateDto);

@@ -43,4 +43,13 @@ public class ApiResult<T>
             IsSucceeded = false,
             StatusCode = 401
         };
+
+    public static ApiResult<T> SystemError(string message = "Internal Server Error")
+        => new()
+        {
+            Data = default,
+            Message = message,
+            IsSucceeded = false,
+            StatusCode = 500
+        };
 }

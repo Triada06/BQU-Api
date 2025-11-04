@@ -14,6 +14,7 @@ public static class AppServices
         services.AddScoped<IClassService, ClassService>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IExcelService, ExcelService>();
+        services.AddScoped<IExcelCrudService, ExcelCrudService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
