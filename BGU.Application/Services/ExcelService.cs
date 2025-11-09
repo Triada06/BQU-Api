@@ -540,9 +540,48 @@ public class ExcelService : IExcelService
         return items;
     }
 
-    public Task<byte[]> GenerateClassTimeTemplateAsync()
+    public async Task<byte[]> GenerateClassTimeTemplateAsync()
     {
-        throw new NotImplementedException();
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        using (var package = new ExcelPackage())
+        {
+            var worksheet = package.Workbook.Worksheets.Add("ClassTimes");
+
+            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
+            worksheet.Cells[1, 2].Value = "Start (HH:MM:SS)";
+            worksheet.Cells[1, 3].Value = "End (HH:MM:SS)";
+            worksheet.Cells[1, 4].Value = "DayOfWeek (Monday/Tuesday/Wednesday/Thursday/Friday)";
+            worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
+
+            using (var range = worksheet.Cells[1, 1, 1, 5])
+            {
+                range.Style.Font.Bold = true;
+                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+            }
+
+            worksheet.Cells[2, 2].Value = "09:00:00";
+            worksheet.Cells[2, 3].Value = "10:30:00";
+            worksheet.Cells[2, 4].Value = "Monday";
+            worksheet.Cells[2, 5].Value = "CREATE";
+
+            var dayValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
+            dayValidation.Formula.Values.Add("Monday");
+            dayValidation.Formula.Values.Add("Tuesday");
+            dayValidation.Formula.Values.Add("Wednesday");
+            dayValidation.Formula.Values.Add("Thursday");
+            dayValidation.Formula.Values.Add("Friday");
+
+            var operationValidation =
+                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
+            operationValidation.Formula.Values.Add("CREATE");
+            operationValidation.Formula.Values.Add("UPDATE");
+            operationValidation.Formula.Values.Add("DELETE");
+
+            worksheet.Cells.AutoFitColumns();
+            return await Task.FromResult(package.GetAsByteArray());
+        }
     }
 
     public async Task<List<TaughtSubjectDto>> ParseTaughtSubjectExcelAsync(Stream fileStream)
