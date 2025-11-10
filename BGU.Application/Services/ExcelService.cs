@@ -542,7 +542,7 @@ public class ExcelService : IExcelService
 
     public async Task<byte[]> GenerateClassTimeTemplateAsync()
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
 
         using (var package = new ExcelPackage())
         {
@@ -586,7 +586,7 @@ public class ExcelService : IExcelService
 
     public async Task<List<TaughtSubjectDto>> ParseTaughtSubjectExcelAsync(Stream fileStream)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
         var items = new List<TaughtSubjectDto>();
 
         using (var package = new ExcelPackage(fileStream))
@@ -618,7 +618,7 @@ public class ExcelService : IExcelService
 
     public async Task<byte[]> GenerateTaughtSubjectTemplateAsync()
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
 
         using (var package = new ExcelPackage())
         {
@@ -655,7 +655,7 @@ public class ExcelService : IExcelService
 
     public async Task<List<TeacherDto>> ParseTeacherExcelAsync(Stream fileStream)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
         var items = new List<TeacherDto>();
 
         using (var package = new ExcelPackage(fileStream))
@@ -695,7 +695,7 @@ public class ExcelService : IExcelService
 
     public async Task<byte[]> GenerateTeacherTemplateAsync()
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
 
         using (var package = new ExcelPackage())
         {

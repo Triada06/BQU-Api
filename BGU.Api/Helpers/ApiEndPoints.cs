@@ -27,4 +27,97 @@ public static class ApiEndPoints
         public const string GetById = $"{Base}/{{id}}";
         public const string Delete = $"{Base}/{{id}}";
     }
+
+    public static class Admin
+    {
+        private const string Base = $"{ApiBase}/admin";
+    }
+
+    public static class Student
+    {
+        private const string Base = $"{ApiBase}/students";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class AdmissionYear
+    {
+        private const string Base = $"{ApiBase}/admission-years";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Faculty
+    {
+        private const string Base = $"{ApiBase}/faculties";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Department
+    {
+        private const string Base = $"{ApiBase}/departments";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Specialization
+    {
+        private const string Base = $"{ApiBase}/specializations";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Group
+    {
+        private const string Base = $"{ApiBase}/groups";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Subject
+    {
+        private const string Base = $"{ApiBase}/subjects";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class LectureHall
+    {
+        private const string Base = $"{ApiBase}/lecture-halls";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class ClassTime
+    {
+        private const string Base = $"{ApiBase}/class-time";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class TaughtSubject
+    {
+        private const string Base = $"{ApiBase}/taught-subjects";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
+
+    public static class Teacher
+    {
+        private const string Base = $"{ApiBase}/teachers";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+    }
 }

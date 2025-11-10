@@ -25,7 +25,7 @@ public class AdminController(
         return Ok(res);
     }
 
-    [HttpGet("students/template")]
+    [HttpGet(ApiEndPoints.Student.Template)]
     public async Task<IActionResult> DownloadStudentTemplate()
     {
         var fileBytes = await excelService.GenerateStudentTemplateAsync();
@@ -35,7 +35,7 @@ public class AdminController(
     }
 
     // Upload and import
-    [HttpPost("students/import")]
+    [HttpPost(ApiEndPoints.Student.Import)]
     public async Task<IActionResult> ImportStudents(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -70,7 +70,7 @@ public class AdminController(
     }
 
     // Single student creation
-    [HttpPost("students")]
+    [HttpPost(ApiEndPoints.Student.Create)]
     public async Task<IActionResult> CreateStudent([FromBody] CreateStudentDto request)
     {
         var result = await adminService.CreateStudentAsync(request);
@@ -78,7 +78,7 @@ public class AdminController(
     }
 
 
-    [HttpGet("admission-years/template")]
+    [HttpGet(ApiEndPoints.AdmissionYear.Template)]
     public async Task<IActionResult> DownloadAdmissionYearTemplate()
     {
         var fileBytes = await excelService.GenerateAdmissionYearTemplateAsync();
@@ -86,7 +86,7 @@ public class AdminController(
             "AdmissionYearTemplate.xlsx");
     }
 
-    [HttpPost("admission-years/import")]
+    [HttpPost(ApiEndPoints.AdmissionYear.Import)]
     public async Task<IActionResult> ImportAdmissionYears(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -117,7 +117,7 @@ public class AdminController(
 
     // ==================== FACULTY ====================
 
-    [HttpGet("faculties/template")]
+    [HttpGet(ApiEndPoints.Faculty.Template)]
     public async Task<IActionResult> DownloadFacultyTemplate()
     {
         var fileBytes = await excelService.GenerateFacultyTemplateAsync();
@@ -125,7 +125,7 @@ public class AdminController(
             "FacultyTemplate.xlsx");
     }
 
-    [HttpPost("faculties/import")]
+    [HttpPost(ApiEndPoints.Faculty.Template)]
     public async Task<IActionResult> ImportFaculties(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -156,7 +156,7 @@ public class AdminController(
 
     // ==================== DEPARTMENT ====================
 
-    [HttpGet("departments/template")]
+    [HttpGet(ApiEndPoints.Department.Template)]
     public async Task<IActionResult> DownloadDepartmentTemplate()
     {
         var fileBytes = await excelService.GenerateDepartmentTemplateAsync();
@@ -164,7 +164,7 @@ public class AdminController(
             "DepartmentTemplate.xlsx");
     }
 
-    [HttpPost("departments/import")]
+    [HttpPost(ApiEndPoints.Department.Import)]
     public async Task<IActionResult> ImportDepartments(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -195,7 +195,7 @@ public class AdminController(
 
     // ==================== SPECIALIZATION ====================
 
-    [HttpGet("specializations/template")]
+    [HttpGet(ApiEndPoints.Specialization.Template)]
     public async Task<IActionResult> DownloadSpecializationTemplate()
     {
         var fileBytes = await excelService.GenerateSpecializationTemplateAsync();
@@ -203,7 +203,7 @@ public class AdminController(
             "SpecializationTemplate.xlsx");
     }
 
-    [HttpPost("specializations/import")]
+    [HttpPost(ApiEndPoints.Specialization.Import)]
     public async Task<IActionResult> ImportSpecializations(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -234,7 +234,7 @@ public class AdminController(
 
     // ==================== GROUP ====================
 
-    [HttpGet("groups/template")]
+    [HttpGet(ApiEndPoints.Group.Template)]
     public async Task<IActionResult> DownloadGroupTemplate()
     {
         var fileBytes = await excelService.GenerateGroupTemplateAsync();
@@ -242,7 +242,7 @@ public class AdminController(
             "GroupTemplate.xlsx");
     }
 
-    [HttpPost("groups/import")]
+    [HttpPost(ApiEndPoints.Group.Import)]
     public async Task<IActionResult> ImportGroups(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -273,7 +273,7 @@ public class AdminController(
 
     // ==================== SUBJECT ====================
 
-    [HttpGet("subjects/template")]
+    [HttpGet(ApiEndPoints.Subject.Template)]
     public async Task<IActionResult> DownloadSubjectTemplate()
     {
         var fileBytes = await excelService.GenerateSubjectTemplateAsync();
@@ -281,7 +281,7 @@ public class AdminController(
             "SubjectTemplate.xlsx");
     }
 
-    [HttpPost("subjects/import")]
+    [HttpPost(ApiEndPoints.Subject.Import)]
     public async Task<IActionResult> ImportSubjects(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -312,7 +312,7 @@ public class AdminController(
 
     // ==================== LECTURE HALL ====================
 
-    [HttpGet("lecture-halls/template")]
+    [HttpGet(ApiEndPoints.LectureHall.Template)]
     public async Task<IActionResult> DownloadLectureHallTemplate()
     {
         var fileBytes = await excelService.GenerateLectureHallTemplateAsync();
@@ -320,7 +320,7 @@ public class AdminController(
             "LectureHallTemplate.xlsx");
     }
 
-    [HttpPost("lecture-halls/import")]
+    [HttpPost(ApiEndPoints.LectureHall.Import)]
     public async Task<IActionResult> ImportLectureHalls(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -351,7 +351,7 @@ public class AdminController(
 
     // ==================== CLASS TIME ====================
 
-    [HttpGet("class-times/template")]
+    [HttpGet(ApiEndPoints.ClassTime.Template)]
     public async Task<IActionResult> DownloadClassTimeTemplate()
     {
         var fileBytes = await excelService.GenerateClassTimeTemplateAsync();
@@ -359,7 +359,7 @@ public class AdminController(
             "ClassTimeTemplate.xlsx");
     }
 
-    [HttpPost("class-times/import")]
+    [HttpPost(ApiEndPoints.ClassTime.Import)]
     public async Task<IActionResult> ImportClassTimes(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -390,7 +390,7 @@ public class AdminController(
 
     // ==================== TAUGHT SUBJECT ====================
 
-    [HttpGet("taught-subjects/template")]
+    [HttpGet(ApiEndPoints.TaughtSubject.Template)]
     public async Task<IActionResult> DownloadTaughtSubjectTemplate()
     {
         var fileBytes = await excelService.GenerateTaughtSubjectTemplateAsync();
@@ -398,7 +398,7 @@ public class AdminController(
             "TaughtSubjectTemplate.xlsx");
     }
 
-    [HttpPost("taught-subjects/import")]
+    [HttpPost(ApiEndPoints.TaughtSubject.Import)]
     public async Task<IActionResult> ImportTaughtSubjects(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -429,7 +429,7 @@ public class AdminController(
 
     // ==================== TEACHER ====================
 
-    [HttpGet("teachers/template")]
+    [HttpGet(ApiEndPoints.Teacher.Template)]
     public async Task<IActionResult> DownloadTeacherTemplate()
     {
         var fileBytes = await excelService.GenerateTeacherTemplateAsync();
@@ -437,7 +437,7 @@ public class AdminController(
             "TeacherTemplate.xlsx");
     }
 
-    [HttpPost("teachers/import")]
+    [HttpPost(ApiEndPoints.Teacher.Import)]
     public async Task<IActionResult> ImportTeachers(IFormFile file)
     {
         if (file == null || file.Length == 0)
