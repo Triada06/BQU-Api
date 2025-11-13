@@ -39,6 +39,7 @@ public static class ApiEndPoints
         public const string Create = $"{Base}/";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
+        public const string DashBoard = $"{Base}/dashboard";
     }
 
     public static class AdmissionYear

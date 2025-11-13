@@ -4,5 +4,5 @@ namespace BGU.Application.Services.Interfaces;
 
 public interface IStudentService
 {
-    Task<StudentGetTodayClassesResponse> GetTodayClassesAsync(string userId);
+    Task<StudentDashboardResponse> Profile(string userId);
 }

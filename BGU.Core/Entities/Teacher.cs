@@ -6,5 +6,5 @@ public class Teacher : BaseEntity
     public AppUser AppUser { get; set; } = null!;
 
 
-    public TeacherAcademicInfo? TeacherAcademicInfo { get; set; }
+    public TeacherAcademicInfo TeacherAcademicInfo { get; set; } = new();
 }

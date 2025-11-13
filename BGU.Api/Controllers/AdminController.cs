@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-// [Authorize(Roles = "Admin,Dean,SuperAdmin")]
+// [Authorize(Roles = "Teacher,Dean")]
 public class AdminController(
     IUserService userService,
     RoleManager<IdentityRole> roleManager,

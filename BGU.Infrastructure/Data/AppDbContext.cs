@@ -30,6 +30,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.Entity<AppUser>()
+            .Property(x => x.BornDate)
+            .HasColumnType("date");
         base.OnModelCreating(builder);
     }
 }

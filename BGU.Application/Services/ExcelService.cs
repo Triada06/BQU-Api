@@ -772,54 +772,71 @@ public class ExcelService : IExcelService
         }
     }
 
-    public async Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream)
+   public async Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream)
+{
+    ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+
+    var students = new List<CreateStudentDto>();
+
+    using (var package = new ExcelPackage(fileStream))
     {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+        var worksheet = package.Workbook.Worksheets[0];
+        var rowCount = worksheet.Dimension.Rows;
 
-        var students = new List<CreateStudentDto>();
-
-        using (var package = new ExcelPackage(fileStream))
+        for (int row = 2; row <= rowCount; row++)
         {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
+            try
             {
-                try
-                {
-                    // Parse enums from string
-                    var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
-                    var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
+                // Parse enums from string
+                var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
+                var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
 
-                    var student = new CreateStudentDto(
-                        Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                        BornDate: DateTime.Parse(worksheet.Cells[row, 7].Value?.ToString()),
-                        FacultyId: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                        SpecializationId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
-                        GroupId: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
-                        AdmissionYearId: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
-                        EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
-                        FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
-                        DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString()),
-                        AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString())
-                    );
+                // Parse BornDate correctly
+                var bornCellValue = worksheet.Cells[row, 7].Value;
+                DateTime bornDate;
 
-                    students.Add(student);
-                }
-                catch (Exception ex)
+                if (bornCellValue is double numericDate) 
                 {
-                    Console.WriteLine($"Error parsing row {row}: {ex.Message}");
+                    // Excel stores dates as numbers sometimes
+                    bornDate = DateTime.FromOADate(numericDate);
                 }
+                else
+                {
+                    // fallback to string parsing
+                    bornDate = DateTime.Parse(bornCellValue?.ToString() 
+                                ?? throw new Exception($"Invalid BornDate at row {row}"));
+                }
+
+                var student = new CreateStudentDto(
+                    Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                    Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                    Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                    MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                    PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                    Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
+                    BornDate: bornDate,
+                    FacultyId: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                    SpecializationId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                    GroupId: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
+                    AdmissionYearId: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
+                    EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
+                    FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
+                    DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
+                    AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0")
+                );
+
+                students.Add(student);
+            }
+            catch (Exception ex)
+            {
+                // Log the row number + error, continue parsing next rows
+                Console.WriteLine($"Error parsing row {row}: {ex.Message}");
             }
         }
-
-        return students;
     }
+
+    return students;
+}
 
     public async Task<byte[]> GenerateStudentTemplateAsync()
     {
@@ -867,7 +884,7 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 10].Value = "group-id-789";
             worksheet.Cells[2, 11].Value = "year-id-2024";
             worksheet.Cells[2, 12].Value = "English";
-            worksheet.Cells[2, 13].Value = "FullTime";
+            worksheet.Cells[2, 13].Value = "InPerson";
             worksheet.Cells[2, 14].Value = "12345";
             worksheet.Cells[2, 15].Value = "650.5";
 

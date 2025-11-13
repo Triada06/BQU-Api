@@ -1,5 +1,6 @@
 using BGU.Application.Contracts.Student;
 using BGU.Application.Dtos.Class;
+using BGU.Application.Dtos.Student;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
@@ -15,12 +16,12 @@ public class StudentService(
     IStudentRepository studentRepository,
     ITaughtSubjectRepository taughtSubjectRepository) : IStudentService
 {
-    public async Task<StudentGetTodayClassesResponse> GetTodayClassesAsync(string userId)
+    public async Task<StudentDashboardResponse> Profile(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return new StudentGetTodayClassesResponse(null,
+            return new StudentDashboardResponse(null,
                 ResponseMessages.Unauthorized, false,
                 (int)StatusCode.Unauthorized);
         }
@@ -40,7 +41,7 @@ public class StudentService(
         )).FirstOrDefault();
         if (student == null)
         {
-            return new StudentGetTodayClassesResponse(
+            return new StudentDashboardResponse(
                 null,
                 ResponseMessages.NotFound,
                 false,
@@ -52,7 +53,7 @@ public class StudentService(
         var classesToday = student.StudentAcademicInfo.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
             .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
-            .Select(c => new ClassDto(
+            .Select(c => new TodaysClassesDto(
                 c.Id,
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
@@ -61,9 +62,9 @@ public class StudentService(
             ))
             .OrderBy(c => c.Period)
             .ToList();
-        return new StudentGetTodayClassesResponse(classesToday, "Found", true, 200);
+        return new StudentDashboardResponse(new StudentDashboardDto(user.Name, classesToday), "Found", true, 200);
     }
-
+    
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
 }

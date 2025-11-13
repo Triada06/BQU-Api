@@ -392,7 +392,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 switch (item.Operation)
                 {
                     case "CREATE":
-                        var newSpecialization = new Specialization { Name = item.Name };
+                        var newSpecialization = new Specialization { Name = item.Name, FacultyId = item.FacultyId };
                         dbContext.Specializations.Add(newSpecialization);
                         await dbContext.SaveChangesAsync();
 
@@ -511,7 +511,14 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 switch (item.Operation)
                 {
                     case "CREATE":
-                        var newGroup = new Group { Code = item.Code };
+                        var newGroup = new Group
+                        {
+                            Code = item.Code,
+                            AdmissionYearId = item.AdmissionYearId,
+                            EducationLanguage = item.EducationLanguage,
+                            EducationLevel = item.EducationLevel,
+                            SpecializationId = item.SpecializationId,
+                        };
                         dbContext.Groups.Add(newGroup);
                         await dbContext.SaveChangesAsync();
 
@@ -552,6 +559,10 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         }
 
                         existingGroup.Code = item.Code;
+                        existingGroup.AdmissionYearId = item.AdmissionYearId;
+                        existingGroup.EducationLanguage = item.EducationLanguage;
+                        existingGroup.EducationLevel = item.EducationLevel;
+                        existingGroup.SpecializationId = item.SpecializationId;
                         await dbContext.SaveChangesAsync();
 
                         results.Add(new BulkImportResult
