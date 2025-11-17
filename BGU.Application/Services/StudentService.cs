@@ -1,4 +1,6 @@
 using BGU.Application.Contracts.Student;
+using BGU.Application.Contracts.Student.Requests;
+using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.Student;
 using BGU.Application.Services.Interfaces;
@@ -64,7 +66,95 @@ public class StudentService(
             .ToList();
         return new StudentDashboardResponse(new StudentDashboardDto(user.Name, classesToday), "Found", true, 200);
     }
-    
+
+    public async Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return new StudentScheduleResponse(null,
+                ResponseMessages.Unauthorized, false,
+                (int)StatusCode.Unauthorized);
+        }
+
+        var student = (await studentRepository.FindAsync(
+            s => s.AppUserId == userId,
+            s => s.Include(st => st.StudentAcademicInfo)
+                .ThenInclude(ai => ai.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Subject)
+                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Teacher)
+                .ThenInclude(t => t.AppUser)
+                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Classes)
+                .ThenInclude(c => c.ClassTime)
+        )).FirstOrDefault();
+
+        if (student == null)
+        {
+            return new StudentScheduleResponse(
+                null,
+                ResponseMessages.NotFound,
+                false,
+                (int)StatusCode.NotFound
+            );
+        }
+
+        if (request.Schedule == "week")
+        {
+            var todayDate = DateTime.Today;
+
+            int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+            var weekStart = todayDate.AddDays(-diff);
+            var weekEnd = weekStart.AddDays(4);
+
+            var classesThisWeek = student.StudentAcademicInfo.Group.TaughtSubjects
+                .SelectMany(gs => gs.Classes)
+                .Where(c =>
+                {
+                    // Map DaysOfTheWeek (1–5) to actual date
+                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
+
+                    return classDate >= weekStart && classDate <= weekEnd;
+                })
+                .Select(c =>
+                {
+                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
+                    var classDateTime = classDate.Add(c.ClassTime.Start);
+
+                    return new TodaysClassesDto(
+                        c.Id,
+                        c.TaughtSubject.Subject.Name,
+                        c.ClassType.ToString(),
+                        c.TaughtSubject.Teacher.AppUser.Name,
+                        new DateTimeOffset(classDateTime)
+                    );
+                })
+                .OrderBy(c => c.Period)
+                .ToList();
+            return new StudentScheduleResponse(
+                new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
+                "Found", true, 200);
+        }
+
+        int today = GetToday();
+        var classesToday = student.StudentAcademicInfo.Group.TaughtSubjects
+            .SelectMany(gs => gs.Classes)
+            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
+            .Select(c => new TodaysClassesDto(
+                c.Id,
+                c.TaughtSubject.Subject.Name,
+                c.ClassType.ToString(),
+                c.TaughtSubject.Teacher.AppUser.Name,
+                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start))
+            ))
+            .OrderBy(c => c.Period)
+            .ToList();
+        return new StudentScheduleResponse(new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesToday),
+            "Found", true, 200);
+    }
+
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
 }

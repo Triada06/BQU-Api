@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using BGU.Api;
 using BGU.Api.Filters;
 using BGU.Api.Helpers;
 using BGU.Application.Dtos.AppUser;
@@ -122,7 +123,6 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseHttpsRedirection();
 
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -141,6 +141,7 @@ if (app.Environment.IsDevelopment())
 
 // app.UseSwagger();
 // app.UseSwaggerUI();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

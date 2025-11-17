@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,16 @@ public class StudentController(IStudentService studentService) : ControllerBase
         if (userId == null)
             return Unauthorized();
         var data = await studentService.Profile(userId);
+        return Ok(data);
+    }
+
+    [HttpGet(ApiEndPoints.Student.Schedule)]
+    public async Task<IActionResult> Schedule(string schedule)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized();
+        var data = await studentService.GetSchedule(userId, new StudentScheduleRequest(schedule));
         return Ok(data);
     }
 }

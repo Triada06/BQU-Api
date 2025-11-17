@@ -32,6 +32,7 @@
 
     <ItemGroup>
       <Folder Include="Helpers\Mappings\" />
+      <Folder Include="Validators\" />
     </ItemGroup>
 
 </Project>

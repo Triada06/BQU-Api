@@ -96,7 +96,7 @@ public class AdminService(
         await userManager.AddToRoleAsync(user, "Student");
 
         // Create student
-        var student = new Student
+        var student = new Core.Entities.Student()
         {
             AppUserId = user.Id,
             StudentAcademicInfo = new StudentAcademicInfo
