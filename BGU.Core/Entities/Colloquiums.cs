@@ -2,7 +2,7 @@ using BGU.Core.Enums;
 
 namespace BGU.Core.Entities;
 
-public class Colloquium : BaseEntity
+public class Colloquiums : BaseEntity
 {
     public Grade Grade { get; set; }
     public DateTime Date { get; set; }

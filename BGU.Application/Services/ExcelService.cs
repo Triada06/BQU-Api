@@ -711,9 +711,9 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 8].Value = "BornDate (YYYY-MM-DD)";
             worksheet.Cells[1, 9].Value = "DepartmentId";
             worksheet.Cells[1, 10].Value = "Position";
+            
             worksheet.Cells[1, 11].Value = "ContractType";
             worksheet.Cells[1, 12].Value = "State";
-            worksheet.Cells[1, 13].Value = "Salary";
             worksheet.Cells[1, 14].Value = "Operation (CREATE/UPDATE/DELETE)";
 
             using (var range = worksheet.Cells[1, 1, 1, 14])

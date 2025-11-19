@@ -6,6 +6,8 @@ namespace BGU.Application.Services.Interfaces;
 
 public interface IStudentService
 {
-    Task<StudentDashboardResponse> Profile(string userId);
+    Task<StudentDashboardResponse> Dashboard(string userId);
     Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request);
+    Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request);
+    Task GetProfile(string userId);
 }

@@ -12,7 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<AppUser> AppUsers { get; set; }
     public DbSet<Class> Classes { get; set; }
     public DbSet<ClassTime> ClassTimes { get; set; }
-    public DbSet<Colloquium> Colloquiums { get; set; }
+    public DbSet<Colloquiums> Colloquiums { get; set; }
     public DbSet<Decree> Decrees { get; set; }
     public DbSet<Department> Departments { get; set; }
     public DbSet<Exam> Exams { get; set; }
@@ -27,6 +27,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<TaughtSubject> TaughtSubjects { get; set; }
     public DbSet<Teacher> Teachers { get; set; }
     public DbSet<TeacherAcademicInfo> TeacherAcademicInfos { get; set; }
+    public DbSet<Attendance> Attendances { get; set; }
+    public DbSet<Seminar> Seminars { get; set; }
+    public DbSet<ClassSession> ClassSessions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

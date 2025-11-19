@@ -8,16 +8,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Student,Teacher,Dean")]
+[Authorize(Roles = "Student" )]
 public class StudentController(IStudentService studentService) : ControllerBase
 {
+    
     [HttpGet(ApiEndPoints.Student.DashBoard)]
-    public async Task<IActionResult> Profile()
+    public async Task<IActionResult> Dashboard()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
             return Unauthorized();
-        var data = await studentService.Profile(userId);
+        var data = await studentService.Dashboard(userId);
         return Ok(data);
     }
 
@@ -29,5 +30,25 @@ public class StudentController(IStudentService studentService) : ControllerBase
             return Unauthorized();
         var data = await studentService.GetSchedule(userId, new StudentScheduleRequest(schedule));
         return Ok(data);
+    }
+    
+    [HttpGet(ApiEndPoints.Student.Grades)]
+    public async Task<IActionResult> Grades(string grade) //todo: test this feat with data
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized();
+        var data = await studentService.GetGrades(userId, new StudentGradesRequest(grade));
+        return Ok(data);
+    }
+    [HttpGet(ApiEndPoints.Student.Profile)]
+    public async Task<IActionResult> Profile()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized();
+        // var data = await studentService.GetProfile(userId);
+        // return Ok(data);
+        return Ok();
     }
 }

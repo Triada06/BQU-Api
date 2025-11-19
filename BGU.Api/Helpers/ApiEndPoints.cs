@@ -40,6 +40,8 @@ public static class ApiEndPoints
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
         public const string DashBoard = $"{Base}/dashboard";
+        public const string Profile = $"{Base}/profile";
+        public const string Grades = $"{Base}/grades/{{grade}}";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
     }
 
