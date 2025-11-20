@@ -8,10 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Student" )]
+[Authorize(Roles = "Student")]
 public class StudentController(IStudentService studentService) : ControllerBase
 {
-    
     [HttpGet(ApiEndPoints.Student.DashBoard)]
     public async Task<IActionResult> Dashboard()
     {
@@ -31,7 +30,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var data = await studentService.GetSchedule(userId, new StudentScheduleRequest(schedule));
         return Ok(data);
     }
-    
+
     [HttpGet(ApiEndPoints.Student.Grades)]
     public async Task<IActionResult> Grades(string grade) //todo: test this feat with data
     {
@@ -41,14 +40,14 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var data = await studentService.GetGrades(userId, new StudentGradesRequest(grade));
         return Ok(data);
     }
+
     [HttpGet(ApiEndPoints.Student.Profile)]
     public async Task<IActionResult> Profile()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
             return Unauthorized();
-        // var data = await studentService.GetProfile(userId);
-        // return Ok(data);
-        return Ok();
+        var data = await studentService.GetProfile(userId);
+        return Ok(data);
     }
 }

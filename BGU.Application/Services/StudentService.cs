@@ -238,10 +238,54 @@ public class StudentService(
             "Ok", true, 200);
     }
 
-    public Task GetProfile(string userId)
+    public async Task<StudentProfileResponse> GetProfile(string userId)
     {
-        throw new NotImplementedException();
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return new StudentProfileResponse(null, null,
+                ResponseMessages.Unauthorized, false,
+                (int)StatusCode.Unauthorized);
+        }
+
+        var student = (await studentRepository.FindAsync(
+            s => s.AppUserId == userId,
+            s => s.Include(st => st.StudentAcademicInfo)
+                .ThenInclude(ai => ai.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Subject)
+                .Include(st=>st.StudentAcademicInfo.AdmissionYear)
+                .Include(st=>st.StudentAcademicInfo.Faculty)
+                .Include(st=>st.StudentAcademicInfo.Specialization)
+                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Teacher)
+                .ThenInclude(t => t.AppUser)
+                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Classes)
+                .ThenInclude(c => c.ClassTime)
+        )).FirstOrDefault();
+
+        if (student == null)
+        {
+            return new StudentProfileResponse(
+                null,
+                null,
+                ResponseMessages.NotFound,
+                false,
+                (int)StatusCode.NotFound
+            );
+        }
+
+        var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, student.Id,
+            student.StudentAcademicInfo.Gpa, nameof(student.StudentAcademicInfo.Group.EducationLevel),
+            student.StudentAcademicInfo.AdmissionYear.FirstYear, student.StudentAcademicInfo.Faculty.Name,
+            student.StudentAcademicInfo.Specialization.Name);
+
+        var studentProfileInfo = new StudentPersonalInfo(user.Email!, user.BornDate);
+        return new StudentProfileResponse(studentAcademicInfo, studentProfileInfo, ResponseMessages.Success, true,
+            (int)StatusCode.Ok);
     }
+
 
     private static double CalculateOverallSubjectScore(List<int> seminarScores, List<int> colloquiumScores,
         Grade assigment)

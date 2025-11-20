@@ -9,5 +9,5 @@ public interface IStudentService
     Task<StudentDashboardResponse> Dashboard(string userId);
     Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request);
     Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request);
-    Task GetProfile(string userId);
+    Task<StudentProfileResponse> GetProfile(string userId);
 }
