@@ -273,7 +273,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 switch (item.Operation)
                 {
                     case "CREATE":
-                        var newDepartment = new Department { Name = item.Name };
+                        var newDepartment = new Department { Name = item.Name, FacultyId = item.FacultyId };
                         dbContext.Departments.Add(newDepartment);
                         await dbContext.SaveChangesAsync();
 
@@ -314,6 +314,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         }
 
                         existingDepartment.Name = item.Name;
+                        existingDepartment.FacultyId = item.FacultyId;
                         await dbContext.SaveChangesAsync();
 
                         results.Add(new BulkImportResult
@@ -1183,7 +1184,8 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             Operation = "CREATE",
                             Success = true,
                             Message = $"Created successfully. Temporary password: {tempPassword}",
-                            EntityId = teacher.Id
+                            EntityId = teacher.Id,
+                            TemporaryPassword = tempPassword
                         });
                         break;
 

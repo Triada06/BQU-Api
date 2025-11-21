@@ -164,6 +164,30 @@ public class ExcelService : IExcelService
 
             for (int row = 2; row <= rowCount; row++)
             {
+                
+                bool isRowEmpty = true;
+                for (int col = 1; col <= 4; col++) // Check first 4 columns
+                {
+                    if (worksheet.Cells[row, col].Value != null && 
+                        !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
+                    {
+                        isRowEmpty = false;
+                        break;
+                    }
+                }
+        
+                if (isRowEmpty)
+                {
+                    continue; // Skip empty row
+                }
+        
+                var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+        
+                // Double-check name is not empty
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
                 try
                 {
                     items.Add(new DepartmentDto(
