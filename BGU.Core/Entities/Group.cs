@@ -13,4 +13,5 @@ public class Group : BaseEntity
     public Specialization Specialization { get; set; }
 
     public ICollection<TaughtSubject> TaughtSubjects { get; set; } = [];
+    public ICollection<StudentAcademicInfo> Students { get; set; } = [];    
 }

@@ -26,6 +26,6 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
     //TODO: fix the signup, it can send a null request but shouldnt, it shouldnt accept repeated FIN codes, it accpets non-unique emails yet returns Ok
-    //TODO: on sing in entering wrong data returns 500 instead 404 or 400
+    //TODO: on sing in entering wrong data returns 500 instead 404 or 400`
     
 }

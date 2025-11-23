@@ -620,6 +620,29 @@ public class ExcelService : IExcelService
 
             for (int row = 2; row <= rowCount; row++)
             {
+                bool isRowEmpty = true;
+                for (int col = 1; col <= 4; col++) // Check first 4 columns
+                {
+                    if (worksheet.Cells[row, col].Value != null && 
+                        !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
+                    {
+                        isRowEmpty = false;
+                        break;
+                    }
+                }
+        
+                if (isRowEmpty)
+                {
+                    continue; // Skip empty row
+                }
+        
+                var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+        
+                // Double-check name is not empty
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
                 try
                 {
                     items.Add(new TaughtSubjectDto(
@@ -627,7 +650,9 @@ public class ExcelService : IExcelService
                         SubjectId: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
                         TeacherId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
                         GroupId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        Code:worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Hours:int.Parse(worksheet.Cells[row, 6].Value?.ToString()),
+                        Operation: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
                 }
                 catch (Exception ex)
@@ -652,9 +677,11 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 2].Value = "SubjectId";
             worksheet.Cells[1, 3].Value = "TeacherId";
             worksheet.Cells[1, 4].Value = "GroupId";
-            worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
+            worksheet.Cells[1, 5].Value = "Code";
+            worksheet.Cells[1, 6].Value = "Hours";
+            worksheet.Cells[1, 7].Value = "Operation (CREATE/UPDATE/DELETE)";
 
-            using (var range = worksheet.Cells[1, 1, 1, 5])
+            using (var range = worksheet.Cells[1, 1, 1, 7])
             {
                 range.Style.Font.Bold = true;
                 range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -664,10 +691,12 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 2].Value = "subject-id-here";
             worksheet.Cells[2, 3].Value = "teacher-id-here";
             worksheet.Cells[2, 4].Value = "group-id-here";
-            worksheet.Cells[2, 5].Value = "CREATE";
+            worksheet.Cells[2, 5].Value = "code-here";
+            worksheet.Cells[2, 6].Value = "hours-here";
+            worksheet.Cells[2, 7].Value = "CREATE";
 
             var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
+                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 7, 1000, 7].Address);
             operationValidation.Formula.Values.Add("CREATE");
             operationValidation.Formula.Values.Add("UPDATE");
             operationValidation.Formula.Values.Add("DELETE");

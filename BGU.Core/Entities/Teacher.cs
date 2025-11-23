@@ -7,4 +7,5 @@ public class Teacher : BaseEntity
 
 
     public TeacherAcademicInfo TeacherAcademicInfo { get; set; } = new();
+    public ICollection<TaughtSubject> TaughtSubjects { get; set; } = [];
 }

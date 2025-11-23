@@ -1,3 +1,11 @@
 namespace BGU.Application.Dtos.TaughtSubject;
 
-public record TaughtSubjectDto(string? Id, string SubjectId, string TeacherId, string GroupId, string Operation);
+public sealed record TaughtSubjectDto(
+    string? Id,
+    string SubjectId,
+    string TeacherId,
+    string GroupId,
+    string Code,
+    int Hours,
+    string Operation
+);

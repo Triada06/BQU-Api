@@ -124,6 +124,8 @@ public static class ApiEndPoints
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
         public const string Profile = $"{Base}/profile";
+        public const string MyCourses = $"{Base}/courses";
+        public const string Schedule = $"{Base}/schedule/{{schedule}}";
 
     }
 }

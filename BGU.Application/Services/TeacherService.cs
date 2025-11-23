@@ -1,8 +1,12 @@
 using BGU.Application.Contracts.Student.Responses;
+using BGU.Application.Contracts.Teacher.Requests;
 using BGU.Application.Contracts.Teacher.Responses;
+using BGU.Application.Dtos.Class;
+using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
+using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -61,4 +65,129 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         return new TeacherProfileResponse(teacherPersonalInfoDto, teacherAcademicInfoDto, ResponseMessages.Success,
             true, (int)StatusCode.Ok);
     }
+
+    public async Task<TeacherScheduleResponse> GetSchedule(TeacherScheduleRequest request)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null)
+        {
+            return new TeacherScheduleResponse(null,
+                ResponseMessages.Unauthorized, false,
+                (int)StatusCode.Unauthorized);
+        }
+
+        var teacher = (await teacherRepository.FindAsync(
+            s => s.AppUserId == request.UserId,
+            s =>
+                s.Include(x => x.TaughtSubjects)
+                    .ThenInclude(x => x.Classes)
+                    .Include(st => st.TeacherAcademicInfo)
+                    .ThenInclude(ai => ai.Department)
+                    .ThenInclude(g => g.Faculty)
+                    .ThenInclude(ts => ts.Specializations)
+        )).FirstOrDefault();
+
+        if (teacher == null)
+        {
+            return new TeacherScheduleResponse(
+                null,
+                ResponseMessages.NotFound,
+                false,
+                (int)StatusCode.NotFound
+            );
+        }
+
+        if (request.Schedule == "week")
+        {
+            var todayDate = DateTime.Today;
+
+            int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+            var weekStart = todayDate.AddDays(-diff);
+            var weekEnd = weekStart.AddDays(4);
+            var classesThisWeek = teacher.TaughtSubjects.SelectMany(x => x.Classes)
+                .Where(c =>
+                {
+                    // Map DaysOfTheWeek (1–5) to actual date
+                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
+
+                    return classDate >= weekStart && classDate <= weekEnd;
+                }).Select(c =>
+                {
+                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
+                    var classDateTime = classDate.Add(c.ClassTime.Start);
+
+                    return new TodaysClassesDto(
+                        c.Id,
+                        c.TaughtSubject.Subject.Name,
+                        c.ClassType.ToString(),
+                        c.TaughtSubject.Teacher.AppUser.Name,
+                        new DateTimeOffset(classDateTime)
+                    );
+                })
+                .OrderBy(c => c.Period)
+                .ToList();
+
+            return new TeacherScheduleResponse(
+                new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
+                "Found", true, 200);
+        }
+
+        int today = GetToday();
+        var classesToday = teacher.TaughtSubjects.SelectMany(x => x.Classes)
+            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today).Select(c => new TodaysClassesDto(
+                c.Id,
+                c.TaughtSubject.Subject.Name,
+                c.ClassType.ToString(),
+                c.TaughtSubject.Teacher.AppUser.Name,
+                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start))
+            )).OrderBy(c => c.Period)
+            .ToList();
+        return new TeacherScheduleResponse(new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesToday),
+            "Found", true, 200);
+    }
+
+    public async Task<TeacherCoursesResponse> GetCourses(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return new TeacherCoursesResponse(null,
+                ResponseMessages.Unauthorized, false,
+                (int)StatusCode.Unauthorized);
+        }
+
+        var teacher = (await teacherRepository.FindAsync(
+            s => s.AppUserId == userId,
+            s =>
+                s.Include(x => x.TaughtSubjects)
+                    .ThenInclude(x => x.Group)
+                    .ThenInclude(x => x.Students)
+                    .Include(x => x.TaughtSubjects)
+                    .ThenInclude(x => x.Classes)
+                    .Include(st => st.TeacherAcademicInfo)
+                    .ThenInclude(ai => ai.Department)
+                    .ThenInclude(g => g.Faculty)
+                    .ThenInclude(ts => ts.Specializations)
+        )).FirstOrDefault();
+
+        if (teacher == null)
+        {
+            return new TeacherCoursesResponse(
+                null,
+                ResponseMessages.NotFound,
+                false,
+                (int)StatusCode.NotFound
+            );
+        }
+
+        var courses =
+            teacher.TaughtSubjects?.Select(x =>
+                new TeacherCourseDto(x.Id, x.Subject.Name, x.Code, x.Group.Code, x.Subject.CreditsNumber,
+                    x.Group.Students.Count, x.Hours));
+        return new TeacherCoursesResponse(courses, ResponseMessages.Success, true, (int)StatusCode.Ok);
+    }
+
+
+    private static int GetToday()
+        => (int)DateTime.Today.DayOfWeek;
 }

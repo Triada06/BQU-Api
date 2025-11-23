@@ -642,7 +642,8 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 switch (item.Operation)
                 {
                     case "CREATE":
-                        var newSubject = new Subject { Name = item.Name };
+                        var newSubject = new Subject
+                            { Name = item.Name, DepartmentId = item.DepartmentId, TeacherCode = item.TeacherCode };
                         dbContext.Subjects.Add(newSubject);
                         await dbContext.SaveChangesAsync();
 
@@ -992,6 +993,11 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 {
                     case "CREATE":
                         var newTaughtSubject = new TaughtSubject();
+                        newTaughtSubject.Code = item.Code;
+                        newTaughtSubject.Hours = item.Hours;
+                        newTaughtSubject.GroupId = item.GroupId;
+                        newTaughtSubject.SubjectId = item.SubjectId;
+                        newTaughtSubject.TeacherId = item.TeacherId;
                         dbContext.TaughtSubjects.Add(newTaughtSubject);
                         await dbContext.SaveChangesAsync();
 
@@ -1031,6 +1037,8 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         existingTaughtObject.GroupId = item.GroupId;
                         existingTaughtObject.SubjectId = item.SubjectId;
                         existingTaughtObject.TeacherId = item.TeacherId;
+                        existingTaughtObject.Hours = item.Hours;
+                        existingTaughtObject.Code = item.Code;
                         await dbContext.SaveChangesAsync();
 
                         results.Add(new BulkImportResult

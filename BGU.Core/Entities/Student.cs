@@ -10,4 +10,4 @@ public class Student : BaseEntity
     public ICollection<Colloquiums> Colloquiums { get; set; } = [];
     public ICollection<Seminar> SeminarGrades { get; set; } = [];
     public ICollection<IndependentWork> IndependentWorks { get; set; } = [];
-}
+} 

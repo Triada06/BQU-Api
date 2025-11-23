@@ -5,8 +5,7 @@ namespace BGU.Core.Entities;
 public class Subject : BaseEntity
 {
     public int CreditsNumber { get; set; }
-
-
+    
     public required string Name { get; set; }
     public string TeacherCode { get; set; }
 
