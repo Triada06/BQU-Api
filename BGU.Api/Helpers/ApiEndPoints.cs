@@ -128,4 +128,15 @@ public static class ApiEndPoints
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
 
     }
+
+    public static class Dean
+    {
+        private const string Base = $"{ApiBase}/teachers";
+        public const string Create = $"{Base}/";
+        public const string Template = $"{Base}/template";
+        public const string Import = $"{Base}/import";
+        public const string Profile = $"{Base}/profile";
+        public const string MyCourses = $"{Base}/courses";
+        public const string Schedule = $"{Base}/schedule/{{schedule}}";
+    }
 }

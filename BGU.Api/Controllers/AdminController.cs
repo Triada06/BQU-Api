@@ -6,6 +6,7 @@ using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BGU.Api.Controllers;
 
@@ -467,6 +468,44 @@ public class AdminController(
     }
 
 
+    [HttpGet("classes/template")]
+    public async Task<IActionResult> DownloadClassTemplate()
+    {
+        var fileBytes = await excelService.GenerateClassTemplateAsync();
+        return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            "ClassTemplate.xlsx");
+    }
+
+    [HttpPost("classes/import")]
+    public async Task<IActionResult> ImportClasses(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+    
+        if (!file.FileName.EndsWith(".xlsx"))
+            return BadRequest("Only .xlsx files are supported");
+    
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var items = await excelService.ParseClassExcelAsync(stream);
+            var results = await excelCrudService.ProcessClassesAsync(items);
+        
+            return Ok(new
+            {
+                totalProcessed = results.Count,
+                successful = results.Count(r => r.Success),
+                failed = results.Count(r => !r.Success),
+                details = results
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error processing file: {ex.Message}");
+        }
+    }   
+    //todo: FIX TIME SPANS FOR CLASSTIME
+    
     // [AllowAnonymous]
     // [HttpPost("api/addroles")]
     // public async Task<IActionResult> CreateRole()

@@ -1,4 +1,5 @@
 using BGU.Application.Dtos.AdmissionYear;
+using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.ClassTime;
 using BGU.Application.Dtos.Department;
 using BGU.Application.Dtos.Faculty;
@@ -51,4 +52,7 @@ public interface IExcelService
 
     Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream);
     Task<byte[]> GenerateStudentTemplateAsync();
+
+    Task<List<ClassExcelDto>> ParseClassExcelAsync(Stream fileStream);
+    Task<byte[]> GenerateClassTemplateAsync();
 }

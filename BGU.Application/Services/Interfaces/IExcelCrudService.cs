@@ -1,5 +1,6 @@
 using BGU.Application.Common;
 using BGU.Application.Dtos.AdmissionYear;
+using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.ClassTime;
 using BGU.Application.Dtos.Department;
 using BGU.Application.Dtos.Faculty;
@@ -24,4 +25,5 @@ public interface IExcelCrudService
     Task<List<BulkImportResult>> ProcessClassTimesAsync(List<ClassTimeDto> items);
     Task<List<BulkImportResult>> ProcessTaughtSubjectsAsync(List<TaughtSubjectDto> items);
     Task<List<BulkImportResult>> ProcessTeachersAsync(List<TeacherDto> items);
+    Task<List<BulkImportResult>> ProcessClassesAsync(List<ClassExcelDto> items);
 }

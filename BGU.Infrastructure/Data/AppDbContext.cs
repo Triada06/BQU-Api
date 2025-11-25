@@ -36,6 +36,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<AppUser>()
             .Property(x => x.BornDate)
             .HasColumnType("date");
+        
+        builder.Entity<Faculty>()
+            .HasOne(f => f.Dean)
+            .WithOne(d => d.Faculty)
+            .HasForeignKey<Dean>(d => d.FacultyId);
+        
         base.OnModelCreating(builder);
     }
 }

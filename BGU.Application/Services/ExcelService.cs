@@ -1,4 +1,5 @@
 using BGU.Application.Dtos.AdmissionYear;
+using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.ClassTime;
 using BGU.Application.Dtos.Department;
 using BGU.Application.Dtos.Faculty;
@@ -164,30 +165,30 @@ public class ExcelService : IExcelService
 
             for (int row = 2; row <= rowCount; row++)
             {
-                
                 bool isRowEmpty = true;
                 for (int col = 1; col <= 4; col++) // Check first 4 columns
                 {
-                    if (worksheet.Cells[row, col].Value != null && 
+                    if (worksheet.Cells[row, col].Value != null &&
                         !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
                     {
                         isRowEmpty = false;
                         break;
                     }
                 }
-        
+
                 if (isRowEmpty)
                 {
                     continue; // Skip empty row
                 }
-        
+
                 var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-        
+
                 // Double-check name is not empty
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     continue;
                 }
+
                 try
                 {
                     items.Add(new DepartmentDto(
@@ -540,18 +541,61 @@ public class ExcelService : IExcelService
         using (var package = new ExcelPackage(fileStream))
         {
             var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
+            var rowCount = worksheet.Dimension?.Rows ?? 0;
 
             for (int row = 2; row <= rowCount; row++)
             {
                 try
                 {
+                    // Check if row has data
+                    var startValue = worksheet.Cells[row, 2].Value;
+                    if (startValue == null)
+                    {
+                        continue; // Skip empty row
+                    }
+
+                    // Parse TimeSpan - Excel can store times as DateTime or string
+                    TimeSpan start;
+                    TimeSpan end;
+
+                    // Try parsing Start time
+                    if (worksheet.Cells[row, 2].Value is DateTime startDateTime)
+                    {
+                        // Excel stores time as DateTime
+                        start = startDateTime.TimeOfDay;
+                    }
+                    else
+                    {
+                        // Try parsing as string "HH:MM:SS" or "HH:MM"
+                        var startStr = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                        if (!TimeSpan.TryParse(startStr, out start))
+                        {
+                            Console.WriteLine($"Failed to parse start time: {startStr}");
+                            continue;
+                        }
+                    }
+
+                    // Try parsing End time
+                    if (worksheet.Cells[row, 3].Value is DateTime endDateTime)
+                    {
+                        end = endDateTime.TimeOfDay;
+                    }
+                    else
+                    {
+                        var endStr = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                        if (!TimeSpan.TryParse(endStr, out end))
+                        {
+                            Console.WriteLine($"Failed to parse end time: {endStr}");
+                            continue;
+                        }
+                    }
+
                     items.Add(new ClassTimeDto(
                         Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Start: TimeSpan.Parse(worksheet.Cells[row, 2].Value?.ToString()),
-                        End: TimeSpan.Parse(worksheet.Cells[row, 3].Value?.ToString()),
+                        Start: start,
+                        End: end,
                         DaysOfTheWeek: ParseEnum<DaysOfTheWeek>(worksheet.Cells[row, 4].Value),
-                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim()?.ToUpper() ?? "CREATE"
                     ));
                 }
                 catch (Exception ex)
@@ -567,14 +611,13 @@ public class ExcelService : IExcelService
     public async Task<byte[]> GenerateClassTimeTemplateAsync()
     {
         ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
         using (var package = new ExcelPackage())
         {
             var worksheet = package.Workbook.Worksheets.Add("ClassTimes");
 
             worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Start (HH:MM:SS)";
-            worksheet.Cells[1, 3].Value = "End (HH:MM:SS)";
+            worksheet.Cells[1, 2].Value = "Start (HH:MM:SS or HH:MM)";
+            worksheet.Cells[1, 3].Value = "End (HH:MM:SS or HH:MM)";
             worksheet.Cells[1, 4].Value = "DayOfWeek (Monday/Tuesday/Wednesday/Thursday/Friday)";
             worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
 
@@ -585,10 +628,21 @@ public class ExcelService : IExcelService
                 range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
             }
 
+            // Format time columns as TEXT to prevent Excel from auto-formatting
+            worksheet.Cells[2, 2, 1000, 2].Style.Numberformat.Format = "@"; // Text format
+            worksheet.Cells[2, 3, 1000, 3].Style.Numberformat.Format = "@"; // Text format
+
+            // Example data
             worksheet.Cells[2, 2].Value = "09:00:00";
             worksheet.Cells[2, 3].Value = "10:30:00";
             worksheet.Cells[2, 4].Value = "Monday";
             worksheet.Cells[2, 5].Value = "CREATE";
+
+            // Add another example
+            worksheet.Cells[3, 2].Value = "14:00";
+            worksheet.Cells[3, 3].Value = "15:30";
+            worksheet.Cells[3, 4].Value = "Tuesday";
+            worksheet.Cells[3, 5].Value = "CREATE";
 
             var dayValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
             dayValidation.Formula.Values.Add("Monday");
@@ -623,26 +677,27 @@ public class ExcelService : IExcelService
                 bool isRowEmpty = true;
                 for (int col = 1; col <= 4; col++) // Check first 4 columns
                 {
-                    if (worksheet.Cells[row, col].Value != null && 
+                    if (worksheet.Cells[row, col].Value != null &&
                         !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
                     {
                         isRowEmpty = false;
                         break;
                     }
                 }
-        
+
                 if (isRowEmpty)
                 {
                     continue; // Skip empty row
                 }
-        
+
                 var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-        
+
                 // Double-check name is not empty
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     continue;
                 }
+
                 try
                 {
                     items.Add(new TaughtSubjectDto(
@@ -650,8 +705,8 @@ public class ExcelService : IExcelService
                         SubjectId: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
                         TeacherId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
                         GroupId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Code:worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Hours:int.Parse(worksheet.Cells[row, 6].Value?.ToString()),
+                        Code: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Hours: int.Parse(worksheet.Cells[row, 6].Value?.ToString()),
                         Operation: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
                 }
@@ -764,7 +819,7 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 8].Value = "BornDate (YYYY-MM-DD)";
             worksheet.Cells[1, 9].Value = "DepartmentId";
             worksheet.Cells[1, 10].Value = "Position";
-            
+
             worksheet.Cells[1, 11].Value = "ContractType";
             worksheet.Cells[1, 12].Value = "State";
             worksheet.Cells[1, 14].Value = "Operation (CREATE/UPDATE/DELETE)";
@@ -825,71 +880,71 @@ public class ExcelService : IExcelService
         }
     }
 
-   public async Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream)
-{
-    ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-    var students = new List<CreateStudentDto>();
-
-    using (var package = new ExcelPackage(fileStream))
+    public async Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream)
     {
-        var worksheet = package.Workbook.Worksheets[0];
-        var rowCount = worksheet.Dimension.Rows;
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
 
-        for (int row = 2; row <= rowCount; row++)
+        var students = new List<CreateStudentDto>();
+
+        using (var package = new ExcelPackage(fileStream))
         {
-            try
+            var worksheet = package.Workbook.Worksheets[0];
+            var rowCount = worksheet.Dimension.Rows;
+
+            for (int row = 2; row <= rowCount; row++)
             {
-                // Parse enums from string
-                var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
-                var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
-
-                // Parse BornDate correctly
-                var bornCellValue = worksheet.Cells[row, 7].Value;
-                DateTime bornDate;
-
-                if (bornCellValue is double numericDate) 
+                try
                 {
-                    // Excel stores dates as numbers sometimes
-                    bornDate = DateTime.FromOADate(numericDate);
+                    // Parse enums from string
+                    var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
+                    var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
+
+                    // Parse BornDate correctly
+                    var bornCellValue = worksheet.Cells[row, 7].Value;
+                    DateTime bornDate;
+
+                    if (bornCellValue is double numericDate)
+                    {
+                        // Excel stores dates as numbers sometimes
+                        bornDate = DateTime.FromOADate(numericDate);
+                    }
+                    else
+                    {
+                        // fallback to string parsing
+                        bornDate = DateTime.Parse(bornCellValue?.ToString()
+                                                  ?? throw new Exception($"Invalid BornDate at row {row}"));
+                    }
+
+                    var student = new CreateStudentDto(
+                        Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                        Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                        MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
+                        BornDate: bornDate,
+                        FacultyId: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                        SpecializationId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                        GroupId: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
+                        AdmissionYearId: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
+                        EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
+                        FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
+                        DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
+                        AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0")
+                    );
+
+                    students.Add(student);
                 }
-                else
+                catch (Exception ex)
                 {
-                    // fallback to string parsing
-                    bornDate = DateTime.Parse(bornCellValue?.ToString() 
-                                ?? throw new Exception($"Invalid BornDate at row {row}"));
+                    // Log the row number + error, continue parsing next rows
+                    Console.WriteLine($"Error parsing row {row}: {ex.Message}");
                 }
-
-                var student = new CreateStudentDto(
-                    Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                    Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                    Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                    MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                    PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                    Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                    BornDate: bornDate,
-                    FacultyId: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                    SpecializationId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
-                    GroupId: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
-                    AdmissionYearId: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
-                    EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
-                    FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
-                    DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
-                    AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0")
-                );
-
-                students.Add(student);
-            }
-            catch (Exception ex)
-            {
-                // Log the row number + error, continue parsing next rows
-                Console.WriteLine($"Error parsing row {row}: {ex.Message}");
             }
         }
-    }
 
-    return students;
-}
+        return students;
+    }
 
     public async Task<byte[]> GenerateStudentTemplateAsync()
     {
@@ -946,6 +1001,86 @@ public class ExcelService : IExcelService
             return await Task.FromResult(package.GetAsByteArray());
         }
     }
+
+
+    public async Task<List<ClassExcelDto>> ParseClassExcelAsync(Stream fileStream)
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+        var items = new List<ClassExcelDto>();
+
+        using (var package = new ExcelPackage(fileStream))
+        {
+            var worksheet = package.Workbook.Worksheets[0];
+            var rowCount = worksheet.Dimension?.Rows ?? 0;
+
+            for (int row = 2; row <= rowCount; row++)
+            {
+                try
+                {
+                    // Check if row has data
+                    var taughtSubjectId = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(taughtSubjectId))
+                    {
+                        continue; // Skip empty row
+                    }
+
+                    items.Add(new ClassExcelDto(
+                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                        ClassType: ParseEnum<ClassType>(worksheet.Cells[row, 2].Value),
+                        TaughtSubjectId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                        ClassTimeId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim()?.ToUpper() ?? "CREATE"
+                    ));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error parsing Class row {row}: {ex.Message}");
+                }
+            }
+        }
+
+        return items;
+    }
+
+    public async Task<byte[]> GenerateClassTemplateAsync()
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Classes");
+
+        worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
+        worksheet.Cells[1, 2].Value = "ClassType (Лекция/Семинар)";
+        worksheet.Cells[1, 3].Value = "TaughtSubjectId";
+        worksheet.Cells[1, 4].Value = "ClassTimeId";
+        worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
+
+        using (var range = worksheet.Cells[1, 1, 1, 5])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+        }
+
+        worksheet.Cells[2, 2].Value = "Лекция";
+        worksheet.Cells[2, 3].Value = "taught-subject-id-here";
+        worksheet.Cells[2, 4].Value = "class-time-id-here";
+        worksheet.Cells[2, 5].Value = "CREATE";
+
+        var classTypeValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 2, 1000, 2].Address);
+        classTypeValidation.Formula.Values.Add("Лекция");
+        classTypeValidation.Formula.Values.Add("Семинар");
+
+        var operationValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
+        operationValidation.Formula.Values.Add("CREATE");
+        operationValidation.Formula.Values.Add("UPDATE");
+        operationValidation.Formula.Values.Add("DELETE");
+
+        worksheet.Cells.AutoFitColumns();
+        return await Task.FromResult(package.GetAsByteArray());
+    }
+
 
     private T ParseEnum<T>(object cellValue) where T : struct, Enum
     {
