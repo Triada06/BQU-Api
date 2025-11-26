@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using BGU.Application.Contracts.User;
 using BGU.Application.Dtos.AppUser;
+using BGU.Application.Dtos.Dean;
 using BGU.Application.Helpers.Exceptions;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
@@ -21,27 +22,28 @@ namespace BGU.Application.Services;
 public class UserService(
     UserManager<AppUser> userManager,
     IConfiguration config,
+    IDeanRepository deanRepository,
     IUserRepository userRepository,
     IStudentRepository studentRepository)
     : IUserService
 {
-    public async Task<string> SignInAsync(AppUserSignInDto appUserDto)
+    public async Task<string> SignInAsync(AppUserSignInDto deanUserDto)
     {
-        var user = await userManager.FindByEmailAsync(appUserDto.Email)
-                   ?? await userManager.FindByNameAsync(appUserDto.Email);
+        var user = await userManager.FindByEmailAsync(deanUserDto.Email)
+                   ?? await userManager.FindByNameAsync(deanUserDto.Email);
         if (user is null)
             throw new InvalidLoginCredentialsException();
 
-        var result = await userManager.CheckPasswordAsync(user, appUserDto.PassWord);
+        var result = await userManager.CheckPasswordAsync(user, deanUserDto.PassWord);
 
         if (!result)
             throw new InvalidLoginCredentialsException();
         return await GenerateJwtToken(user);
     }
 
-    public async Task<AuthResponse> SignUpAsync(AppUserSignUpDto appUser)
+    public async Task<AuthResponse> SignUpAsync(AppUserSignUpDto deanUser)
     {
-        var template = appUser.UserName.Trim();
+        var template = deanUser.UserName.Trim();
         var isExists = await userRepository.AnyAsync(u =>
             u.UserName != null && u.UserName.Trim() == template);
         if (isExists)
@@ -51,16 +53,16 @@ public class UserService(
 
         var user = new AppUser //TODO:needs to be changed
         {
-            UserName = appUser.UserName,
-            Email = appUser.Email,
-            Name = appUser.Name,
-            Surname = appUser.Surname,
-            MiddleName = appUser.MiddleName,
-            Pin = appUser.PinCode,
-            Gender = appUser.Gender,
+            UserName = deanUser.UserName,
+            Email = deanUser.Email,
+            Name = deanUser.Name,
+            Surname = deanUser.Surname,
+            MiddleName = deanUser.MiddleName,
+            Pin = deanUser.PinCode,
+            Gender = deanUser.Gender,
             BornDate = DateTime.UtcNow,
         };
-        await userManager.CreateAsync(user, appUser.PassWord);
+        await userManager.CreateAsync(user, deanUser.PassWord);
         await userManager.AddToRoleAsync(user, nameof(Roles.Student));
         var student = new Student
         {
@@ -68,6 +70,45 @@ public class UserService(
             StudentAcademicInfo = new StudentAcademicInfo()
         };
         await studentRepository.CreateAsync(student);
+        var token = await GenerateJwtToken(user);
+        return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, null);
+    }
+
+    public async Task<AuthResponse> SignUpDeanAsync(DeanRegisterDto deanUser)
+    {
+        var template = deanUser.UserName.Trim();
+        var isExists = await userRepository.AnyAsync(u =>
+            u.UserName != null && u.UserName.Trim() == template);
+        if (isExists)
+        {
+            return new AuthResponse(null, null, false, ["User already exists, try sign in."]);
+        }
+
+        var user = new AppUser
+        {
+            UserName = deanUser.UserName,
+            Email = deanUser.Email,
+            Name = deanUser.Name,
+            Surname = deanUser.Surname,
+            MiddleName = deanUser.MiddleName,
+            Pin = deanUser.PinCode,
+            Gender = deanUser.Gender,
+            BornDate = DateTime.UtcNow,
+        };
+        var res = await userManager.CreateAsync(user, deanUser.PassWord);
+        if (!res.Succeeded)
+        {
+            return new AuthResponse(null, null, false, res.Errors.Select(x => x.Description));
+        }
+
+        await userManager.AddToRoleAsync(user, nameof(Roles.Dean));
+        var dean = new Dean()
+        {
+            AppUserId = user.Id,
+            FacultyId = deanUser.FacultyId,
+            RoleName = deanUser.RoleName
+        };
+        await deanRepository.CreateAsync(dean);
         var token = await GenerateJwtToken(user);
         return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, null);
     }

@@ -19,12 +19,7 @@ public class AdminController(
     IExcelService excelService,
     IAdminService adminService) : ControllerBase
 {
-    [HttpPost(ApiEndPoints.User.SignUp)]
-    public async Task<IActionResult> SignUp([FromBody] AppUserSignUpDto request)
-    {
-        var res = await userService.SignUpAsync(request); //TODO: change to admin service
-        return Ok(res);
-    }
+    
 
     [HttpGet(ApiEndPoints.Student.Template)]
     public async Task<IActionResult> DownloadStudentTemplate()

@@ -1,5 +1,4 @@
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<Seminar> Seminars { get; set; }
     public DbSet<ClassSession> ClassSessions { get; set; }
+    public DbSet<Dean> Deans { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -42,6 +42,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .WithOne(d => d.Faculty)
             .HasForeignKey<Dean>(d => d.FacultyId);
         
-        base.OnModelCreating(builder);
+        base.OnModelCreating(builder);  
     }
 }

@@ -8,7 +8,7 @@ namespace BGU.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Dean")]
-public class DeanController(IDeanService deanService) : ControllerBase
+public class DeanController(IDeanService deanService): ControllerBase
 {
     [HttpGet(ApiEndPoints.Dean.Profile)]
     public async Task<IActionResult> Profile()

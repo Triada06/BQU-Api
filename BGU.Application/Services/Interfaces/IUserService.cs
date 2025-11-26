@@ -1,5 +1,6 @@
 using BGU.Application.Contracts.User;
 using BGU.Application.Dtos.AppUser;
+using BGU.Application.Dtos.Dean;
 using BGU.Core.Entities;
 using Microsoft.EntityFrameworkCore.Query;
 
@@ -9,6 +10,7 @@ public interface IUserService
 {
     public Task<string> SignInAsync(AppUserSignInDto appUserDto);
     public Task<AuthResponse> SignUpAsync(AppUserSignUpDto appUser);
+    public Task<AuthResponse> SignUpDeanAsync(DeanRegisterDto deanUser);
 
     public Task<bool> DeleteAsync(string userId);
 

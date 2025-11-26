@@ -9,6 +9,7 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/user";
         public const string SignIn = $"{Base}/signin";
         public const string SignUp = $"{Base}/signup";
+        public const string DeanSignUp = $"{Base}/dean-signup";
         public const string GetAll = $"{Base}";
         public const string GetById = $"{Base}/{{id}}";
         public const string Delete = $"{Base}/{{id}}";
@@ -131,7 +132,7 @@ public static class ApiEndPoints
 
     public static class Dean
     {
-        private const string Base = $"{ApiBase}/teachers";
+        private const string Base = $"{ApiBase}/deans";
         public const string Create = $"{Base}/";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";

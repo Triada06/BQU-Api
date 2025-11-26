@@ -16,12 +16,14 @@ public static class AppServices
         services.AddScoped<IExcelService, ExcelService>();
         services.AddScoped<IExcelCrudService, ExcelCrudService>();
         services.AddScoped<ITeacherService, TeacherService>();
+        services.AddScoped<IDeanService, DeanService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IClassRepository, ClassRepository>();
         services.AddScoped<ITaughtSubjectRepository, TaughtSubjectRepository>();
         services.AddScoped<ITeacherRepository, TeacherRepository>();
+        services.AddScoped<IDeanRepository, DeanRepository>();
         return services;
     }
 }
