@@ -81,7 +81,6 @@ builder.Services.AddControllers(options => { options.Filters.Add<ResponseStatusC
 builder.Services.AddProblemDetails();
 builder.Services.AddValidatorsFromAssemblyContaining<AppUserCreateValidator>();
 
-
 // Identity Config - Changed from AddIdentityCore to AddIdentity
 builder.Services.AddIdentityCore<AppUser>(options =>
     {

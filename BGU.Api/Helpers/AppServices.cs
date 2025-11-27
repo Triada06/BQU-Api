@@ -17,6 +17,7 @@ public static class AppServices
         services.AddScoped<IExcelCrudService, ExcelCrudService>();
         services.AddScoped<ITeacherService, TeacherService>();
         services.AddScoped<IDeanService, DeanService>();
+        services.AddScoped<IRoomService, RoomService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
@@ -24,6 +25,7 @@ public static class AppServices
         services.AddScoped<ITaughtSubjectRepository, TaughtSubjectRepository>();
         services.AddScoped<ITeacherRepository, TeacherRepository>();
         services.AddScoped<IDeanRepository, DeanRepository>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
         return services;
     }
 }

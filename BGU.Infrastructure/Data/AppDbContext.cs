@@ -1,6 +1,7 @@
 using BGU.Core.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BGU.Infrastructure.Data;
 
@@ -30,18 +31,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Seminar> Seminars { get; set; }
     public DbSet<ClassSession> ClassSessions { get; set; }
     public DbSet<Dean> Deans { get; set; }
+    public DbSet<Room> Rooms { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.Entity<AppUser>()
             .Property(x => x.BornDate)
             .HasColumnType("date");
+
+        builder.Entity<Room>()
+            .Property(x => x.Name)
+            .HasMaxLength(20);
         
         builder.Entity<Faculty>()
             .HasOne(f => f.Dean)
             .WithOne(d => d.Faculty)
             .HasForeignKey<Dean>(d => d.FacultyId);
-        
-        base.OnModelCreating(builder);  
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType.IsEnum)
+                {
+                    var converterType = typeof(EnumToStringConverter<>).MakeGenericType(property.ClrType);
+                    var converter = Activator.CreateInstance(converterType);
+                    property.SetValueConverter((ValueConverter)converter);
+                }
+            }
+        }
+
+        base.OnModelCreating(builder);
     }
 }
