@@ -28,7 +28,7 @@ public static class ApiEndPoints
         public const string GetById = $"{Base}/{{id}}";
         public const string Delete = $"{Base}/{{id}}";
     }
-
+ 
     public static class Room
     {
         private const string Base = $"{ApiBase}/rooms";

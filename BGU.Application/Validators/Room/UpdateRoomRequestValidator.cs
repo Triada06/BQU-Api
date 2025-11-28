@@ -8,7 +8,8 @@ public class UpdateRoomRequestValidator : AbstractValidator<UpdateRoomRequest>
     public UpdateRoomRequestValidator()
     {
         RuleFor(x => x.Capacity).NotEmpty().WithMessage("Capacity is required")
-            .LessThan(30).WithMessage("Capacity must be greater than 30");
+            .GreaterThan(0).WithMessage("Capacity must be greater than zero")
+            .LessThan(50).WithMessage("Capacity must be less than 50");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Room name is required")
             .MaximumLength(15).WithMessage("Room name cannot exceed 15 characters");
     }

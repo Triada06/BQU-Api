@@ -9,6 +9,7 @@ using BGU.Infrastructure.Data;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -77,11 +78,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddDataProtection();
 builder.Services.AddAppServices();
 builder.Services.AddAuthorization();
-builder.Services.AddControllers(options => { options.Filters.Add<ResponseStatusCodeFilter>(); });
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ResponseStatusCodeFilter>();
+    options.Filters.Add<ValidationFilter>(); // Add this
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddValidatorsFromAssemblyContaining<AppUserCreateValidator>();
 
-// Identity Config - Changed from AddIdentityCore to AddIdentity
 builder.Services.AddIdentityCore<AppUser>(options =>
     {
         options.Password.RequireDigit = true;
