@@ -187,6 +187,98 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         return new TeacherCoursesResponse(courses, ResponseMessages.Success, true, (int)StatusCode.Ok);
     }
 
+    public async Task<UpdateTeacherResponse> UpdateAsync(string teacherId, UpdateTeacherRequest request)
+    {
+        var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
+            i => i.Include(x => x.TeacherAcademicInfo).Include(x => x.AppUser), tracking: true)).FirstOrDefault();
+        if (teacher is null)
+            return new UpdateTeacherResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
+
+        teacher.AppUser.Name = request.Name;
+        teacher.AppUser.Surname = request.Surname;
+        teacher.TeacherAcademicInfo.DepartmentId = request.DepartmentId;
+
+        if (request.Email != teacher.AppUser.Email)
+        {
+            var user = await userManager.FindByIdAsync(teacher.AppUserId);
+            if (user is null)
+            {
+                return new UpdateTeacherResponse(null,
+                    StatusCode.Unauthorized, false, ResponseMessages.Unauthorized);
+            }
+
+            var token = await userManager.GenerateChangeEmailTokenAsync(user, request.Email);
+            var result = await userManager.ChangeEmailAsync(user, request.Email, token);
+            if (!result.Succeeded)
+            {
+                return new UpdateTeacherResponse(null, StatusCode.BadRequest, false,
+                    string.Join(", ", result.Errors.Select(x => x.Description)));
+            }
+        }
+
+        await teacherRepository.UpdateAsync(teacher);
+        return new UpdateTeacherResponse(
+            teacherId, StatusCode.Ok, false, ResponseMessages.Success);
+    }
+
+    public async Task<DeleteTeacherResponse> DeleteAsync(string teacherId)
+    {
+        var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
+            i => i.Include(x => x.AppUser), tracking: true)).FirstOrDefault();
+        if (teacher is null)
+        {
+            return new DeleteTeacherResponse(StatusCode.NotFound, false, ResponseMessages.NotFound);
+        }
+
+        if (!await teacherRepository.DeleteAsync(teacher))
+        {
+            return new DeleteTeacherResponse(StatusCode.BadRequest, false,
+                string.Join(", ", ResponseMessages.Failed));
+        }
+
+        var res = await userManager.DeleteAsync(teacher.AppUser);
+        if (!res.Succeeded)
+        {
+            return new DeleteTeacherResponse(StatusCode.BadRequest, false,
+                string.Join(", ", res.Errors.Select(x => x.Description)));
+        }
+
+
+        return new DeleteTeacherResponse(StatusCode.Ok, true, ResponseMessages.Success);
+    }
+
+    public async Task<GetByIdTeacherResponse> GetByIdAsync(string teacherId)
+    {
+        var teacher = await teacherRepository.GetByIdAsync(teacherId,
+            i => i.Include(x => x.TeacherAcademicInfo)
+                .Include(x => x.AppUser), tracking: false);
+        if (teacher is null)
+            return new GetByIdTeacherResponse(null, ResponseMessages.NotFound, false, StatusCode.NotFound);
+        return new GetByIdTeacherResponse(
+            new GetTeacherDto(teacherId, teacher.AppUser.Email!, teacher.AppUser.Name, teacher.AppUser.Surname,
+                teacher.AppUser.MiddleName, teacher.AppUser.Pin, teacher.AppUser.Gender, teacher.AppUser.BornDate,
+                teacher.TeacherAcademicInfo.DepartmentId, teacher.TeacherAcademicInfo.TeachingPosition,
+                teacher.TeacherAcademicInfo.TypeOfContract, teacher.TeacherAcademicInfo.State),
+            ResponseMessages.Success,
+            true, StatusCode.Ok);
+    }
+
+    public async Task<GetAllTeachersResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
+    {
+        var teachers = await teacherRepository.GetAllAsync(page, pageSize,
+            include: i => i.Include(x => x.TeacherAcademicInfo)
+                .Include(x => x.AppUser),
+            tracking: false);
+        return new GetAllTeachersResponse(
+            teachers.Select(x => new GetTeacherDto(x.Id, x.AppUser.Email!, x.AppUser.Name,
+                x.AppUser.Surname,
+                x.AppUser.MiddleName, x.AppUser.Pin, x.AppUser.Gender, x.AppUser.BornDate,
+                x.TeacherAcademicInfo.DepartmentId, x.TeacherAcademicInfo.TeachingPosition,
+                x.TeacherAcademicInfo.TypeOfContract, x.TeacherAcademicInfo.State)),
+            ResponseMessages.Success,
+            true, StatusCode.Ok);
+    }
+
 
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;

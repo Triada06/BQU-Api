@@ -32,7 +32,7 @@ public class RoomController(IRoomService roomService) : ControllerBase
     {
         var res = await roomService.GetByIdAsync(id);
         return new ObjectResult(res);
-    }//todo: fix the validation issues
+    }
 
     [HttpPut(ApiEndPoints.Room.Update)]
     public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateRoomRequest request)

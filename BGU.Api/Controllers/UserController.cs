@@ -1,23 +1,16 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using BGU.Api.Helpers;
 using BGU.Application.Dtos.AppUser;
 using BGU.Application.Dtos.Dean;
-using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
-using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace BGU.Api.Controllers;
 
 // [Authorize(Roles = "Student,Teacher,Dean")]
 [ApiController]
 public class UserController(IUserService userService) : ControllerBase
-{
+{ 
     [AllowAnonymous]
     [HttpPost(ApiEndPoints.User.SignIn)]
     public async Task<IActionResult> SignIn([FromBody] AppUserSignInDto request)
@@ -25,7 +18,7 @@ public class UserController(IUserService userService) : ControllerBase
         var res = await userService.SignInAsync(request);
         return Ok(res);
     }
-
+    [Authorize(Roles = "Teacher")]
     [HttpPost(ApiEndPoints.User.SignUp)]
     public async Task<IActionResult> SignUp([FromBody] AppUserSignUpDto request)
     {
@@ -33,7 +26,7 @@ public class UserController(IUserService userService) : ControllerBase
         return Ok(res);
     }
 
-    // [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = "Dean")]
     [HttpPost(ApiEndPoints.User.DeanSignUp)]
     public async Task<IActionResult> DeanSignUp([FromBody] DeanRegisterDto request)
     {

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -24,7 +23,8 @@ public class ValidationFilter : IAsyncActionFilter
 
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(e => new {
+                    var errors = result.Errors.Select(e => new
+                    {
                         Property = e.PropertyName,
                         Message = e.ErrorMessage
                     });
@@ -34,5 +34,6 @@ public class ValidationFilter : IAsyncActionFilter
                 }
             }
         }
+        await next();
     }
 }

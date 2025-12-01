@@ -9,12 +9,10 @@ using BGU.Infrastructure.Data;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
-using OfficeOpenXml;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -121,6 +119,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 var app = builder.Build();
+
+var controllers = typeof(Program).Assembly.GetTypes()
+    .Where(t => t.Name.EndsWith("Controller"))
+    .Select(t => t.Name);
+Console.WriteLine("Found controllers: " + string.Join(", ", controllers));
 
 app.UseStaticFiles();
 app.UseRouting();
