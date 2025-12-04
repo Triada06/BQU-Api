@@ -9,6 +9,7 @@ public static class AppServices
 {
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
+        //services
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IStudentService, StudentService>();
         services.AddScoped<IClassService, ClassService>();
@@ -18,7 +19,10 @@ public static class AppServices
         services.AddScoped<ITeacherService, TeacherService>();
         services.AddScoped<IDeanService, DeanService>();
         services.AddScoped<IRoomService, RoomService>();
+        services.AddScoped<ITaughtSubjectService, TaughtSubjectService>();
+        services.AddScoped<IGroupService, GroupService>();
 
+        //repos
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IClassRepository, ClassRepository>();
@@ -26,6 +30,8 @@ public static class AppServices
         services.AddScoped<ITeacherRepository, TeacherRepository>();
         services.AddScoped<IDeanRepository, DeanRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<ITaughtSubjectRepository, TaughtSubjectRepository>();
+        services.AddScoped<IGroupRepository, GroupRepository>();
         return services;
     }
 }

@@ -11,5 +11,4 @@ public class Subject : BaseEntity
 
     public string DepartmentId { get; set; }
     public Department Department { get; set; }
-    
 }
