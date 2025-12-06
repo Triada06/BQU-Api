@@ -1,10 +1,12 @@
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.Group.Requests;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;
 
+//todo: test ts whole controller
 [ApiController]
 [Authorize(Roles = "Dean")]
 public class GroupController(IGroupService groupService) : ControllerBase
@@ -14,5 +16,26 @@ public class GroupController(IGroupService groupService) : ControllerBase
     {
         var res = await groupService.GetAllAsync(page, pageSize);
         return new ObjectResult(res);
-    }   
+    }
+
+    [HttpGet(ApiEndPoints.Group.GetById)]
+    public async Task<IActionResult> GetById([FromRoute] string id)
+    {
+        var res = await groupService.GetByIdAsync(id);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.Group.Delete)]
+    public async Task<IActionResult> Delete([FromRoute] string id)
+    {
+        var res = await groupService.DeleteAsync(id);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.Group.Update)]
+    public async Task<IActionResult> Update([FromRoute] string id, UpdateGroupRequest request)
+    {
+        var res = await groupService.UpdateAsync(id, request);
+        return new ObjectResult(res);
+    }
 }
