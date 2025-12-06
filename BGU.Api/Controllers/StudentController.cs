@@ -50,4 +50,29 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var data = await studentService.GetProfile(userId);
         return Ok(data);
     }
+
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Student.Filter)]
+    public async Task<IActionResult> FilterBy([FromQuery] string groupId, [FromQuery] int year)
+    {
+        var res = await studentService.FilterAsync(groupId, year);
+        return new ObjectResult(res);
+    }
+
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Student.Search)]
+    public async Task<IActionResult> Search([FromQuery] string searchText)
+    {
+        var res = await studentService.SearchAsync(searchText);
+        return new ObjectResult(res);
+    }
+
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Student.GetAll)]
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var res = await studentService.GetAllAsync(page, pageSize);
+        return new ObjectResult(res);
+    }
 }

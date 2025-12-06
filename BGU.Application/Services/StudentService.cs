@@ -17,6 +17,7 @@ namespace BGU.Application.Services;
 public class StudentService(
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
+    IUserRepository userRepository,
     ITaughtSubjectRepository taughtSubjectRepository) : IStudentService
 {
     public async Task<StudentDashboardResponse> Dashboard(string userId)
@@ -286,6 +287,58 @@ public class StudentService(
             (int)StatusCode.Ok);
     }
 
+    public async Task<GetStudentResponse> FilterAsync(string groupId, int year)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<GetStudentResponse> SearchAsync(string searchString)
+    {
+        var users = await userManager.GetUsersInRoleAsync("Student");
+        if (users.Count is 0)
+        {
+            return new GetStudentResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
+        }
+
+        var filteredUsers = users.Where(u =>
+            u.Name.Contains(searchString, StringComparison.CurrentCultureIgnoreCase) ||
+            u.Surname.Contains(searchString, StringComparison.CurrentCultureIgnoreCase) ||
+            u.MiddleName.Contains(searchString, StringComparison.CurrentCultureIgnoreCase));
+
+        List<Student> students = [];
+
+        foreach (var user in filteredUsers)
+        {
+            var student = await studentRepository.GetByIdAsync(user.Id, x => x
+                .Include(st => st.StudentAcademicInfo)
+                .ThenInclude(st => st.Group)
+                .Include(st => st.AppUser), false);
+
+            if (student is not null)
+            {
+                students.Add(student);
+            }
+        }
+
+        return new GetStudentResponse(students.Select(x => new GetStudentDto(x.Id,
+                x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
+                GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now))), StatusCode.Ok, true,
+            ResponseMessages.Success);
+    }
+
+    public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize)
+    {
+        var students =
+            (await studentRepository.GetAllAsync(page, pageSize, false,
+                x => x
+                    .Include(st => st.StudentAcademicInfo)
+                    .ThenInclude(st => st.Group)
+                    .Include(st => st.AppUser)))
+            .Select(x =>
+                new GetStudentDto(x.Id, x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now)));
+        return new GetStudentResponse(students, StatusCode.Ok, true, ResponseMessages.Success);
+    }
 
     private static double CalculateOverallSubjectScore(List<int> seminarScores, List<int> colloquiumScores,
         Grade assigment)
@@ -293,4 +346,10 @@ public class StudentService(
 
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
+
+    private static int GetYear(DateTime start, DateTime end)
+    {
+        var totalDays = (end - start).TotalDays;
+        return (int)(totalDays / 365.2425);
+    }
 }
