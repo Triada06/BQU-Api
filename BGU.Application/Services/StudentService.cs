@@ -287,17 +287,47 @@ public class StudentService(
             (int)StatusCode.Ok);
     }
 
-    public async Task<GetStudentResponse> FilterAsync(string groupId, int year)
+    public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
     {
-        throw new NotImplementedException();
+        var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
+            .Include(st => st.StudentAcademicInfo)
+            .ThenInclude(st => st.Group)
+            .Include(st => st.AppUser))).ToList();
+        if (students.Count == 0)
+        {
+            return new GetStudentResponse([], StatusCode.NotFound, true, ResponseMessages.NotFound);
+        }
+
+        if (groupId is not null)
+        {
+            students = students.Where(x => x.StudentAcademicInfo.GroupId == groupId).ToList();
+        }
+
+        if (year is not null && students.Count is not 0)
+        {
+            students = students.Where(x => GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now) == year)
+                .ToList();
+        }
+
+        return new GetStudentResponse(students.Count == 0
+                ? []
+                : students.Select(x => new GetStudentDto(x.Id,
+                    x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now))), StatusCode.Ok, true,
+            ResponseMessages.Success);
     }
 
-    public async Task<GetStudentResponse> SearchAsync(string searchString)
+    public async Task<GetStudentResponse> SearchAsync(string? searchString)
     {
         var users = await userManager.GetUsersInRoleAsync("Student");
         if (users.Count is 0)
         {
-            return new GetStudentResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
+            return new GetStudentResponse([], StatusCode.NotFound, false, ResponseMessages.NotFound);
+        }
+
+        if (searchString is null)
+        {
+            return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }
 
         var filteredUsers = users.Where(u =>
@@ -305,25 +335,28 @@ public class StudentService(
             u.Surname.Contains(searchString, StringComparison.CurrentCultureIgnoreCase) ||
             u.MiddleName.Contains(searchString, StringComparison.CurrentCultureIgnoreCase));
 
-        List<Student> students = [];
+        var userIds = filteredUsers.Select(u => u.Id).ToList();
 
-        foreach (var user in filteredUsers)
-        {
-            var student = await studentRepository.GetByIdAsync(user.Id, x => x
+        var students = await studentRepository.FindAsync(
+            x => userIds.Contains(x.AppUserId),
+            x => x
                 .Include(st => st.StudentAcademicInfo)
                 .ThenInclude(st => st.Group)
-                .Include(st => st.AppUser), false);
+                .Include(st => st.AppUser),
+            false);
 
-            if (student is not null)
-            {
-                students.Add(student);
-            }
-        }
-
-        return new GetStudentResponse(students.Select(x => new GetStudentDto(x.Id,
-                x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
-                GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now))), StatusCode.Ok, true,
-            ResponseMessages.Success);
+        return new GetStudentResponse(students.Count == 0
+                ? []
+                : students.Select(x => new GetStudentDto(
+                    x!.Id,
+                    x.AppUser.Name +" "+ x.AppUser.Surname,
+                    x.StudentAcademicInfo.Group.Code,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now)
+                )),
+            StatusCode.Ok,
+            true,
+            ResponseMessages.Success
+        );
     }
 
     public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize)
@@ -349,7 +382,7 @@ public class StudentService(
 
     private static int GetYear(DateTime start, DateTime end)
     {
-        var totalDays = (end - start).TotalDays;
-        return (int)(totalDays / 365.2425);
+        var years = (end - start).TotalDays / 365.2425;
+        return years < 1 ? 1 : (int)years;
     }
 }

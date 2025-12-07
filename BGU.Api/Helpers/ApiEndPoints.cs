@@ -48,8 +48,8 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/students";
         public const string Create = $"{Base}";
-        public const string Filter = $"{Base}";
-        public const string Search = $"{Base}";
+        public const string Filter = $"{Base}/filter-by";
+        public const string Search = $"{Base}/search";
         public const string GetAll = $"{Base}";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";

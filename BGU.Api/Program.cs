@@ -123,7 +123,6 @@ var app = builder.Build();
 var controllers = typeof(Program).Assembly.GetTypes()
     .Where(t => t.Name.EndsWith("Controller"))
     .Select(t => t.Name);
-Console.WriteLine("Found controllers: " + string.Join(", ", controllers));
 
 app.UseStaticFiles();
 app.UseRouting();

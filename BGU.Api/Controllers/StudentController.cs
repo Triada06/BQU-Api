@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Student")]
 public class StudentController(IStudentService studentService) : ControllerBase
 {
+    [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.DashBoard)]
     public async Task<IActionResult> Dashboard()
     {
@@ -21,6 +21,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return Ok(data);
     }
 
+    [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Schedule)]
     public async Task<IActionResult> Schedule(string schedule)
     {
@@ -31,6 +32,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return Ok(data);
     }
 
+    [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Grades)]
     public async Task<IActionResult> Grades(string grade) //todo: test this feat with data
     {
@@ -41,6 +43,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return Ok(data);
     }
 
+    [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Profile)]
     public async Task<IActionResult> Profile()
     {
@@ -53,7 +56,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Student.Filter)]
-    public async Task<IActionResult> FilterBy([FromQuery] string groupId, [FromQuery] int year)
+    public async Task<IActionResult> FilterBy([FromQuery] string? groupId, [FromQuery] int? year)
     {
         var res = await studentService.FilterAsync(groupId, year);
         return new ObjectResult(res);
@@ -61,7 +64,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Student.Search)]
-    public async Task<IActionResult> Search([FromQuery] string searchText)
+    public async Task<IActionResult> Search([FromQuery] string? searchText)
     {
         var res = await studentService.SearchAsync(searchText);
         return new ObjectResult(res);
