@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;
 
-//todo: test ts whole controller
 [ApiController]
 [Authorize(Roles = "Dean")]
 public class GroupController(IGroupService groupService) : ControllerBase
@@ -25,14 +24,14 @@ public class GroupController(IGroupService groupService) : ControllerBase
         return new ObjectResult(res);
     }
 
-    [HttpGet(ApiEndPoints.Group.Delete)]
+    [HttpDelete(ApiEndPoints.Group.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
         var res = await groupService.DeleteAsync(id);
         return new ObjectResult(res);
     }
 
-    [HttpGet(ApiEndPoints.Group.Update)]
+    [HttpPut(ApiEndPoints.Group.Update)]
     public async Task<IActionResult> Update([FromRoute] string id, UpdateGroupRequest request)
     {
         var res = await groupService.UpdateAsync(id, request);

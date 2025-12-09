@@ -19,6 +19,7 @@ public class GroupService(IGroupRepository groupRepository) : IGroupService
                 include: x =>
                     x.Include(e => e.Specialization)
                         .Include(e => e.Students)
+                        .Include(e => e.AdmissionYear)
             ))
             .Select(x => new GetGroupDto(x.Id, x.Code, x.Specialization.Name,
                 DateTime.Now.Year - x.AdmissionYear.FirstYear, x.Students.Count));
@@ -31,7 +32,8 @@ public class GroupService(IGroupRepository groupRepository) : IGroupService
             await groupRepository.GetByIdAsync(id,
                 include: x =>
                     x.Include(e => e.Specialization)
-                        .Include(e => e.Students), tracking
+                        .Include(e => e.Students)
+                        .Include(e => e.AdmissionYear), tracking
             );
 
         if (group is null)
@@ -78,7 +80,7 @@ public class GroupService(IGroupRepository groupRepository) : IGroupService
             return new UpdateGroupsResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        group.SpecializationId = request.DepartmentId;
+        group.SpecializationId = request.SpecialisationId;
         group.Code = request.GroupCode;
         group.AdmissionYear.FirstYear = request.Year;
         group.AdmissionYear.SecondYear += 1;

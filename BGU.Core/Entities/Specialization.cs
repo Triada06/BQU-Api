@@ -5,4 +5,6 @@ public class Specialization : BaseEntity
     public string Name { get; set; }
     public string FacultyId { get; set; }
     public Faculty Faculty { get; set; }
+
+    public ICollection<Group> Groups { get; set; } = [];
 }

@@ -51,7 +51,7 @@ public class UserService(
             return new AuthResponse(null, null, false, ["User already exists, try sign in."]);
         }
 
-        var user = new AppUser //TODO:needs to be changed
+        var user = new AppUser 
         {
             UserName = deanUser.UserName,
             Email = deanUser.Email,

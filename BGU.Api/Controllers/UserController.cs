@@ -13,6 +13,7 @@ namespace BGU.Api.Controllers;
 [ApiController]
 public class UserController(IUserService userService, UserManager<AppUser> userManager) : ControllerBase
 {
+    //todo: fin should be unique, fix that
     [AllowAnonymous]
     [HttpPost(ApiEndPoints.User.SignIn)]
     public async Task<IActionResult> SignIn([FromBody] AppUserSignInDto request)
@@ -37,14 +38,14 @@ public class UserController(IUserService userService, UserManager<AppUser> userM
         return Ok(res);
     }
 
-    [AllowAnonymous]
-    [HttpDelete(ApiEndPoints.User.Delete)]
-     public async Task<IActionResult> Delete([FromRoute] string id)
-    {
-        var user = await userManager.FindByIdAsync(id);  
-        await userManager.DeleteAsync(user);
-        return Ok();
-    }
+    // [AllowAnonymous]
+    // [HttpDelete(ApiEndPoints.User.Delete)]
+    //  public async Task<IActionResult> Delete([FromRoute] string id)
+    // {
+    //     var user = await userManager.FindByIdAsync(id);  
+    //     await userManager.DeleteAsync(user);
+    //     return Ok();
+    // }
     //TODO: fix the signup, it can send a null request but shouldnt, it shouldnt accept repeated FIN codes, it accpets non-unique emails yet returns Ok
     //TODO: on sing in entering wrong data returns 500 instead 404 or 400`
 }
