@@ -22,13 +22,22 @@ public static class ApiEndPoints
     public static class Class
     {
         private const string Base = $"{ApiBase}/class";
-        public const string Create = $"{Base}/{{id}}";
+        public const string Create = $"{Base}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetAll = $"{Base}";
         public const string GetById = $"{Base}/{{id}}";
         public const string Delete = $"{Base}/{{id}}";
     }
- 
+
+    public static class Syllabus
+    {
+        private const string Base = $"{ApiBase}/syllabus";
+        public const string Create = $"{Base}";
+        public const string Update = $"{Base}/{{id}}";
+        public const string GetById = $"{Base}/{{id}}";
+        public const string Delete = $"{Base}/{{id}}";
+    }
+
     public static class Room
     {
         private const string Base = $"{ApiBase}/rooms";

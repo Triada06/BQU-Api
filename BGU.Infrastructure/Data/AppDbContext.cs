@@ -32,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<ClassSession> ClassSessions { get; set; }
     public DbSet<Dean> Deans { get; set; }
     public DbSet<Room> Rooms { get; set; }
+    public DbSet<Syllabus> Syllabus { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -40,6 +41,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasColumnType("date");
 
         builder.Entity<Room>()
+            .Property(x => x.Name)
+            .HasMaxLength(20);
+        builder.Entity<Syllabus>()
             .Property(x => x.Name)
             .HasMaxLength(20);
         
