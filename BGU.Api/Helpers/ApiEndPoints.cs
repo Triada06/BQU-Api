@@ -32,7 +32,7 @@ public static class ApiEndPoints
     public static class Syllabus
     {
         private const string Base = $"{ApiBase}/syllabus";
-        public const string Create = $"{Base}";
+        public const string Create = $"{Base}/{{taughtSubjectId}}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetById = $"{Base}/{{id}}";
         public const string Delete = $"{Base}/{{id}}";

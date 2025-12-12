@@ -6,4 +6,4 @@ public class Syllabus : BaseEntity
     public string FilePath { get; set; }
     public string? TaughtSubjectId { get; set; }
     public TaughtSubject? TaughtSubject { get; set; }
-}
+}   

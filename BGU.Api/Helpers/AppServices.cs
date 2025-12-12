@@ -21,6 +21,7 @@ public static class AppServices
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<ITaughtSubjectService, TaughtSubjectService>();
         services.AddScoped<IGroupService, GroupService>();
+        services.AddScoped<ISyllabusService, SyllabusService>();
 
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
@@ -32,6 +33,7 @@ public static class AppServices
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<ITaughtSubjectRepository, TaughtSubjectRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<ISyllabusRepository, SyllabusRepository>();
         return services;
     }
 }
