@@ -45,7 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasMaxLength(20);
         builder.Entity<Syllabus>()
             .Property(x => x.Name)
-            .HasMaxLength(20);
+            .HasMaxLength(100);
         
         builder.Entity<Faculty>()
             .HasOne(f => f.Dean)

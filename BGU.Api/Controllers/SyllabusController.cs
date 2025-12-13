@@ -8,36 +8,41 @@ namespace BGU.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Teacher")]
-public class SyllabusController(ISyllabusService syllabusService, IWebHostEnvironment environment) : ControllerBase
+public class SyllabusController(ISyllabusService syllabusService) : ControllerBase
 {
     [HttpPost(ApiEndPoints.Syllabus.Create)]
-    public async Task<IActionResult> Create([FromForm] IFormFile file, [FromQuery] string taughtSubjectId)
+    public async Task<IActionResult> Create(IFormFile file, [FromRoute] string taughtSubjectId)
     {
-        var res = await syllabusService.CreateAsync(new CreateSyllabusRequest(file, taughtSubjectId,
-            environment.WebRootPath + "/Syllabuses"));
-        Console.WriteLine(environment.WebRootPath);
+        var res = await syllabusService.CreateAsync(new CreateSyllabusRequest(file, taughtSubjectId));
         return new ObjectResult(res);
     }
 
-    [HttpPost(ApiEndPoints.Syllabus.Update)]
-    public async Task<IActionResult> Update([FromForm] IFormFile file, [FromRoute] string id)
+    [HttpPut(ApiEndPoints.Syllabus.Update)]
+    public async Task<IActionResult> Update(IFormFile file, [FromRoute] string id)
     {
-        var res = await syllabusService.UpdateAsync(new UpdateSyllabusRequest(file, id,
-            environment.WebRootPath + "/Syllabuses"));
+        var res = await syllabusService.UpdateAsync(new UpdateSyllabusRequest(file, id));
         return new ObjectResult(res);
     }
 
-    [HttpPost(ApiEndPoints.Syllabus.Delete)]
+    [HttpDelete(ApiEndPoints.Syllabus.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
         var res = await syllabusService.DeleteAsync(id);
         return new ObjectResult(res);
     }
 
-    [HttpPost(ApiEndPoints.Syllabus.GetById)]
+    [HttpGet(ApiEndPoints.Syllabus.GetById)]
     public async Task<IActionResult> GetById([FromRoute] string id)
     {
         var res = await syllabusService.GetByIdAsync(id);
-        return new ObjectResult(res);
+
+        if (!res.IsSucceeded || res.Dto is null)
+            return new ObjectResult(res);
+
+        return File(
+            res.Dto.Bytes,
+            "application/pdf",
+            res.Dto.FileName
+        );
     }
 }

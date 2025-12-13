@@ -5,10 +5,14 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
+using Microsoft.AspNetCore.Hosting;
 
 namespace BGU.Application.Services;
 
-public class SyllabusService(ISyllabusRepository syllabusRepository, ITaughtSubjectRepository taughtSubjectRepository)
+public class SyllabusService(
+    ISyllabusRepository syllabusRepository,
+    ITaughtSubjectRepository taughtSubjectRepository,
+    IWebHostEnvironment env)
     : ISyllabusService
 {
     public async Task<CreateSyllabusResponse> CreateAsync(CreateSyllabusRequest request)
@@ -19,8 +23,8 @@ public class SyllabusService(ISyllabusRepository syllabusRepository, ITaughtSubj
                 "This subjet already has a syllabus");
         }
 
-        var fileName = Guid.NewGuid() + "-" + request.File.Name;
-        var filePath = Path.Combine(request.WwwRootPath, fileName);
+        var fileName = Guid.NewGuid() + "-" + request.File.FileName;
+        var filePath = Path.Combine(GetSyllabusPath(), fileName);
 
         await using (var writer = new FileStream(filePath, FileMode.Create))
         {
@@ -57,8 +61,8 @@ public class SyllabusService(ISyllabusRepository syllabusRepository, ITaughtSubj
             File.Delete(syllabus.FilePath);
         }
 
-        var newFileName = Guid.NewGuid() + "-" + request.File.Name;
-        var newFilePath = Path.Combine(request.WwwRootPath, newFileName);
+        var newFileName = Guid.NewGuid() + "-" + request.File.FileName;
+        var newFilePath = Path.Combine(GetSyllabusPath(), newFileName);
 
         await using (var writer = new FileStream(newFilePath, FileMode.Create))
         {
@@ -109,4 +113,7 @@ public class SyllabusService(ISyllabusRepository syllabusRepository, ITaughtSubj
         return new GetByIdSyllabusResponse(new GetSyllabusDto(bytes, syllabus.Name), StatusCode.Ok, true,
             ResponseMessages.Success);
     }
+    
+    private string GetSyllabusPath()
+        => Path.Combine(env.WebRootPath, "Syllabuses");
 }
