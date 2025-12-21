@@ -13,11 +13,6 @@ namespace BGU.Application.Services;
 
 public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> userManager) : IDeanService
 {
-    public Task<AuthResponse> SignUpAsync(AppUserSignUpDto appUser)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<DeanProfileResponse> GetProfile(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);
@@ -41,7 +36,7 @@ public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> us
         }
 
         var dto = new DeanProfileDto(dean.AppUser.Name, dean.AppUser.Surname, dean.Id, dean.Faculty.Name,
-            dean.AppUser.Email!, dean.AppUser.BornDate);
+            dean.AppUser.Email!, dean.PhoneNumber, dean.AppUser.Pin, dean.AppUser.BornDate);
         return new DeanProfileResponse(
             dto,
             ResponseMessages.Success,

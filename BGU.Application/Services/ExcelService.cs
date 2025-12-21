@@ -484,8 +484,7 @@ public class ExcelService : IExcelService
                     items.Add(new LectureHallDto(
                         Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
                         Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Capacity: int.Parse(worksheet.Cells[row, 3].Value?.ToString()),
-                        Operation: worksheet.Cells[row, 4].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        Operation: worksheet.Cells[row, 3].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
                 }
                 catch (Exception ex)
@@ -508,8 +507,7 @@ public class ExcelService : IExcelService
 
             worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
             worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "Capacity";
-            worksheet.Cells[1, 4].Value = "Operation (CREATE/UPDATE/DELETE)";
+            worksheet.Cells[1, 3].Value = "Operation (CREATE/UPDATE/DELETE)";
 
             using (var range = worksheet.Cells[1, 1, 1, 4])
             {
@@ -519,8 +517,7 @@ public class ExcelService : IExcelService
             }
 
             worksheet.Cells[2, 2].Value = "Hall A-101";
-            worksheet.Cells[2, 3].Value = 50;
-            worksheet.Cells[2, 4].Value = "CREATE";
+            worksheet.Cells[2, 3].Value = "CREATE";
 
             var operationValidation =
                 worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
@@ -786,9 +783,7 @@ public class ExcelService : IExcelService
                         BornDate: DateTime.Parse(worksheet.Cells[row, 8].Value?.ToString()),
                         DepartmentId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
                         Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 10].Value),
-                        ContractType: ParseEnum<TypeOfContract>(worksheet.Cells[row, 11].Value),
-                        State: ParseEnum<State>(worksheet.Cells[row, 12].Value),
-                        Operation: worksheet.Cells[row, 14].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        Operation: worksheet.Cells[row, 11].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
                 }
                 catch (Exception ex)
@@ -820,9 +815,7 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 9].Value = "DepartmentId";
             worksheet.Cells[1, 10].Value = "Position";
 
-            worksheet.Cells[1, 11].Value = "ContractType";
-            worksheet.Cells[1, 12].Value = "State";
-            worksheet.Cells[1, 14].Value = "Operation (CREATE/UPDATE/DELETE)";
+            worksheet.Cells[1, 11].Value = "Operation (CREATE/UPDATE/DELETE)";
 
             using (var range = worksheet.Cells[1, 1, 1, 14])
             {
@@ -840,34 +833,18 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 8].Value = "1980-05-15";
             worksheet.Cells[2, 9].Value = "dept-id-here";
             worksheet.Cells[2, 10].Value = "Профессор";
-            worksheet.Cells[2, 11].Value = "Постоянная";
-            worksheet.Cells[2, 12].Value = "Полный";
-            worksheet.Cells[2, 13].Value = 5000;
-            worksheet.Cells[2, 14].Value = "CREATE";
+            worksheet.Cells[2, 11].Value = "CREATE";
 
             var positionValidation =
                 worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 10, 1000, 10].Address);
-            positionValidation.Formula.Values.Add("СтаршийУчитель");
-            positionValidation.Formula.Values.Add("Учитель");
-            positionValidation.Formula.Values.Add("СтаршийЛаборант");
-            positionValidation.Formula.Values.Add("Лаборант");
-            positionValidation.Formula.Values.Add("ЗавКафедры");
-            positionValidation.Formula.Values.Add("ЗавЛаборатории");
-            positionValidation.Formula.Values.Add("Доцент");
-            positionValidation.Formula.Values.Add("Профессор");
-            positionValidation.Formula.Values.Add("Тютор");
-            positionValidation.Formula.Values.Add("Клерк");
-
-            var contractValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 11, 1000, 11].Address);
-            contractValidation.Formula.Values.Add("Постоянная");
-            contractValidation.Formula.Values.Add("Временно");
-            contractValidation.Formula.Values.Add("Извне");
+            positionValidation.Formula.Values.Add("Teacher");
+            positionValidation.Formula.Values.Add("HeadOfDepartment");
+            positionValidation.Formula.Values.Add("Docent");
 
             var stateValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 12, 1000, 12].Address);
-            stateValidation.Formula.Values.Add("Полставки");
-            stateValidation.Formula.Values.Add("Полный");
-            stateValidation.Formula.Values.Add("Почасово");
+            stateValidation.Formula.Values.Add("PartTime");
+            stateValidation.Formula.Values.Add("FullTime");
+            stateValidation.Formula.Values.Add("ПочасHourlyово");
 
             var operationValidation =
                 worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 14, 1000, 14].Address);

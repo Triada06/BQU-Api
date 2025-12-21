@@ -24,6 +24,12 @@ public class AdminService(
         var specExists = await dbContext.Specializations.AnyAsync(s => s.Id == dto.SpecializationId);
         if (!specExists)
             return ApiResult<StudentCreatedDto>.BadRequest("Invalid specialization");
+        //check if FIN is unique
+        var finExists = await dbContext.Users.AnyAsync(u => u.Pin == dto.PinCode);
+        if (finExists)
+        {
+            return ApiResult<StudentCreatedDto>.BadRequest("Fin code already in use");
+        }
 
         // Check if user already exists
         var existingUser = await userManager.FindByEmailAsync(dto.Email);
@@ -96,7 +102,7 @@ public class AdminService(
         await userManager.AddToRoleAsync(user, "Student");
 
         // Create student
-        var student = new Core.Entities.Student()
+        var student = new Student
         {
             AppUserId = user.Id,
             StudentAcademicInfo = new StudentAcademicInfo

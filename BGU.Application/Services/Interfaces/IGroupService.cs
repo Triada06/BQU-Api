@@ -10,4 +10,5 @@ public interface IGroupService
     Task<GetByIdGroupsResponse> GetByIdAsync(string id,  bool tracking = false);
     Task<DeleteGroupsResponse> DeleteAsync(string id);
     Task<UpdateGroupsResponse> UpdateAsync(string id, UpdateGroupRequest request);
+    Task<CreateGroupsResponse> CreateAsync(CreateGroupRequest request);
 }

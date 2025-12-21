@@ -12,6 +12,4 @@ public sealed record GetTeacherDto(
     char Gender,
     DateTime BornDate,
     string DepartmentId,
-    TeachingPosition Position,
-    TypeOfContract ContractType,
-    State State);
+    TeachingPosition Position);

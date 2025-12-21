@@ -6,4 +6,6 @@ public sealed record DeanProfileDto(
     string EmployeeId,
     string Faculty,
     string Email,
+    string PhoneNumber,
+    string FinCode,
     DateTime BirthDate);

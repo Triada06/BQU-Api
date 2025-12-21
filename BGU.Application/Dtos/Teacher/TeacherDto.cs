@@ -13,6 +13,4 @@ public record TeacherDto(
     DateTime BornDate,
     string DepartmentId,
     TeachingPosition Position,
-    TypeOfContract ContractType,
-    State State,
     string Operation);

@@ -37,4 +37,11 @@ public class GroupController(IGroupService groupService) : ControllerBase
         var res = await groupService.UpdateAsync(id, request);
         return new ObjectResult(res);
     }
+
+    [HttpPost(ApiEndPoints.Group.Create)]
+    public async Task<IActionResult> Create(CreateGroupRequest request)
+    {
+        var res = await groupService.CreateAsync(request);
+        return new ObjectResult(res);
+    }  
 }

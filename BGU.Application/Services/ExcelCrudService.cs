@@ -1141,6 +1141,20 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             continue;
                         }
 
+                        //check if FIN is unique
+                        var finExists = await dbContext.Users.AnyAsync(u => u.Pin == item.PinCode);
+                        if (finExists)
+                        {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = item.PinCode,
+                                Operation = "CREATE",
+                                Success = false,
+                                Message = "Fin code is already in use"
+                            });
+                            continue;
+                        }
+
                         // Create AppUser
                         var user = new AppUser
                         {
@@ -1179,8 +1193,6 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             {
                                 DepartmentId = item.DepartmentId,
                                 TeachingPosition = item.Position,
-                                TypeOfContract = item.ContractType,
-                                State = item.State,
                             }
                         };
 
@@ -1279,8 +1291,6 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         {
                             existingTeacher.TeacherAcademicInfo.DepartmentId = item.DepartmentId;
                             existingTeacher.TeacherAcademicInfo.TeachingPosition = item.Position;
-                            existingTeacher.TeacherAcademicInfo.TypeOfContract = item.ContractType;
-                            existingTeacher.TeacherAcademicInfo.State = item.State;
                         }
                         else
                         {
@@ -1289,8 +1299,6 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             {
                                 DepartmentId = item.DepartmentId,
                                 TeachingPosition = item.Position,
-                                TypeOfContract = item.ContractType,
-                                State = item.State,
                             };
                         }
 
@@ -1372,166 +1380,167 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
 
         return results;
     }
-    
+
     public async Task<List<BulkImportResult>> ProcessClassesAsync(List<ClassExcelDto> items)
-{
-    var results = new List<BulkImportResult>();
-    
-    foreach (var item in items)
     {
-        // Skip empty rows
-        if (string.IsNullOrWhiteSpace(item.TaughtSubjectId))
+        var results = new List<BulkImportResult>();
+
+        foreach (var item in items)
         {
-            continue;
-        }
-        
-        try
-        {
-            var identifier = $"TaughtSubject:{item.TaughtSubjectId}-ClassTime:{item.ClassTimeId}";
-            
-            switch (item.Operation)
+            // Skip empty rows
+            if (string.IsNullOrWhiteSpace(item.TaughtSubjectId))
             {
-                case "CREATE":
-                    var taughtSubjectExists = await dbContext.TaughtSubjects.AnyAsync(t => t.Id == item.TaughtSubjectId);
-                    if (!taughtSubjectExists)
-                    {
+                continue;
+            }
+
+            try
+            {
+                var identifier = $"TaughtSubject:{item.TaughtSubjectId}-ClassTime:{item.ClassTimeId}";
+
+                switch (item.Operation)
+                {
+                    case "CREATE":
+                        var taughtSubjectExists =
+                            await dbContext.TaughtSubjects.AnyAsync(t => t.Id == item.TaughtSubjectId);
+                        if (!taughtSubjectExists)
+                        {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "CREATE",
+                                Success = false,
+                                Message = "TaughtSubject not found"
+                            });
+                            continue;
+                        }
+
+                        var classTimeExists = await dbContext.ClassTimes.AnyAsync(c => c.Id == item.ClassTimeId);
+                        if (!classTimeExists)
+                        {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "CREATE",
+                                Success = false,
+                                Message = "ClassTime not found"
+                            });
+                            continue;
+                        }
+
+                        var newClass = new Class
+                        {
+                            ClassType = item.ClassType,
+                            TaughtSubjectId = item.TaughtSubjectId,
+                            ClassTimeId = item.ClassTimeId
+                        };
+                        dbContext.Classes.Add(newClass);
+                        await dbContext.SaveChangesAsync();
+
                         results.Add(new BulkImportResult
                         {
                             Identifier = identifier,
                             Operation = "CREATE",
-                            Success = false,
-                            Message = "TaughtSubject not found"
+                            Success = true,
+                            Message = "Created successfully",
+                            EntityId = newClass.Id
                         });
-                        continue;
-                    }
-                    
-                    var classTimeExists = await dbContext.ClassTimes.AnyAsync(c => c.Id == item.ClassTimeId);
-                    if (!classTimeExists)
-                    {
-                        results.Add(new BulkImportResult
+                        break;
+
+                    case "UPDATE":
+                        if (string.IsNullOrEmpty(item.Id))
                         {
-                            Identifier = identifier,
-                            Operation = "CREATE",
-                            Success = false,
-                            Message = "ClassTime not found"
-                        });
-                        continue;
-                    }
-                    
-                    var newClass = new Class
-                    {
-                        ClassType = item.ClassType,
-                        TaughtSubjectId = item.TaughtSubjectId,
-                        ClassTimeId = item.ClassTimeId
-                    };
-                    dbContext.Classes.Add(newClass);
-                    await dbContext.SaveChangesAsync();
-                    
-                    results.Add(new BulkImportResult
-                    {
-                        Identifier = identifier,
-                        Operation = "CREATE",
-                        Success = true,
-                        Message = "Created successfully",
-                        EntityId = newClass.Id
-                    });
-                    break;
-                    
-                case "UPDATE":
-                    if (string.IsNullOrEmpty(item.Id))
-                    {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "UPDATE",
+                                Success = false,
+                                Message = "Id is required for update"
+                            });
+                            continue;
+                        }
+
+                        var existingClass = await dbContext.Classes.FindAsync(item.Id);
+                        if (existingClass == null)
+                        {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "UPDATE",
+                                Success = false,
+                                Message = "Entity not found"
+                            });
+                            continue;
+                        }
+
+                        existingClass.ClassType = item.ClassType;
+                        existingClass.TaughtSubjectId = item.TaughtSubjectId;
+                        existingClass.ClassTimeId = item.ClassTimeId;
+                        await dbContext.SaveChangesAsync();
+
                         results.Add(new BulkImportResult
                         {
                             Identifier = identifier,
                             Operation = "UPDATE",
-                            Success = false,
-                            Message = "Id is required for update"
+                            Success = true,
+                            Message = "Updated successfully",
+                            EntityId = existingClass.Id
                         });
-                        continue;
-                    }
-                    
-                    var existingClass = await dbContext.Classes.FindAsync(item.Id);
-                    if (existingClass == null)
-                    {
-                        results.Add(new BulkImportResult
+                        break;
+
+                    case "DELETE":
+                        if (string.IsNullOrEmpty(item.Id))
                         {
-                            Identifier = identifier,
-                            Operation = "UPDATE",
-                            Success = false,
-                            Message = "Entity not found"
-                        });
-                        continue;
-                    }
-                    
-                    existingClass.ClassType = item.ClassType;
-                    existingClass.TaughtSubjectId = item.TaughtSubjectId;
-                    existingClass.ClassTimeId = item.ClassTimeId;
-                    await dbContext.SaveChangesAsync();
-                    
-                    results.Add(new BulkImportResult
-                    {
-                        Identifier = identifier,
-                        Operation = "UPDATE",
-                        Success = true,
-                        Message = "Updated successfully",
-                        EntityId = existingClass.Id
-                    });
-                    break;
-                    
-                case "DELETE":
-                    if (string.IsNullOrEmpty(item.Id))
-                    {
-                        results.Add(new BulkImportResult
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "DELETE",
+                                Success = false,
+                                Message = "Id is required for delete"
+                            });
+                            continue;
+                        }
+
+                        var classToDelete = await dbContext.Classes.FindAsync(item.Id);
+                        if (classToDelete == null)
                         {
-                            Identifier = identifier,
-                            Operation = "DELETE",
-                            Success = false,
-                            Message = "Id is required for delete"
-                        });
-                        continue;
-                    }
-                    
-                    var classToDelete = await dbContext.Classes.FindAsync(item.Id);
-                    if (classToDelete == null)
-                    {
+                            results.Add(new BulkImportResult
+                            {
+                                Identifier = identifier,
+                                Operation = "DELETE",
+                                Success = false,
+                                Message = "Entity not found"
+                            });
+                            continue;
+                        }
+
+                        dbContext.Classes.Remove(classToDelete);
+                        await dbContext.SaveChangesAsync();
+
                         results.Add(new BulkImportResult
                         {
                             Identifier = identifier,
                             Operation = "DELETE",
-                            Success = false,
-                            Message = "Entity not found"
+                            Success = true,
+                            Message = "Deleted successfully",
+                            EntityId = item.Id
                         });
-                        continue;
-                    }
-                    
-                    dbContext.Classes.Remove(classToDelete);
-                    await dbContext.SaveChangesAsync();
-                    
-                    results.Add(new BulkImportResult
-                    {
-                        Identifier = identifier,
-                        Operation = "DELETE",
-                        Success = true,
-                        Message = "Deleted successfully",
-                        EntityId = item.Id
-                    });
-                    break;
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                results.Add(new BulkImportResult
+                {
+                    Identifier = $"TaughtSubject:{item.TaughtSubjectId}",
+                    Operation = item.Operation,
+                    Success = false,
+                    Message = ex.Message
+                });
             }
         }
-        catch (Exception ex)
-        {
-            results.Add(new BulkImportResult
-            {
-                Identifier = $"TaughtSubject:{item.TaughtSubjectId}",
-                Operation = item.Operation,
-                Success = false,
-                Message = ex.Message
-            });
-        }
+
+        return results;
     }
-    
-    return results;
-}
 
     private static string GenerateTemporaryPassword()
         => $"Temp{Guid.NewGuid().ToString().Substring(0, 8)}!";

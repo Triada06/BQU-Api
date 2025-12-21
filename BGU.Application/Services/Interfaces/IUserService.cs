@@ -8,11 +8,9 @@ namespace BGU.Application.Services.Interfaces;
 
 public interface IUserService
 {
-    public Task<string> SignInAsync(AppUserSignInDto appUserDto);
+    public Task<AuthResponse> SignInAsync(AppUserSignInDto appUserDto);
     public Task<AuthResponse> SignUpAsync(AppUserSignUpDto appUser);
     public Task<AuthResponse> SignUpDeanAsync(DeanRegisterDto deanUser);
-
-    public Task<bool> DeleteAsync(string userId);
 
     public Task<AppUserDto?> GetById(string id, Func<IQueryable<AppUser>,
         IIncludableQueryable<AppUser, object>>? include = null, bool tracking = true);

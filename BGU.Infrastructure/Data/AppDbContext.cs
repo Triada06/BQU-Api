@@ -39,14 +39,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<AppUser>()
             .Property(x => x.BornDate)
             .HasColumnType("date");
-
+        builder.Entity<AppUser>()
+            .HasIndex(p => p.Pin)
+            .IsUnique();
         builder.Entity<Room>()
             .Property(x => x.Name)
             .HasMaxLength(20);
         builder.Entity<Syllabus>()
             .Property(x => x.Name)
             .HasMaxLength(100);
-        
+
         builder.Entity<Faculty>()
             .HasOne(f => f.Dean)
             .WithOne(d => d.Faculty)

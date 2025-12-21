@@ -27,18 +27,20 @@ public class UserService(
     IStudentRepository studentRepository)
     : IUserService
 {
-    public async Task<string> SignInAsync(AppUserSignInDto deanUserDto)
+    public async Task<AuthResponse> SignInAsync(AppUserSignInDto deanUserDto)
     {
         var user = await userManager.FindByEmailAsync(deanUserDto.Email)
                    ?? await userManager.FindByNameAsync(deanUserDto.Email);
         if (user is null)
-            throw new InvalidLoginCredentialsException();
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid  email or password "]);
+        }
 
         var result = await userManager.CheckPasswordAsync(user, deanUserDto.PassWord);
 
-        if (!result)
-            throw new InvalidLoginCredentialsException();
-        return await GenerateJwtToken(user);
+        return !result
+            ? new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid  email or password "])
+            : new AuthResponse(await GenerateJwtToken(user), DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
     }
 
     public async Task<AuthResponse> SignUpAsync(AppUserSignUpDto deanUser)
@@ -48,10 +50,16 @@ public class UserService(
             u.UserName != null && u.UserName.Trim() == template);
         if (isExists)
         {
-            return new AuthResponse(null, null, false, ["User already exists, try sign in."]);
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["User already exists, try sign in."]);
         }
 
-        var user = new AppUser 
+        if (await userRepository.AnyAsync(u =>
+                u.Pin.Trim().Equals(deanUser.PinCode, StringComparison.CurrentCultureIgnoreCase)))
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Fin code already is in use"]);
+        }
+
+        var user = new AppUser
         {
             UserName = deanUser.UserName,
             Email = deanUser.Email,
@@ -71,7 +79,7 @@ public class UserService(
         };
         await studentRepository.CreateAsync(student);
         var token = await GenerateJwtToken(user);
-        return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, null);
+        return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
     }
 
     public async Task<AuthResponse> SignUpDeanAsync(DeanRegisterDto deanUser)
@@ -81,7 +89,13 @@ public class UserService(
             u.UserName != null && u.UserName.Trim() == template);
         if (isExists)
         {
-            return new AuthResponse(null, null, false, ["User already exists, try sign in."]);
+            return new AuthResponse(null, null, false, StatusCode.Ok, ["User already exists, try sign in."]);
+        }
+
+        if (await userRepository.AnyAsync(u =>
+                u.Pin.Trim().Equals(deanUser.PinCode, StringComparison.CurrentCultureIgnoreCase)))
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Fin code already is in use"]);
         }
 
         var user = new AppUser
@@ -98,7 +112,7 @@ public class UserService(
         var res = await userManager.CreateAsync(user, deanUser.PassWord);
         if (!res.Succeeded)
         {
-            return new AuthResponse(null, null, false, res.Errors.Select(x => x.Description));
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, res.Errors.Select(x => x.Description));
         }
 
         await userManager.AddToRoleAsync(user, nameof(Roles.Dean));
@@ -110,12 +124,7 @@ public class UserService(
         };
         await deanRepository.CreateAsync(dean);
         var token = await GenerateJwtToken(user);
-        return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, null);
-    }
-
-    public Task<bool> DeleteAsync(string userId)
-    {
-        throw new NotImplementedException();
+        return new AuthResponse(token, ExpireTime: DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
     }
 
     public Task<AppUserDto?> GetById(string id,

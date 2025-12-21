@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;
 
-// [Authorize(Roles = "Student,Teacher,Dean")]
 [ApiController]
 public class UserController(IUserService userService, UserManager<AppUser> userManager) : ControllerBase
 {
@@ -19,7 +18,12 @@ public class UserController(IUserService userService, UserManager<AppUser> userM
     public async Task<IActionResult> SignIn([FromBody] AppUserSignInDto request)
     {
         var res = await userService.SignInAsync(request);
+        if (!res.IsSucceeded)
+        {
+            return BadRequest(res);
+        }
         return Ok(res);
+        // return new ObjectResult(res);
     }
 
     [Authorize(Roles = "Teacher")]
@@ -46,6 +50,4 @@ public class UserController(IUserService userService, UserManager<AppUser> userM
     //     await userManager.DeleteAsync(user);
     //     return Ok();
     // }
-    //TODO: fix the signup, it can send a null request but shouldnt, it shouldnt accept repeated FIN codes, it accpets non-unique emails yet returns Ok
-    //TODO: on sing in entering wrong data returns 500 instead 404 or 400`
 }

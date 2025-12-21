@@ -1,5 +1,6 @@
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
+using BGU.Application.Dtos.TaughtSubject.Requests;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +37,12 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService)
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
         var res = await taughtSubjectService.DeleteAsync(id);
+        return new ObjectResult(res);
+    }
+    [HttpPost(ApiEndPoints.TaughtSubject.Create)]
+    public async Task<IActionResult> Create([FromBody] CreateTaughtSubjectRequest request)
+    {
+        var res = await taughtSubjectService.CreateAsync(request);
         return new ObjectResult(res);
     }
 }

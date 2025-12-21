@@ -257,8 +257,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         return new GetByIdTeacherResponse(
             new GetTeacherDto(teacherId, teacher.AppUser.Email!, teacher.AppUser.Name, teacher.AppUser.Surname,
                 teacher.AppUser.MiddleName, teacher.AppUser.Pin, teacher.AppUser.Gender, teacher.AppUser.BornDate,
-                teacher.TeacherAcademicInfo.DepartmentId, teacher.TeacherAcademicInfo.TeachingPosition,
-                teacher.TeacherAcademicInfo.TypeOfContract, teacher.TeacherAcademicInfo.State),
+                teacher.TeacherAcademicInfo.DepartmentId, teacher.TeacherAcademicInfo.TeachingPosition),
             ResponseMessages.Success,
             true, StatusCode.Ok);
     }
@@ -273,8 +272,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             teachers.Select(x => new GetTeacherDto(x.Id, x.AppUser.Email!, x.AppUser.Name,
                 x.AppUser.Surname,
                 x.AppUser.MiddleName, x.AppUser.Pin, x.AppUser.Gender, x.AppUser.BornDate,
-                x.TeacherAcademicInfo.DepartmentId, x.TeacherAcademicInfo.TeachingPosition,
-                x.TeacherAcademicInfo.TypeOfContract, x.TeacherAcademicInfo.State)),
+                x.TeacherAcademicInfo.DepartmentId, x.TeacherAcademicInfo.TeachingPosition)),
             ResponseMessages.Success,
             true, StatusCode.Ok);
     }

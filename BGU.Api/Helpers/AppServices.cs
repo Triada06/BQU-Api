@@ -22,7 +22,8 @@ public static class AppServices
         services.AddScoped<ITaughtSubjectService, TaughtSubjectService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<ISyllabusService, SyllabusService>();
-
+        services.AddScoped<IClassTimeService, ClassTimeService>();
+        
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
@@ -34,6 +35,9 @@ public static class AppServices
         services.AddScoped<ITaughtSubjectRepository, TaughtSubjectRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<ISyllabusRepository, SyllabusRepository>();
+        services.AddScoped<IAdmissionYearRepository, AdmissionYearRepository>();
+        services.AddScoped<IClassTimeRepository, ClassTimeRepository>();
+        services.AddScoped<ISubjectRepository, SubjectRepository>();
         return services;
     }
 }
