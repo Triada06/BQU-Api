@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using BGU.Application.Contracts.Attendances.Requests;
 using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Responses;
@@ -9,6 +10,7 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
+using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
@@ -19,7 +21,9 @@ public class TaughtSubjectService(
     ITaughtSubjectRepository taughtSubjectRepository,
     ISubjectRepository subjectRepository,
     IClassTimeService classTimeService,
-    IClassRepository classRepository) : ITaughtSubjectService
+    IClassRepository classRepository,
+    IStudentRepository studentRepository,
+    IAttendanceService attendanceService) : ITaughtSubjectService
 {
     public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id)
     {
@@ -143,8 +147,11 @@ public class TaughtSubjectService(
                 ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
                 TaughtSubjectId = taughtSubject.Id,
             };
-            var classTime = (await classTimeService.CreateAsync(new CreateClassTimeRequest(classItem.Id, request.Start,
-                request.End, request.DaysOfTheWeek))).ClassTime;
+
+            //creating a class time 
+            var classTime = (await classTimeService.CreateAsync(new CreateClassTimeRequest(classItem.Id,
+                request.ClassTimes[i].Start,
+                request.ClassTimes[i].End, request.ClassTimes[i].Day))).ClassTime;
 
             if (classTime == null)
             {
@@ -169,6 +176,34 @@ public class TaughtSubjectService(
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating the course");
         }
+
+        //creating an attendance system
+        var studentsInGroup =
+            await studentRepository.FindAsync(st => st.StudentAcademicInfo.GroupId == request.GroupId);
+        if (studentsInGroup.Count != 0 && studentsInGroup.Any(x => x is null))
+        {
+            var attendances = new List<Attendance>();
+            foreach (var c in classes)
+            {
+                var studentId = string.Empty;
+                foreach (var st in studentsInGroup)
+                {
+                    studentId = st!.Id;
+                }
+
+                var attendance = new Attendance
+                {
+                    StudentId = studentId,
+                    ClassId = c.Id,
+                    IsAbsent = false
+                };
+                attendances.Add(attendance);
+            }
+
+            await attendanceService.BulkCreateAsync(attendances
+                .Select(x => new CreateAttendanceRequest(x.ClassId, x.StudentId)).ToList());
+        }
+
 
         return new CreateTaughtSubjectResponse(taughtSubject.Id, true, StatusCode.Ok, ResponseMessages.Success);
     }

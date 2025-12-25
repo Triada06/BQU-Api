@@ -1,4 +1,6 @@
 using BGU.Application.Contracts.Class;
+using BGU.Application.Contracts.Class.Requests;
+using BGU.Application.Contracts.Class.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
@@ -15,6 +17,11 @@ public class ClassService(IClassRepository classRepository, UserManager<AppUser>
     }
 
     public Task<ClassGetByIdResponse> GetByid(string id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<CreateClassResponse> CreateAsync(CreateClassRequest request)
     {
         throw new NotImplementedException();
     }

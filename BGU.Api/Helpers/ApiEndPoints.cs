@@ -66,6 +66,13 @@ public static class ApiEndPoints
         public const string Profile = $"{Base}/profile";
         public const string Grades = $"{Base}/grades/{{grade}}";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
+        public const string MarkAbsence = $"{Base}/{{studentId}}/classes/{{classId}}/mark-absence";
+        public const string GradeSeminar = $"{Base}/{{studentId}}/seminars/{{seminarId}}/grade";
+        public const string GradeFinal = $"{Base}/{{studentId}}/finals/{{finalId}}/grade";
+        public const string GradeColloquium = $"{Base}/{{studentId}}/colloquiums/{{colloquiumId}}/grade";
+
+        public const string GradeIndependentWork =
+            $"{Base}/{{studentId}}/independent-works/{{independentWorkId}}/grade";
     }
 
     public static class AdmissionYear
@@ -87,6 +94,7 @@ public static class ApiEndPoints
     public static class Department
     {
         private const string Base = $"{ApiBase}/departments";
+        public const string GetAll = $"{ApiBase}/departments";
         public const string Create = $"{Base}";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
@@ -95,6 +103,7 @@ public static class ApiEndPoints
     public static class Specialization
     {
         private const string Base = $"{ApiBase}/specializations";
+        public const string GetAll = $"{ApiBase}/specializations";
         public const string Create = $"{Base}";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
@@ -146,6 +155,8 @@ public static class ApiEndPoints
         public const string Update = $"{Base}/{{id}}";
         public const string Template = $"{Base}/template";
         public const string Import = $"{Base}/import";
+        public const string GetAllColloquiums = $"{Base}/{{taughtSubjectId}}/colloquiums";
+        
     }
 
     public static class Teacher
@@ -172,5 +183,12 @@ public static class ApiEndPoints
         public const string Profile = $"{Base}/profile";
         public const string MyCourses = $"{Base}/courses";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
+    }
+
+    public static class Colloquium
+    {
+        private const string Base = $"{ApiBase}/colloquiums";
+        public const string Create = $"{Base}";
+        public const string Delete = $"{Base}/{{id}}";
     }
 }

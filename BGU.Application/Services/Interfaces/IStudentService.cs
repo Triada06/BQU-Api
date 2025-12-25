@@ -14,4 +14,8 @@ public interface IStudentService
     Task<GetStudentResponse> FilterAsync(string? groupId, int? year);
     Task<GetStudentResponse> SearchAsync(string? searchString);
     Task<GetStudentResponse> GetAllAsync(int page, int pageSize);
+
+    Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string teacherId, string taughtSubjectId,
+        string classId);
+    Task<GradeStudentColloquiumResponse> GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request);
 }

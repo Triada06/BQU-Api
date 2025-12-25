@@ -353,26 +353,6 @@ namespace BGU.Infrastructure.Migrations
                     b.ToTable("Deans");
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.Decree", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Number")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Decrees");
-                });
-
             modelBuilder.Entity("BGU.Core.Entities.Department", b =>
                 {
                     b.Property<string>("Id")
@@ -715,10 +695,6 @@ namespace BGU.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TeacherCode")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1106,7 +1082,7 @@ namespace BGU.Infrastructure.Migrations
             modelBuilder.Entity("BGU.Core.Entities.Exam", b =>
                 {
                     b.HasOne("BGU.Core.Entities.Student", "Student")
-                        .WithMany()
+                        .WithMany("Finals")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1404,6 +1380,8 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("Attendances");
 
                     b.Navigation("Colloquiums");
+
+                    b.Navigation("Finals");
 
                     b.Navigation("IndependentWorks");
 

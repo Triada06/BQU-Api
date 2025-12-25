@@ -6,4 +6,4 @@ public record CreateClassTimeRequest(
     string ClassId,
     TimeSpan Start,
     TimeSpan End,
-    DaysOfTheWeek[] Days);
+    DaysOfTheWeek Day);

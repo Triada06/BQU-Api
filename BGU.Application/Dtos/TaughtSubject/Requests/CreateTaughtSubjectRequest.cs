@@ -1,3 +1,4 @@
+using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Core.Enums;
 
 namespace BGU.Application.Dtos.TaughtSubject.Requests;
@@ -10,6 +11,4 @@ public record CreateTaughtSubjectRequest(
     string GroupId,
     int Credits,
     int Hours,
-    TimeSpan Start,
-    TimeSpan End,
-    DaysOfTheWeek[] DaysOfTheWeek);
+    CreateClassTimeRequest[] ClassTimes);

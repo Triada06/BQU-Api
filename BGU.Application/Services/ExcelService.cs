@@ -413,9 +413,8 @@ public class ExcelService : IExcelService
                         Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
                         Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
                         CreditsNumber: int.Parse(worksheet.Cells[row, 3].Value?.ToString()),
-                        TeacherCode: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        DepartmentId: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        DepartmentId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
                 }
                 catch (Exception ex)
@@ -439,9 +438,8 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
             worksheet.Cells[1, 2].Value = "Name";
             worksheet.Cells[1, 3].Value = "CreditsNumber";
-            worksheet.Cells[1, 4].Value = "TeacherCode";
-            worksheet.Cells[1, 5].Value = "DepartmentId";
-            worksheet.Cells[1, 6].Value = "Operation (CREATE/UPDATE/DELETE)";
+            worksheet.Cells[1, 4].Value = "DepartmentId";
+            worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
 
             using (var range = worksheet.Cells[1, 1, 1, 6])
             {
@@ -452,12 +450,11 @@ public class ExcelService : IExcelService
 
             worksheet.Cells[2, 2].Value = "Data Structures";
             worksheet.Cells[2, 3].Value = 6;
-            worksheet.Cells[2, 4].Value = "CS101";
-            worksheet.Cells[2, 5].Value = "dept-id";
-            worksheet.Cells[2, 6].Value = "CREATE";
+            worksheet.Cells[2, 4].Value = "dept-id";
+            worksheet.Cells[2, 5].Value = "CREATE";
 
             var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 6, 1000, 6].Address);
+                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
             operationValidation.Formula.Values.Add("CREATE");
             operationValidation.Formula.Values.Add("UPDATE");
             operationValidation.Formula.Values.Add("DELETE");
@@ -779,9 +776,9 @@ public class ExcelService : IExcelService
                         Surname: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
                         MiddleName: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
                         PinCode: worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
+                        Gender: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
                         BornDate: DateTime.Parse(worksheet.Cells[row, 8].Value?.ToString()),
-                        DepartmentId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                        DepartmentName: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
                         Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 10].Value),
                         Operation: worksheet.Cells[row, 11].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
                     ));
@@ -812,7 +809,7 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 6].Value = "PinCode";
             worksheet.Cells[1, 7].Value = "Gender (M/F)";
             worksheet.Cells[1, 8].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 9].Value = "DepartmentId";
+            worksheet.Cells[1, 9].Value = "DepartmentName";
             worksheet.Cells[1, 10].Value = "Position";
 
             worksheet.Cells[1, 11].Value = "Operation (CREATE/UPDATE/DELETE)";
@@ -831,7 +828,7 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 6].Value = "1234567";
             worksheet.Cells[2, 7].Value = "M";
             worksheet.Cells[2, 8].Value = "1980-05-15";
-            worksheet.Cells[2, 9].Value = "dept-id-here";
+            worksheet.Cells[2, 9].Value = "dept-name-here";
             worksheet.Cells[2, 10].Value = "Профессор";
             worksheet.Cells[2, 11].Value = "CREATE";
 
@@ -900,10 +897,10 @@ public class ExcelService : IExcelService
                         PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
                         Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
                         BornDate: bornDate,
-                        FacultyId: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                        SpecializationId: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
-                        GroupId: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
-                        AdmissionYearId: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
+                        FacultyName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                        SpecializationName: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                        GroupName: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
+                        AdmissionYear: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
                         EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
                         FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
                         DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
@@ -939,10 +936,10 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 5].Value = "PinCode";
             worksheet.Cells[1, 6].Value = "Gender (M/F)";
             worksheet.Cells[1, 7].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 8].Value = "FacultyId";
-            worksheet.Cells[1, 9].Value = "SpecializationId";
-            worksheet.Cells[1, 10].Value = "GroupId";
-            worksheet.Cells[1, 11].Value = "AdmissionYearId";
+            worksheet.Cells[1, 8].Value = "FacultyName";
+            worksheet.Cells[1, 9].Value = "SpecializationName";
+            worksheet.Cells[1, 10].Value = "GroupName";
+            worksheet.Cells[1, 11].Value = "AdmissionYear";
             worksheet.Cells[1, 12].Value = "EducationLanguage";
             worksheet.Cells[1, 13].Value = "FormOfEducation";
             worksheet.Cells[1, 14].Value = "DecreeNumber";
@@ -964,10 +961,10 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 5].Value = "1234567";
             worksheet.Cells[2, 6].Value = "M";
             worksheet.Cells[2, 7].Value = "2000-01-15";
-            worksheet.Cells[2, 8].Value = "faculty-id-123";
-            worksheet.Cells[2, 9].Value = "spec-id-456";
-            worksheet.Cells[2, 10].Value = "group-id-789";
-            worksheet.Cells[2, 11].Value = "year-id-2024";
+            worksheet.Cells[2, 8].Value = "faculty-name-123";
+            worksheet.Cells[2, 9].Value = "spec-name-456";
+            worksheet.Cells[2, 10].Value = "group-name-789";
+            worksheet.Cells[2, 11].Value = "2024/2025";
             worksheet.Cells[2, 12].Value = "English";
             worksheet.Cells[2, 13].Value = "InPerson";
             worksheet.Cells[2, 14].Value = "12345";

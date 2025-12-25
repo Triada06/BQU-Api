@@ -1,4 +1,5 @@
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.Colloquium.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Dtos.TaughtSubject.Requests;
 using BGU.Application.Services.Interfaces;
@@ -10,7 +11,8 @@ namespace BGU.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Dean")]
 //todo: test the whole controller
-public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService) : ControllerBase
+public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService, IColloquiumService colloquiumService)
+    : ControllerBase
 {
     [HttpGet(ApiEndPoints.TaughtSubject.GetAll)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
@@ -39,10 +41,18 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService)
         var res = await taughtSubjectService.DeleteAsync(id);
         return new ObjectResult(res);
     }
+
     [HttpPost(ApiEndPoints.TaughtSubject.Create)]
     public async Task<IActionResult> Create([FromBody] CreateTaughtSubjectRequest request)
     {
         var res = await taughtSubjectService.CreateAsync(request);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.TaughtSubject.GetAllColloquiums)]
+    public async Task<IActionResult> GetAllColloquiums([FromRoute] string taughtSubjectId)
+    {
+        var res = await colloquiumService.GetAllAsync(taughtSubjectId);
         return new ObjectResult(res);
     }
 }

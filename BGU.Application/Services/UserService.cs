@@ -29,17 +29,18 @@ public class UserService(
 {
     public async Task<AuthResponse> SignInAsync(AppUserSignInDto deanUserDto)
     {
-        var user = await userManager.FindByEmailAsync(deanUserDto.Email)
-                   ?? await userManager.FindByNameAsync(deanUserDto.Email);
+        var user = await userManager.FindByEmailAsync(deanUserDto.EmailOrFin)
+                   ?? await userManager.Users
+                       .FirstOrDefaultAsync(x => x.Pin == deanUserDto.EmailOrFin);
         if (user is null)
         {
-            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid  email or password "]);
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid login credentials"]);
         }
 
         var result = await userManager.CheckPasswordAsync(user, deanUserDto.PassWord);
 
         return !result
-            ? new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid  email or password "])
+            ? new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid login credentials "])
             : new AuthResponse(await GenerateJwtToken(user), DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
     }
 

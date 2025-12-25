@@ -15,46 +15,66 @@ public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRe
     {
         if (request.Start >= request.End)
         {
-            return new CreateClassTimeResponse(null, StatusCode.BadRequest, false,
-                "Start time must be earlier than end time");
+            return new CreateClassTimeResponse(
+                null,
+                StatusCode.BadRequest,
+                false,
+                "Start time must be earlier than end time."
+            );
         }
 
-
-        if (request.Days == null || request.Days.Length == 0)
+        // Validate day
+        if (!Enum.IsDefined(request.Day))
         {
-            return new CreateClassTimeResponse(null, StatusCode.BadRequest, false,
-                "At least one day must be selected.");
+            return new CreateClassTimeResponse(
+                null,
+                StatusCode.BadRequest,
+                false,
+                "Invalid day of the week."
+            );
         }
 
-        DaysOfTheWeek combinedDays = DaysOfTheWeek.None;
-
-        foreach (var day in request.Days.Distinct())
-            combinedDays |= day;
-
-        bool exists = await classRepository.AnyAsync(ct => ct.Id == request.ClassId &&
-                                                           ct.ClassTime.Start == request.Start &&
-                                                           ct.ClassTime.End == request.End &&
-                                                           ct.ClassTime.DaysOfTheWeek == combinedDays);
+        // Check duplicates (same class, same time, same day)
+        bool exists = await classRepository.AnyAsync(ct =>
+            ct.Id == request.ClassId &&
+            ct.ClassTime.Start == request.Start &&
+            ct.ClassTime.End == request.End &&
+            ct.ClassTime.DaysOfTheWeek == request.Day
+        );
 
         if (exists)
         {
-            return new CreateClassTimeResponse(null, StatusCode.BadRequest, false,
-                "This class schedule already exists.");
+            return new CreateClassTimeResponse(
+                null,
+                StatusCode.BadRequest,
+                false,
+                "This class schedule already exists."
+            );
         }
-
 
         var classTime = new ClassTime
         {
             Start = request.Start,
             End = request.End,
-            DaysOfTheWeek = combinedDays
+            DaysOfTheWeek = request.Day
         };
 
-        if (!await classTimeRepository.CreateAsync(classTime))
+
+        if (! await classTimeRepository.CreateAsync(classTime))
         {
-            return new CreateClassTimeResponse(null, StatusCode.InternalServerError, false, ResponseMessages.Failed);
+            return new CreateClassTimeResponse(
+                null,
+                StatusCode.InternalServerError,
+                false,
+                ResponseMessages.Failed
+            );
         }
 
-        return new CreateClassTimeResponse(classTime, StatusCode.Ok, true, ResponseMessages.Success);
+        return new CreateClassTimeResponse(
+            classTime,
+            StatusCode.Ok,
+            true,
+            ResponseMessages.Success
+        );
     }
 }

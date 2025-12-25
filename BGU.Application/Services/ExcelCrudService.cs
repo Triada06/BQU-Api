@@ -15,6 +15,8 @@ using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 
 namespace BGU.Application.Services;
 
@@ -644,7 +646,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                 {
                     case "CREATE":
                         var newSubject = new Subject
-                            { Name = item.Name, DepartmentId = item.DepartmentId, TeacherCode = item.TeacherCode };
+                            { Name = item.Name, DepartmentId = item.DepartmentId };
                         dbContext.Subjects.Add(newSubject);
                         await dbContext.SaveChangesAsync();
 
@@ -1102,7 +1104,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
         return results;
     }
 
-    public async Task<List<BulkImportResult>> ProcessTeachersAsync(List<TeacherDto> items)
+    public async Task<byte[]> ProcessTeachersAsync(List<TeacherDto> items)
     {
         var results = new List<BulkImportResult>();
 
@@ -1110,6 +1112,20 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
         {
             try
             {
+                var department = await dbContext.Departments.Where(x =>
+                    x.Name.ToLower().Trim() == item.DepartmentName.ToLower().Trim()).FirstOrDefaultAsync();
+
+                if (department is null)
+                {
+                    results.Add(new BulkImportResult
+                    {
+                        Identifier = item.DepartmentName,
+                        Success = false,
+                        Message = $"Department with name {item.DepartmentName} not found"
+                    });
+                    continue;
+                }
+
                 switch (item.Operation)
                 {
                     case "CREATE":
@@ -1128,7 +1144,8 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         }
 
                         // Validate department exists
-                        var departmentExists = await dbContext.Departments.AnyAsync(d => d.Id == item.DepartmentId);
+                        var departmentExists = await dbContext.Departments.AnyAsync(d =>
+                            d.Name.ToLower().Trim() == item.DepartmentName.ToLower().Trim());
                         if (!departmentExists)
                         {
                             results.Add(new BulkImportResult
@@ -1191,7 +1208,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             AppUserId = user.Id,
                             TeacherAcademicInfo = new TeacherAcademicInfo
                             {
-                                DepartmentId = item.DepartmentId,
+                                DepartmentId = department.Id,
                                 TeachingPosition = item.Position,
                             }
                         };
@@ -1206,7 +1223,9 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             Success = true,
                             Message = $"Created successfully. Temporary password: {tempPassword}",
                             EntityId = teacher.Id,
-                            TemporaryPassword = tempPassword
+                            TemporaryPassword = tempPassword,
+                            FullName = item.Name + item.Surname,
+                            FinCode = item.PinCode
                         });
                         break;
 
@@ -1236,20 +1255,6 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                                 Operation = "UPDATE",
                                 Success = false,
                                 Message = "Teacher not found"
-                            });
-                            continue;
-                        }
-
-                        // Validate department exists
-                        var deptExists = await dbContext.Departments.AnyAsync(d => d.Id == item.DepartmentId);
-                        if (!deptExists)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "UPDATE",
-                                Success = false,
-                                Message = "Department not found"
                             });
                             continue;
                         }
@@ -1289,7 +1294,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                         // Update TeacherAcademicInfo
                         if (existingTeacher.TeacherAcademicInfo != null)
                         {
-                            existingTeacher.TeacherAcademicInfo.DepartmentId = item.DepartmentId;
+                            existingTeacher.TeacherAcademicInfo.DepartmentId = department.Id;
                             existingTeacher.TeacherAcademicInfo.TeachingPosition = item.Position;
                         }
                         else
@@ -1297,7 +1302,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             // Create academic info if it doesn't exist
                             existingTeacher.TeacherAcademicInfo = new TeacherAcademicInfo
                             {
-                                DepartmentId = item.DepartmentId,
+                                DepartmentId = department.Id,
                                 TeachingPosition = item.Position,
                             };
                         }
@@ -1310,7 +1315,9 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             Operation = "UPDATE",
                             Success = true,
                             Message = "Updated successfully",
-                            EntityId = existingTeacher.Id
+                            EntityId = existingTeacher.Id,
+                            FullName = item.Name + item.Surname,
+                            FinCode = item.PinCode
                         });
                         break;
 
@@ -1361,7 +1368,9 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                             Operation = "DELETE",
                             Success = true,
                             Message = "Deleted successfully",
-                            EntityId = item.Id
+                            EntityId = item.Id,
+                            FullName = item.Name + item.Surname,
+                            FinCode = item.PinCode
                         });
                         break;
                 }
@@ -1378,7 +1387,8 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
             }
         }
 
-        return results;
+        // Generate Excel file from results
+        return GenerateResultsExcel(results);
     }
 
     public async Task<List<BulkImportResult>> ProcessClassesAsync(List<ClassExcelDto> items)
@@ -1541,6 +1551,87 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
 
         return results;
     }
+
+
+    private byte[] GenerateResultsExcel(List<BulkImportResult> results)
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Import Results");
+
+        // Add summary section
+        worksheet.Cells[1, 1].Value = "Import Summary";
+        worksheet.Cells[1, 1].Style.Font.Bold = true;
+        worksheet.Cells[1, 1].Style.Font.Size = 14;
+
+        worksheet.Cells[2, 1].Value = "Total Processed:";
+        worksheet.Cells[2, 2].Value = results.Count;
+
+        worksheet.Cells[3, 1].Value = "Successful:";
+        worksheet.Cells[3, 2].Value = results.Count(r => r.Success);
+        worksheet.Cells[3, 2].Style.Font.Color.SetColor(System.Drawing.Color.Green);
+
+        worksheet.Cells[4, 1].Value = "Failed:";
+        worksheet.Cells[4, 2].Value = results.Count(r => !r.Success);
+        worksheet.Cells[4, 2].Style.Font.Color.SetColor(System.Drawing.Color.Red);
+
+        // Add headers for detailed results
+        var headerRow = 6;
+        worksheet.Cells[headerRow, 1].Value = "Identifier";
+        worksheet.Cells[headerRow, 2].Value = "Operation";
+        worksheet.Cells[headerRow, 3].Value = "Status";
+        worksheet.Cells[headerRow, 4].Value = "Message";
+        worksheet.Cells[headerRow, 5].Value = "Entity ID";
+        worksheet.Cells[headerRow, 6].Value = "Temporary Password";
+        worksheet.Cells[headerRow, 7].Value = "Name Surname";
+        worksheet.Cells[headerRow, 8].Value = "FIN code";
+
+        // Style headers
+        using (var range = worksheet.Cells[headerRow, 1, headerRow, 6])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+        }
+
+        // Add data rows
+        var currentRow = headerRow + 1;
+        foreach (var result in results)
+        {
+            worksheet.Cells[currentRow, 1].Value = result.Identifier;
+            worksheet.Cells[currentRow, 2].Value = result.Operation;
+            worksheet.Cells[currentRow, 3].Value = result.Success ? "SUCCESS" : "FAILED";
+            worksheet.Cells[currentRow, 4].Value = result.Message;
+            worksheet.Cells[currentRow, 5].Value = result.EntityId ?? "";
+            worksheet.Cells[currentRow, 6].Value = result.TemporaryPassword ?? "";
+            worksheet.Cells[currentRow, 7].Value = result.FullName ?? "";
+            worksheet.Cells[currentRow, 8].Value = result.FinCode ?? "";
+
+            // Color code status
+            var statusCell = worksheet.Cells[currentRow, 3];
+            if (result.Success)
+            {
+                statusCell.Style.Font.Color.SetColor(System.Drawing.Color.Green);
+                statusCell.Style.Font.Bold = true;
+            }
+            else
+            {
+                statusCell.Style.Font.Color.SetColor(System.Drawing.Color.Red);
+                statusCell.Style.Font.Bold = true;
+            }
+
+            currentRow++;
+        }
+
+        // Auto-fit columns
+        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        // Return as byte array
+        return package.GetAsByteArray();
+    }
+
 
     private static string GenerateTemporaryPassword()
         => $"Temp{Guid.NewGuid().ToString().Substring(0, 8)}!";

@@ -19,8 +19,6 @@ public class AdminController(
     IExcelService excelService,
     IAdminService adminService) : ControllerBase
 {
-    
-
     [HttpGet(ApiEndPoints.Student.Template)]
     public async Task<IActionResult> DownloadStudentTemplate()
     {
@@ -44,20 +42,13 @@ public class AdminController(
         {
             using var stream = file.OpenReadStream();
             var students = await excelService.ParseStudentExcelAsync(stream);
+            var excelBytes = await adminService.BulkImportStudentsAsync(students);
 
-            if (!students.Any())
-                return BadRequest("No valid students found in file");
-
-            // Import students
-            var results = await adminService.BulkImportStudentsAsync(students);
-
-            return Ok(new
-            {
-                totalProcessed = results.Count,
-                successful = results.Count(r => r.Success),
-                failed = results.Count(r => !r.Success),
-                details = results
-            });
+            var fileName = $"StudentImportResults_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        
+            return File(excelBytes, 
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                fileName);
         }
         catch (Exception ex)
         {
@@ -269,42 +260,42 @@ public class AdminController(
 
     // ==================== SUBJECT ====================
 
-    [HttpGet(ApiEndPoints.Subject.Template)]
-    public async Task<IActionResult> DownloadSubjectTemplate()
-    {
-        var fileBytes = await excelService.GenerateSubjectTemplateAsync();
-        return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "SubjectTemplate.xlsx");
-    }
-
-    [HttpPost(ApiEndPoints.Subject.Import)]
-    public async Task<IActionResult> ImportSubjects(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded");
-
-        if (!file.FileName.EndsWith(".xlsx"))
-            return BadRequest("Only .xlsx files are supported");
-
-        try
-        {
-            using var stream = file.OpenReadStream();
-            var items = await excelService.ParseSubjectExcelAsync(stream);
-            var results = await excelCrudService.ProcessSubjectsAsync(items);
-
-            return Ok(new
-            {
-                totalProcessed = results.Count,
-                successful = results.Count(r => r.Success),
-                failed = results.Count(r => !r.Success),
-                details = results
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Error processing file: {ex.Message}");
-        }
-    }
+    // [HttpGet(ApiEndPoints.Subject.Template)]
+    // public async Task<IActionResult> DownloadSubjectTemplate()
+    // {
+    //     var fileBytes = await excelService.GenerateSubjectTemplateAsync();
+    //     return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    //         "SubjectTemplate.xlsx");
+    // }
+    //
+    // [HttpPost(ApiEndPoints.Subject.Import)]
+    // public async Task<IActionResult> ImportSubjects(IFormFile file)
+    // {
+    //     if (file == null || file.Length == 0)
+    //         return BadRequest("No file uploaded");
+    //
+    //     if (!file.FileName.EndsWith(".xlsx"))
+    //         return BadRequest("Only .xlsx files are supported");
+    //
+    //     try
+    //     {
+    //         using var stream = file.OpenReadStream();
+    //         var items = await excelService.ParseSubjectExcelAsync(stream);
+    //         var results = await excelCrudService.ProcessSubjectsAsync(items);
+    //
+    //         return Ok(new
+    //         {
+    //             totalProcessed = results.Count,
+    //             successful = results.Count(r => r.Success),
+    //             failed = results.Count(r => !r.Success),
+    //             details = results
+    //         });
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return StatusCode(500, $"Error processing file: {ex.Message}");
+    //     }
+    // }
 
     // ==================== LECTURE HALL ====================
     //
@@ -446,15 +437,13 @@ public class AdminController(
         {
             using var stream = file.OpenReadStream();
             var items = await excelService.ParseTeacherExcelAsync(stream);
-            var results = await excelCrudService.ProcessTeachersAsync(items);
+            var excelBytes = await excelCrudService.ProcessTeachersAsync(items);
 
-            return Ok(new
-            {
-                totalProcessed = results.Count,
-                successful = results.Count(r => r.Success),
-                failed = results.Count(r => !r.Success),
-                details = results
-            });
+            var fileName = $"TeacherImportResults_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+            return File(excelBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
         }
         catch (Exception ex)
         {
@@ -463,44 +452,44 @@ public class AdminController(
     }
 
 
-    [HttpGet("classes/template")]
-    public async Task<IActionResult> DownloadClassTemplate()
-    {
-        var fileBytes = await excelService.GenerateClassTemplateAsync();
-        return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            "ClassTemplate.xlsx");
-    }
-
-    [HttpPost("classes/import")]
-    public async Task<IActionResult> ImportClasses(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded");
-    
-        if (!file.FileName.EndsWith(".xlsx"))
-            return BadRequest("Only .xlsx files are supported");
-    
-        try
-        {
-            using var stream = file.OpenReadStream();
-            var items = await excelService.ParseClassExcelAsync(stream);
-            var results = await excelCrudService.ProcessClassesAsync(items);
-        
-            return Ok(new
-            {
-                totalProcessed = results.Count,
-                successful = results.Count(r => r.Success),
-                failed = results.Count(r => !r.Success),
-                details = results
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Error processing file: {ex.Message}");
-        }
-    }   
+    // [HttpGet("classes/template")]
+    // public async Task<IActionResult> DownloadClassTemplate()
+    // {
+    //     var fileBytes = await excelService.GenerateClassTemplateAsync();
+    //     return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+    //         "ClassTemplate.xlsx");
+    // }
+    //
+    // [HttpPost("classes/import")]
+    // public async Task<IActionResult> ImportClasses(IFormFile file)
+    // {
+    //     if (file == null || file.Length == 0)
+    //         return BadRequest("No file uploaded");
+    //
+    //     if (!file.FileName.EndsWith(".xlsx"))
+    //         return BadRequest("Only .xlsx files are supported");
+    //
+    //     try
+    //     {
+    //         using var stream = file.OpenReadStream();
+    //         var items = await excelService.ParseClassExcelAsync(stream);
+    //         var results = await excelCrudService.ProcessClassesAsync(items);
+    //     
+    //         return Ok(new
+    //         {
+    //             totalProcessed = results.Count,
+    //             successful = results.Count(r => r.Success),
+    //             failed = results.Count(r => !r.Success),
+    //             details = results
+    //         });
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return StatusCode(500, $"Error processing file: {ex.Message}");
+    //     }
+    // }   
     //todo: FIX TIME SPANS FOR CLASSTIME
-    
+
     // [AllowAnonymous]
     // [HttpPost("api/addroles")]
     // public async Task<IActionResult> CreateRole()

@@ -4,5 +4,6 @@ public enum TeachingPosition
 {
     Docent,
     Teacher,
-    HeadOfDepartment
+    HeadOfDepartment,
+    Professor
 }

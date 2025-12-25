@@ -2,6 +2,7 @@ namespace BGU.Core.Enums;
 
 public enum Grade
 {
+    Zero = 0,
     One = 1,
     Two,
     Three,

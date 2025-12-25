@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Services.Interfaces;
+using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -78,4 +79,34 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var res = await studentService.GetAllAsync(page, pageSize);
         return new ObjectResult(res);
     }
+
+    [Authorize(Roles = "Teacher")]
+    [HttpPut(ApiEndPoints.Student.MarkAbsence)]
+    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId,
+        [FromRoute] string taughtSubjectId)
+    {
+        var teacherId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (teacherId == null)
+            return Unauthorized();
+        var res = await studentService.MarkAbsenceAsync(studentId, teacherId, taughtSubjectId, classId);
+        return new ObjectResult(res);
+    }
+
+    [Authorize(Roles = "Teacher")]
+    [HttpPut(ApiEndPoints.Student.GradeColloquium)]
+    public async Task<IActionResult> GradeColloquium([FromRoute] string studentId, [FromRoute] string colloquiumId,
+        [FromRoute] Grade grade)
+    {
+        var res = await studentService.GradeStudentColloquiumAsync(
+            new GradeStudentColloquiumRequest(studentId, colloquiumId, grade));
+        return new ObjectResult(res);
+    }
+
+
+    // [Authorize(Roles = "Teacher")]
+    // [HttpPut(ApiEndPoints.Student.GradeSeminar)]
+    // [Authorize(Roles = "Teacher")]
+    // [HttpPut(ApiEndPoints.Student.GradeIndependentWork)]
+    // [Authorize(Roles = "Teacher")]
+    // [HttpPut(ApiEndPoints.Student.GradeFinal)]
 }

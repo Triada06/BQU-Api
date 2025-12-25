@@ -24,6 +24,6 @@ public interface IExcelCrudService
     Task<List<BulkImportResult>> ProcessLectureHallsAsync(List<LectureHallDto> items);
     Task<List<BulkImportResult>> ProcessClassTimesAsync(List<ClassTimeDto> items);
     Task<List<BulkImportResult>> ProcessTaughtSubjectsAsync(List<TaughtSubjectDto> items);
-    Task<List<BulkImportResult>> ProcessTeachersAsync(List<TeacherDto> items);
+    Task<byte[]> ProcessTeachersAsync(List<TeacherDto> items);
     Task<List<BulkImportResult>> ProcessClassesAsync(List<ClassExcelDto> items);
 }

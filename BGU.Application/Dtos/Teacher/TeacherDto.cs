@@ -11,6 +11,7 @@ public record TeacherDto(
     string PinCode,
     char Gender,
     DateTime BornDate,
-    string DepartmentId,
+    // string DepartmentId,
+    string DepartmentName,
     TeachingPosition Position,
     string Operation);

@@ -18,7 +18,9 @@ public class StudentService(
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
     IUserRepository userRepository,
-    ITaughtSubjectRepository taughtSubjectRepository) : IStudentService
+    ITaughtSubjectRepository taughtSubjectRepository,
+    IAttendanceService attendanceService,
+    IColloquiumRepository colloquiumRepository) : IStudentService
 {
     public async Task<StudentDashboardResponse> Dashboard(string userId)
     {
@@ -292,6 +294,8 @@ public class StudentService(
         var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
             .Include(st => st.StudentAcademicInfo)
             .ThenInclude(st => st.Group)
+            .Include(st => st.StudentAcademicInfo.AdmissionYear)
+            .Include(st => st.StudentAcademicInfo.Specialization)
             .Include(st => st.AppUser))).ToList();
         if (students.Count == 0)
         {
@@ -313,7 +317,11 @@ public class StudentService(
                 ? []
                 : students.Select(x => new GetStudentDto(x.Id,
                     x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now))), StatusCode.Ok, true,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    x.StudentAcademicInfo.Specialization.Name,
+                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
+                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore)),
+            StatusCode.Ok, true,
             ResponseMessages.Success);
     }
 
@@ -342,6 +350,8 @@ public class StudentService(
             x => x
                 .Include(st => st.StudentAcademicInfo)
                 .ThenInclude(st => st.Group)
+                .Include(st => st.StudentAcademicInfo.AdmissionYear)
+                .Include(st => st.StudentAcademicInfo.Specialization)
                 .Include(st => st.AppUser),
             false);
 
@@ -349,9 +359,12 @@ public class StudentService(
                 ? []
                 : students.Select(x => new GetStudentDto(
                     x!.Id,
-                    x.AppUser.Name +" "+ x.AppUser.Surname,
+                    x.AppUser.Name + " " + x.AppUser.Surname,
                     x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now)
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    x.StudentAcademicInfo.Specialization.Name,
+                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
+                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore
                 )),
             StatusCode.Ok,
             true,
@@ -366,11 +379,63 @@ public class StudentService(
                 x => x
                     .Include(st => st.StudentAcademicInfo)
                     .ThenInclude(st => st.Group)
+                    .Include(st => st.StudentAcademicInfo.AdmissionYear)
+                    .Include(st => st.StudentAcademicInfo.Specialization)
                     .Include(st => st.AppUser)))
             .Select(x =>
                 new GetStudentDto(x.Id, x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now)));
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    x.StudentAcademicInfo.Specialization.Name,
+                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
+                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore));
         return new GetStudentResponse(students, StatusCode.Ok, true, ResponseMessages.Success);
+    }
+
+    public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string teacherId,
+        string taughtSubjectId, string classId)
+    {
+        var student =
+            await studentRepository.GetByIdAsync(studentId, include: x => x
+                .Include(e => e.StudentAcademicInfo)
+                .ThenInclude(e => e.Group), tracking: true);
+        if (student is null)
+        {
+            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
+                $"Student with id {studentId} not found ");
+        }
+
+        var attendance = student.Attendances.FirstOrDefault(x => x.ClassId == classId);
+        if (attendance is null)
+        {
+            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
+        }
+
+        var res = await attendanceService.UpdateAttendanceAsync(attendance);
+        if (!res.IsSucceeded)
+        {
+            return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
+                $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
+        }
+
+        return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+            $"Attendance status of the student with an Id of {student.Id} updated successfully");
+    }
+
+    public async Task<GradeStudentColloquiumResponse> GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request)
+    {
+        // var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: true);
+        var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
+        if (colloquium is null)
+        {
+            return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false,
+                $"Colloquium with an Id of {request.ColloquiumId} not found");
+        }
+
+        colloquium.Grade = request.Grade;
+        return await colloquiumRepository.UpdateAsync(colloquium)
+            ? new GradeStudentColloquiumResponse(StatusCode.Ok, true, ResponseMessages.Success)
+            : new GradeStudentColloquiumResponse(StatusCode.InternalServerError, false,
+                "An error occured while updating the grade");
     }
 
     private static double CalculateOverallSubjectScore(List<int> seminarScores, List<int> colloquiumScores,

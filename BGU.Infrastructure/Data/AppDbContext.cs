@@ -13,7 +13,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Class> Classes { get; set; }
     public DbSet<ClassTime> ClassTimes { get; set; }
     public DbSet<Colloquiums> Colloquiums { get; set; }
-    public DbSet<Decree> Decrees { get; set; }
     public DbSet<Department> Departments { get; set; }
     public DbSet<Exam> Exams { get; set; }
     public DbSet<Faculty> Faculties { get; set; }
