@@ -12,11 +12,13 @@ using BGU.Application.Dtos.TaughtSubject;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
+using BGU.Infrastructure.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 
 namespace BGU.Application.Services;
 
-public class ExcelService : IExcelService
+public class ExcelService(IGroupRepository groupRepository) : IExcelService
 {
     public async Task<List<AdmissionYearDto>> ParseAdmissionYearExcelAsync(Stream fileStream)
     {
@@ -770,17 +772,15 @@ public class ExcelService : IExcelService
                 try
                 {
                     items.Add(new TeacherDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Email: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        Surname: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        MiddleName: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        PinCode: worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                        BornDate: DateTime.Parse(worksheet.Cells[row, 8].Value?.ToString()),
-                        DepartmentName: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
-                        Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 10].Value),
-                        Operation: worksheet.Cells[row, 11].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
+                        Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                        Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                        MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
+                        BornDate: DateTime.Parse(worksheet.Cells[row, 7].Value?.ToString()),
+                        DepartmentName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                        Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 9].Value)
                     ));
                 }
                 catch (Exception ex)
@@ -801,18 +801,16 @@ public class ExcelService : IExcelService
         {
             var worksheet = package.Workbook.Worksheets.Add("Teachers");
 
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Email";
-            worksheet.Cells[1, 3].Value = "Name";
-            worksheet.Cells[1, 4].Value = "Surname";
-            worksheet.Cells[1, 5].Value = "MiddleName";
-            worksheet.Cells[1, 6].Value = "PinCode";
-            worksheet.Cells[1, 7].Value = "Gender (M/F)";
-            worksheet.Cells[1, 8].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 9].Value = "DepartmentName";
-            worksheet.Cells[1, 10].Value = "Position";
+            worksheet.Cells[1, 1].Value = "Email";
+            worksheet.Cells[1, 2].Value = "Name";
+            worksheet.Cells[1, 3].Value = "Surname";
+            worksheet.Cells[1, 4].Value = "MiddleName";
+            worksheet.Cells[1, 5].Value = "PinCode";
+            worksheet.Cells[1, 6].Value = "Gender (M/F)";
+            worksheet.Cells[1, 7].Value = "BornDate (YYYY-MM-DD)";
+            worksheet.Cells[1, 8].Value = "DepartmentName";
+            worksheet.Cells[1, 9].Value = "Position";
 
-            worksheet.Cells[1, 11].Value = "Operation (CREATE/UPDATE/DELETE)";
 
             using (var range = worksheet.Cells[1, 1, 1, 14])
             {
@@ -821,16 +819,15 @@ public class ExcelService : IExcelService
                 range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
             }
 
-            worksheet.Cells[2, 2].Value = "teacher@example.com";
-            worksheet.Cells[2, 3].Value = "John";
-            worksheet.Cells[2, 4].Value = "Smith";
-            worksheet.Cells[2, 5].Value = "Michael";
-            worksheet.Cells[2, 6].Value = "1234567";
-            worksheet.Cells[2, 7].Value = "M";
-            worksheet.Cells[2, 8].Value = "1980-05-15";
-            worksheet.Cells[2, 9].Value = "dept-name-here";
-            worksheet.Cells[2, 10].Value = "Профессор";
-            worksheet.Cells[2, 11].Value = "CREATE";
+            worksheet.Cells[2, 1].Value = "teacher@example.com";
+            worksheet.Cells[2, 2].Value = "John";
+            worksheet.Cells[2, 3].Value = "Smith";
+            worksheet.Cells[2, 4].Value = "Michael";
+            worksheet.Cells[2, 5].Value = "1234567";
+            worksheet.Cells[2, 6].Value = "M";
+            worksheet.Cells[2, 7].Value = "1980-05-15";
+            worksheet.Cells[2, 8].Value = "dept-name-here";
+            worksheet.Cells[2, 9].Value = "Профессор";
 
             var positionValidation =
                 worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 10, 1000, 10].Address);
@@ -842,12 +839,6 @@ public class ExcelService : IExcelService
             stateValidation.Formula.Values.Add("PartTime");
             stateValidation.Formula.Values.Add("FullTime");
             stateValidation.Formula.Values.Add("ПочасHourlyово");
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 14, 1000, 14].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
 
             worksheet.Cells.AutoFitColumns();
             return await Task.FromResult(package.GetAsByteArray());
@@ -870,7 +861,7 @@ public class ExcelService : IExcelService
                 try
                 {
                     // Parse enums from string
-                    var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
+                    // var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
                     var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
 
                     // Parse BornDate correctly
@@ -897,14 +888,10 @@ public class ExcelService : IExcelService
                         PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
                         Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
                         BornDate: bornDate,
-                        FacultyName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                        SpecializationName: worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
                         GroupName: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
-                        AdmissionYear: worksheet.Cells[row, 11].Value?.ToString()?.Trim(),
-                        EducationLanguage: Enum.Parse<EducationLanguage>(educationLangStr, ignoreCase: true),
-                        FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true),
                         DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
-                        AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0")
+                        AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0"),
+                        FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true)
                     );
 
                     students.Add(student);
@@ -936,14 +923,11 @@ public class ExcelService : IExcelService
             worksheet.Cells[1, 5].Value = "PinCode";
             worksheet.Cells[1, 6].Value = "Gender (M/F)";
             worksheet.Cells[1, 7].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 8].Value = "FacultyName";
-            worksheet.Cells[1, 9].Value = "SpecializationName";
-            worksheet.Cells[1, 10].Value = "GroupName";
-            worksheet.Cells[1, 11].Value = "AdmissionYear";
-            worksheet.Cells[1, 12].Value = "EducationLanguage";
-            worksheet.Cells[1, 13].Value = "FormOfEducation";
-            worksheet.Cells[1, 14].Value = "DecreeNumber";
-            worksheet.Cells[1, 15].Value = "AdmissionScore";
+            worksheet.Cells[1, 8].Value = "GroupName";
+            worksheet.Cells[1, 9].Value = "DecreeNumber";
+            worksheet.Cells[1, 10].Value = "AdmissionScore";
+            worksheet.Cells[1, 11].Value = "FormOfEducation";
+
 
             // Style headers
             using (var range = worksheet.Cells[1, 1, 1, 15])
@@ -961,14 +945,10 @@ public class ExcelService : IExcelService
             worksheet.Cells[2, 5].Value = "1234567";
             worksheet.Cells[2, 6].Value = "M";
             worksheet.Cells[2, 7].Value = "2000-01-15";
-            worksheet.Cells[2, 8].Value = "faculty-name-123";
-            worksheet.Cells[2, 9].Value = "spec-name-456";
-            worksheet.Cells[2, 10].Value = "group-name-789";
-            worksheet.Cells[2, 11].Value = "2024/2025";
-            worksheet.Cells[2, 12].Value = "English";
-            worksheet.Cells[2, 13].Value = "InPerson";
-            worksheet.Cells[2, 14].Value = "12345";
-            worksheet.Cells[2, 15].Value = "650.5";
+            worksheet.Cells[2, 8].Value = "group-name-789";
+            worksheet.Cells[2, 9].Value = "12345";
+            worksheet.Cells[2, 10].Value = "650.5";
+            worksheet.Cells[2, 11].Value = "InPerson";
 
             worksheet.Cells.AutoFitColumns();
 

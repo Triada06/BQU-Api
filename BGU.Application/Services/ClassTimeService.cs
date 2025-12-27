@@ -35,14 +35,14 @@ public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRe
         }
 
         // Check duplicates (same class, same time, same day)
-        bool exists = await classRepository.AnyAsync(ct =>
-            ct.Id == request.ClassId &&
-            ct.ClassTime.Start == request.Start &&
-            ct.ClassTime.End == request.End &&
-            ct.ClassTime.DaysOfTheWeek == request.Day
-        );
+        var @class = (await classRepository.FindAsync(ct =>
+                ct.Id == request.ClassId &&
+                ct.ClassTime.Start == request.Start &&
+                ct.ClassTime.End == request.End &&
+                ct.ClassTime.DaysOfTheWeek == request.Day
+            , tracking: true)).FirstOrDefault();
 
-        if (exists)
+        if (@class is null)
         {
             return new CreateClassTimeResponse(
                 null,
@@ -59,14 +59,25 @@ public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRe
             DaysOfTheWeek = request.Day
         };
 
+        @class.ClassTimeId = classTime.Id;
 
-        if (! await classTimeRepository.CreateAsync(classTime))
+        if (!await classTimeRepository.CreateAsync(classTime))
         {
             return new CreateClassTimeResponse(
                 null,
                 StatusCode.InternalServerError,
                 false,
                 ResponseMessages.Failed
+            );
+        }
+
+        if (!await classRepository.UpdateAsync(@class))
+        {
+            return new CreateClassTimeResponse(
+                null,
+                StatusCode.InternalServerError,
+                false,
+                $"Couldn't update the class with an id of {@class.Id}."
             );
         }
 

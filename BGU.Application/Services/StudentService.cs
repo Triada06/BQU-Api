@@ -159,6 +159,9 @@ public class StudentService(
             "Found", true, 200);
     }
 
+    
+    
+    //TODO: REFACTOR THIS METHOD    
     public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
     {
         var user = await userManager.FindByIdAsync(userId);
@@ -196,48 +199,50 @@ public class StudentService(
 
         if (request.Grade == "sessions")
         {
-            var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
-                .Select(c => new ClassSessions(
-                    c.Subject.Name,
-                    c.ClassSessions.Select(e => new ClassInfo(e.Date,
-                        c.Classes.Where(x => x.CreatedAt == e.Date).Select(m => m.ClassType).First(),
-                        e.Attendances.Where(x => x.CreatedAt == e.Date).Select(m => m.IsAbsent).First(),
-                        student.SeminarGrades.Where(ex => ex.GotAt == e.Date).Select(m => (int)m.Grade).First())
-                    ))
-                )
-                .ToList();
-            return new StudentGradesResponse(null, sessions,
-                "Ok", true, 200);
+            // var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
+            //     .Select(c => new ClassSessions(
+            //         c.Subject.Name,
+            //         c.ClassSessions.Select(e => new ClassInfo(e.Date,
+            //             c.Classes.Where(x => x.CreatedAt == e.Date).Select(m => m.ClassType).First(),
+            //             e.Attendances.Where(x => x.CreatedAt == e.Date).Select(m => m.IsAbsent).First(),
+            //             student.SeminarGrades.Where(ex => ex.GotAt == e.Date).Select(m => (int)m.Grade).First())
+            //         ))
+            //     )
+            //     .ToList();
+            // return new StudentGradesResponse(null, sessions,
+            //     "Ok", true, 200);
         }
 
         var taughtSubjects = student.StudentAcademicInfo.Group.TaughtSubjects;
 
-        var classes = taughtSubjects
-            .Select(c => new AcademicPerformanceDto(
-                c.Subject.Name,
-                c.Group.Code,
-                c.Teacher.AppUser.Name,
-                c.Subject.CreditsNumber,
-                c.Hours,
-                CalculateOverallSubjectScore(
-                    c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-                        .ToList(),
-                    c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-                        .ToList(),
-                    (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
-                        .Count(s => s.IsPassed)),
-                c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-                    .ToList(),
-                c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-                    .ToList(),
-                c.IndependentWorks.Where(x => x.StudentId == student.Id)
-                    .Count(s => s.IsPassed),
-                c.ClassSessions
-                    .Select(m => m.Attendances.Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent)).Count(),
-                c.Hours / 2)
-            )
-            .ToList();
-        return new StudentGradesResponse(new StudentGradesDto(classes), null,
+        // var classes = taughtSubjects
+        //     .Select(c => new AcademicPerformanceDto(
+        //         c.Subject.Name,
+        //         c.Group.Code,
+        //         c.Teacher.AppUser.Name,
+        //         c.Subject.CreditsNumber,
+        //         c.Hours,
+        //         CalculateOverallSubjectScore(
+        //             c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+        //                 .ToList(),
+        //             c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+        //                 .ToList(),
+        //             (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
+        //                 .Count(s => s.IsPassed)),
+        //         c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+        //             .ToList(),
+        //         c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+        //             .ToList(),
+        //         c.IndependentWorks.Where(x => x.StudentId == student.Id)
+        //             .Count(s => s.IsPassed),
+        //         c.ClassSessions
+        //             .Select(m => m.Attendances.Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent)).Count(),
+        //         c.Hours / 2)
+        //     )
+        //     .ToList();
+        // return new StudentGradesResponse(new StudentGradesDto(classes), null,
+            // "Ok", true, 200);
+        return new StudentGradesResponse(new StudentGradesDto([]), null,
             "Ok", true, 200);
     }
 

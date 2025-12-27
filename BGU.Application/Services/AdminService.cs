@@ -14,30 +14,23 @@ namespace BGU.Application.Services;
 public class AdminService(
     AppDbContext dbContext,
     UserManager<AppUser> userManager,
+    IGroupRepository groupRepository,
     IStudentRepository studentRepository) : IAdminService
 {
     public async Task<ApiResult<StudentCreatedDto>> CreateStudentAsync(CreateStudentDto dto)
     {
-        // Validate foreign keys
-        var faculty = await dbContext.Faculties
-            .Where(f => f.Name.Trim().ToLower() == dto.FacultyName.Trim().ToLower())
-            .FirstOrDefaultAsync();
-        if (faculty is null)
-            return ApiResult<StudentCreatedDto>.BadRequest($"Faculty with the name {dto.FacultyName} not found");
+        var group =
+            (await groupRepository.FindAsync(x => x.Code.Trim().ToLower() == dto.GroupName.Trim().ToLower(),
+                include: x => x
+                    .Include(g => g.Specialization)
+                    .ThenInclude(g => g.Faculty)
+                    .Include(g => g.AdmissionYear)))
+            .FirstOrDefault();
 
-        var spec = await dbContext.Specializations
-            .Where(s => s.Name.Trim().ToLower() == dto.SpecializationName.Trim().ToLower())
-            .FirstOrDefaultAsync();
-        if (spec is null)
-            return ApiResult<StudentCreatedDto>.BadRequest(
-                $"Specialization with the name {dto.SpecializationName} not found");
-
-        var group = await dbContext.Groups.Where(f =>
-                f.Code.Trim().ToLower() == dto.GroupName.Trim().ToLower())
-            .FirstOrDefaultAsync();
-        if (group is null)
-            return ApiResult<StudentCreatedDto>.BadRequest(
-                $"Group with the code name {dto.GroupName} not found");
+        if (group == null)
+        {
+            return ApiResult<StudentCreatedDto>.BadRequest($"Group with the name {dto.GroupName} not found");
+        }
 
         //check if FIN is unique
         var finExists = await dbContext.Users.AnyAsync(u => u.Pin == dto.PinCode);
@@ -47,21 +40,10 @@ public class AdminService(
         }
 
         //checking admission year
-        var year = ResolveAdmissionYear(dto.AdmissionYear);
-        if (year is null)
+        if (string.IsNullOrWhiteSpace(group.AdmissionYearId))
         {
             return ApiResult<StudentCreatedDto>.BadRequest(
-                $"Admission year {dto.AdmissionYear} was sent wrong, the correct way : xxxx/xxxx");
-        }
-        var admissionYear = await dbContext.AdmissionYears
-            .Where(ay => ay.FirstYear == year.FirstYear && ay.SecondYear == year.SecondYear).FirstOrDefaultAsync();
-
-        if (admissionYear is null) //if null then create and continue
-        {
-            await dbContext.AdmissionYears.AddAsync(year);
-            await dbContext.SaveChangesAsync();
-
-            admissionYear = year;
+                $"Group with the code name {group.Code} has no admission year");
         }
 
         // Check if user already exists
@@ -88,11 +70,11 @@ public class AdminService(
             existingStu.AppUser.Gender = dto.Gender;
             if (existingStu.StudentAcademicInfo is not null)
             {
-                existingStu.StudentAcademicInfo.FacultyId = faculty.Id;
-                existingStu.StudentAcademicInfo.SpecializationId = spec.Id;
+                existingStu.StudentAcademicInfo.FacultyId = group.Specialization.Faculty.Id;
+                existingStu.StudentAcademicInfo.SpecializationId = group.Specialization.Id;
                 existingStu.StudentAcademicInfo.GroupId = group.Code;
-                existingStu.StudentAcademicInfo.AdmissionYearId = admissionYear.Id;
-                existingStu.StudentAcademicInfo.EducationLanguage = dto.EducationLanguage;
+                existingStu.StudentAcademicInfo.AdmissionYearId = group.AdmissionYear.Id;
+                existingStu.StudentAcademicInfo.EducationLanguage = group.EducationLanguage;
                 existingStu.StudentAcademicInfo.FormOfEducation = dto.FormOfEducation;
                 existingStu.StudentAcademicInfo.DecreeNumber = dto.DecreeNumber;
                 existingStu.StudentAcademicInfo.AdmissionScore = dto.AdmissionScore;
@@ -140,11 +122,11 @@ public class AdminService(
             AppUserId = user.Id,
             StudentAcademicInfo = new StudentAcademicInfo
             {
-                FacultyId = faculty.Id,
-                SpecializationId = spec.Id,
+                FacultyId = group.Specialization.Faculty.Id,
+                SpecializationId = group.Specialization.Id,
                 GroupId = group.Id,
-                AdmissionYearId = admissionYear.Id,
-                EducationLanguage = dto.EducationLanguage,
+                AdmissionYearId = group.AdmissionYear.Id,
+                EducationLanguage = group.EducationLanguage,
                 FormOfEducation = dto.FormOfEducation,
                 DecreeNumber = dto.DecreeNumber,
                 AdmissionScore = dto.AdmissionScore,

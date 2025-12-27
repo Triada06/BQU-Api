@@ -1,4 +1,5 @@
 using BGU.Application.Contracts.ClassTime.Requests;
+using BGU.Application.Dtos.Class;
 using BGU.Core.Enums;
 
 namespace BGU.Application.Dtos.TaughtSubject.Requests;
@@ -11,4 +12,6 @@ public record CreateTaughtSubjectRequest(
     string GroupId,
     int Credits,
     int Hours,
-    CreateClassTimeRequest[] ClassTimes);
+    CreateClassDto[] ClassTimes,
+    int Year,
+    int Semster);

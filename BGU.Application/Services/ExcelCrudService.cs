@@ -1126,261 +1126,203 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                     continue;
                 }
 
-                switch (item.Operation)
+                if (!await dbContext.Teachers.Include(x => x.AppUser)
+                        .AnyAsync(x => x.AppUser.Pin == item.PinCode))
                 {
-                    case "CREATE":
-                        // Check if email already exists
-                        var existingUser = await userManager.FindByEmailAsync(item.Email);
-                        if (existingUser != null)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "CREATE",
-                                Success = false,
-                                Message = "Email already exists"
-                            });
-                            continue;
-                        }
-
-                        // Validate department exists
-                        var departmentExists = await dbContext.Departments.AnyAsync(d =>
-                            d.Name.ToLower().Trim() == item.DepartmentName.ToLower().Trim());
-                        if (!departmentExists)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "CREATE",
-                                Success = false,
-                                Message = "Department not found"
-                            });
-                            continue;
-                        }
-
-                        //check if FIN is unique
-                        var finExists = await dbContext.Users.AnyAsync(u => u.Pin == item.PinCode);
-                        if (finExists)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.PinCode,
-                                Operation = "CREATE",
-                                Success = false,
-                                Message = "Fin code is already in use"
-                            });
-                            continue;
-                        }
-
-                        // Create AppUser
-                        var user = new AppUser
-                        {
-                            UserName = item.Email.Split('@')[0],
-                            Email = item.Email,
-                            Name = item.Name,
-                            Surname = item.Surname,
-                            MiddleName = item.MiddleName,
-                            Pin = item.PinCode,
-                            Gender = item.Gender,
-                            BornDate = item.BornDate
-                        };
-
-                        var tempPassword = GenerateTemporaryPassword();
-                        var createResult = await userManager.CreateAsync(user, tempPassword);
-
-                        if (!createResult.Succeeded)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "CREATE",
-                                Success = false,
-                                Message = string.Join(", ", createResult.Errors.Select(e => e.Description))
-                            });
-                            continue;
-                        }
-
-                        await userManager.AddToRoleAsync(user, "Teacher");
-
-                        // Create Teacher entity
-                        var teacher = new Teacher
-                        {
-                            AppUserId = user.Id,
-                            TeacherAcademicInfo = new TeacherAcademicInfo
-                            {
-                                DepartmentId = department.Id,
-                                TeachingPosition = item.Position,
-                            }
-                        };
-
-                        dbContext.Teachers.Add(teacher);
-                        await dbContext.SaveChangesAsync();
-
+                    var existingUser = await userManager.FindByEmailAsync(item.Email);
+                    if (existingUser != null)
+                    {
                         results.Add(new BulkImportResult
                         {
                             Identifier = item.Email,
                             Operation = "CREATE",
-                            Success = true,
-                            Message = $"Created successfully. Temporary password: {tempPassword}",
-                            EntityId = teacher.Id,
-                            TemporaryPassword = tempPassword,
-                            FullName = item.Name + item.Surname,
-                            FinCode = item.PinCode
+                            Success = false,
+                            Message = "Email already exists"
                         });
-                        break;
+                        continue;
+                    }
 
-                    case "UPDATE":
-                        if (string.IsNullOrEmpty(item.Id))
+                    // Validate department exists
+                    var departmentExists = await dbContext.Departments.AnyAsync(d =>
+                        d.Name.ToLower().Trim() == item.DepartmentName.ToLower().Trim());
+                    if (!departmentExists)
+                    {
+                        results.Add(new BulkImportResult
                         {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "UPDATE",
-                                Success = false,
-                                Message = "Id is required for update"
-                            });
-                            continue;
-                        }
+                            Identifier = item.Email,
+                            Operation = "CREATE",
+                            Success = false,
+                            Message = "Department not found"
+                        });
+                        continue;
+                    }
 
-                        var existingTeacher = await dbContext.Teachers
-                            .Include(t => t.AppUser)
-                            .Include(t => t.TeacherAcademicInfo)
-                            .FirstOrDefaultAsync(t => t.Id == item.Id);
-
-                        if (existingTeacher == null)
+                    //check if FIN is unique
+                    var finExists = await dbContext.Users.AnyAsync(u => u.Pin == item.PinCode);
+                    if (finExists)
+                    {
+                        results.Add(new BulkImportResult
                         {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "UPDATE",
-                                Success = false,
-                                Message = "Teacher not found"
-                            });
-                            continue;
-                        }
+                            Identifier = item.PinCode,
+                            Operation = "CREATE",
+                            Success = false,
+                            Message = "Fin code is already in use"
+                        });
+                        continue;
+                    }
 
-                        // Update AppUser info
-                        existingTeacher.AppUser.Name = item.Name;
-                        existingTeacher.AppUser.Surname = item.Surname;
-                        existingTeacher.AppUser.MiddleName = item.MiddleName;
-                        existingTeacher.AppUser.Pin = item.PinCode;
-                        existingTeacher.AppUser.Gender = item.Gender;
-                        existingTeacher.AppUser.BornDate = item.BornDate;
+                    // Create AppUser
+                    var user = new AppUser
+                    {
+                        UserName = item.Email.Split('@')[0],
+                        Email = item.Email,
+                        Name = item.Name,
+                        Surname = item.Surname,
+                        MiddleName = item.MiddleName,
+                        Pin = item.PinCode,
+                        Gender = item.Gender,
+                        BornDate = item.BornDate
+                    };
 
-                        // Update email if changed
-                        if (existingTeacher.AppUser.Email != item.Email)
+                    var tempPassword = GenerateTemporaryPassword();
+                    var createResult = await userManager.CreateAsync(user, tempPassword);
+
+                    if (!createResult.Succeeded)
+                    {
+                        results.Add(new BulkImportResult
                         {
-                            var emailToken =
-                                await userManager.GenerateChangeEmailTokenAsync(existingTeacher.AppUser, item.Email);
-                            var emailResult =
-                                await userManager.ChangeEmailAsync(existingTeacher.AppUser, item.Email, emailToken);
+                            Identifier = item.Email,
+                            Operation = "CREATE",
+                            Success = false,
+                            Message = string.Join(", ", createResult.Errors.Select(e => e.Description))
+                        });
+                        continue;
+                    }
 
-                            if (!emailResult.Succeeded)
-                            {
-                                results.Add(new BulkImportResult
-                                {
-                                    Identifier = item.Email,
-                                    Operation = "UPDATE",
-                                    Success = false,
-                                    Message =
-                                        $"Failed to update email: {string.Join(", ", emailResult.Errors.Select(e => e.Description))}"
-                                });
-                                continue;
-                            }
-                        }
+                    await userManager.AddToRoleAsync(user, "Teacher");
 
-                        await userManager.UpdateAsync(existingTeacher.AppUser);
-
-                        // Update TeacherAcademicInfo
-                        if (existingTeacher.TeacherAcademicInfo != null)
+                    // Create Teacher entity
+                    var teacher = new Teacher
+                    {
+                        AppUserId = user.Id,
+                        TeacherAcademicInfo = new TeacherAcademicInfo
                         {
-                            existingTeacher.TeacherAcademicInfo.DepartmentId = department.Id;
-                            existingTeacher.TeacherAcademicInfo.TeachingPosition = item.Position;
+                            DepartmentId = department.Id,
+                            TeachingPosition = item.Position,
                         }
-                        else
-                        {
-                            // Create academic info if it doesn't exist
-                            existingTeacher.TeacherAcademicInfo = new TeacherAcademicInfo
-                            {
-                                DepartmentId = department.Id,
-                                TeachingPosition = item.Position,
-                            };
-                        }
+                    };
 
-                        await dbContext.SaveChangesAsync();
+                    dbContext.Teachers.Add(teacher);
+                    await dbContext.SaveChangesAsync();
 
+                    results.Add(new BulkImportResult
+                    {
+                        Identifier = item.Email,
+                        Operation = "CREATE",
+                        Success = true,
+                        Message = $"Created successfully. Temporary password: {tempPassword}",
+                        EntityId = teacher.Id,
+                        TemporaryPassword = tempPassword,
+                        FullName = item.Name + item.Surname,
+                        FinCode = item.PinCode
+                    });
+                }
+
+                if (string.IsNullOrEmpty(item.Email))
+                {
+                    results.Add(new BulkImportResult
+                    {
+                        Identifier = item.Email,
+                        Operation = "UPDATE",
+                        Success = false,
+                        Message = "Email is required for update"
+                    });
+                    continue;
+                }
+
+                var existingTeacher = await dbContext.Teachers
+                    .Include(t => t.AppUser)
+                    .Include(t => t.TeacherAcademicInfo)
+                    .FirstOrDefaultAsync(t => t.AppUser.Pin == item.PinCode);
+
+                if (existingTeacher == null)
+                {
+                    results.Add(new BulkImportResult
+                    {
+                        Identifier = item.Email,
+                        Operation = "UPDATE",
+                        Success = false,
+                        Message = "Teacher not found"
+                    });
+                    continue;
+                }
+
+                // Update AppUser info
+                existingTeacher.AppUser.Name = item.Name;
+                existingTeacher.AppUser.Surname = item.Surname;
+                existingTeacher.AppUser.MiddleName = item.MiddleName;
+                existingTeacher.AppUser.Pin = item.PinCode;
+                existingTeacher.AppUser.Gender = item.Gender;
+                existingTeacher.AppUser.BornDate = item.BornDate;
+
+                // Update email if changed
+                if (existingTeacher.AppUser.Email != item.Email)
+                {
+                    var emailToken =
+                        await userManager.GenerateChangeEmailTokenAsync(existingTeacher.AppUser, item.Email);
+                    var emailResult =
+                        await userManager.ChangeEmailAsync(existingTeacher.AppUser, item.Email, emailToken);
+
+                    if (!emailResult.Succeeded)
+                    {
                         results.Add(new BulkImportResult
                         {
                             Identifier = item.Email,
                             Operation = "UPDATE",
-                            Success = true,
-                            Message = "Updated successfully",
-                            EntityId = existingTeacher.Id,
-                            FullName = item.Name + item.Surname,
-                            FinCode = item.PinCode
+                            Success = false,
+                            Message =
+                                $"Failed to update email: {string.Join(", ", emailResult.Errors.Select(e => e.Description))}"
                         });
-                        break;
-
-                    case "DELETE":
-                        if (string.IsNullOrEmpty(item.Id))
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "DELETE",
-                                Success = false,
-                                Message = "Id is required for delete"
-                            });
-                            continue;
-                        }
-
-                        var teacherToDelete = await dbContext.Teachers
-                            .Include(t => t.AppUser)
-                            .Include(t => t.TeacherAcademicInfo)
-                            .FirstOrDefaultAsync(t => t.Id == item.Id);
-
-                        if (teacherToDelete == null)
-                        {
-                            results.Add(new BulkImportResult
-                            {
-                                Identifier = item.Email,
-                                Operation = "DELETE",
-                                Success = false,
-                                Message = "Teacher not found"
-                            });
-                            continue;
-                        }
-
-                        // Delete in order: TeacherAcademicInfo → Teacher → AppUser
-                        if (teacherToDelete.TeacherAcademicInfo != null)
-                        {
-                            dbContext.TeacherAcademicInfos.Remove(teacherToDelete.TeacherAcademicInfo);
-                        }
-
-                        dbContext.Teachers.Remove(teacherToDelete);
-                        await userManager.DeleteAsync(teacherToDelete.AppUser);
-
-                        await dbContext.SaveChangesAsync();
-
-                        results.Add(new BulkImportResult
-                        {
-                            Identifier = item.Email,
-                            Operation = "DELETE",
-                            Success = true,
-                            Message = "Deleted successfully",
-                            EntityId = item.Id,
-                            FullName = item.Name + item.Surname,
-                            FinCode = item.PinCode
-                        });
-                        break;
+                        continue;
+                    }
                 }
+
+                await userManager.UpdateAsync(existingTeacher.AppUser);
+
+                // Update TeacherAcademicInfo
+                if (existingTeacher.TeacherAcademicInfo != null)
+                {
+                    existingTeacher.TeacherAcademicInfo.DepartmentId = department.Id;
+                    existingTeacher.TeacherAcademicInfo.TeachingPosition = item.Position;
+                }
+                else
+                {
+                    // Create academic info if it doesn't exist
+                    existingTeacher.TeacherAcademicInfo = new TeacherAcademicInfo
+                    {
+                        DepartmentId = department.Id,
+                        TeachingPosition = item.Position,
+                    };
+                }
+
+                await dbContext.SaveChangesAsync();
+
+                results.Add(new BulkImportResult
+                {
+                    Identifier = item.Email,
+                    Operation = "UPDATE",
+                    Success = true,
+                    Message = "Updated successfully",
+                    EntityId = existingTeacher.Id,
+                    FullName = item.Name + item.Surname,
+                    FinCode = item.PinCode
+                });
             }
             catch (Exception ex)
             {
                 results.Add(new BulkImportResult
                 {
                     Identifier = item.Email,
-                    Operation = item.Operation,
                     Success = false,
                     Message = ex.Message
                 });
@@ -1419,7 +1361,7 @@ public class ExcelCrudService(AppDbContext dbContext, UserManager<AppUser> userM
                                 Identifier = identifier,
                                 Operation = "CREATE",
                                 Success = false,
-                                Message = "TaughtSubject not found"
+                                Message = "TaughtSubject not found "
                             });
                             continue;
                         }

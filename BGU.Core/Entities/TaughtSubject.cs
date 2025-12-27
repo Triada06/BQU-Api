@@ -17,7 +17,6 @@ public class TaughtSubject : BaseEntity
 
     public Syllabus? Syllabus { get; set; }
     public ICollection<Class> Classes { get; set; } = [];
-    public ICollection<ClassSession> ClassSessions { get; set; } = [];
     public ICollection<Colloquiums> Colloquiums { get; set; } = [];
     public ICollection<Seminar> Seminars { get; set; } = [];
     public ICollection<IndependentWork> IndependentWorks { get; set; } = [];

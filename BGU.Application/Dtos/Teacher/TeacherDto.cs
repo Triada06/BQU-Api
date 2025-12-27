@@ -3,7 +3,6 @@ using BGU.Core.Enums;
 namespace BGU.Application.Dtos.Teacher;
 
 public record TeacherDto(
-    string? Id,
     string Email,
     string Name,
     string Surname,
@@ -13,5 +12,4 @@ public record TeacherDto(
     DateTime BornDate,
     // string DepartmentId,
     string DepartmentName,
-    TeachingPosition Position,
-    string Operation);
+    TeachingPosition Position);

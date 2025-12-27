@@ -28,7 +28,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<TeacherAcademicInfo> TeacherAcademicInfos { get; set; }
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<Seminar> Seminars { get; set; }
-    public DbSet<ClassSession> ClassSessions { get; set; }
     public DbSet<Dean> Deans { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Syllabus> Syllabus { get; set; }
