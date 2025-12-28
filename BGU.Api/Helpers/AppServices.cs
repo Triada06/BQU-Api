@@ -27,7 +27,9 @@ public static class AppServices
         services.AddScoped<ISpecializationService, SpecializationService>();
         services.AddScoped<IAttendanceService, AttendanceService>();
         services.AddScoped<IColloquiumService, ColloquiumService>();
-        
+        services.AddScoped<ISeminarService, SeminarService>();
+        services.AddScoped<IIndependentWorkService, IndependentWorkService>();
+
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
@@ -46,7 +48,8 @@ public static class AppServices
         services.AddScoped<ISpecializationRepository, SpecializationRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IColloquiumRepository, ColloquiumRepository>();
-
+        services.AddScoped<ISeminarRepository, SeminarRepository>();
+        services.AddScoped<IIndependentWorkRepository, IndependentWorkRepository>();
         return services;
     }
 }

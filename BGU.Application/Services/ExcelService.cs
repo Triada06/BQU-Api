@@ -862,7 +862,7 @@ public class ExcelService(IGroupRepository groupRepository) : IExcelService
                 {
                     // Parse enums from string
                     // var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
-                    var formOfEducationStr = worksheet.Cells[row, 13].Value?.ToString()?.Trim();
+                    var formOfEducationStr = worksheet.Cells[row, 11].Value?.ToString()?.Trim();
 
                     // Parse BornDate correctly
                     var bornCellValue = worksheet.Cells[row, 7].Value;
@@ -888,9 +888,9 @@ public class ExcelService(IGroupRepository groupRepository) : IExcelService
                         PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
                         Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
                         BornDate: bornDate,
-                        GroupName: worksheet.Cells[row, 10].Value?.ToString()?.Trim(),
-                        DecreeNumber: int.Parse(worksheet.Cells[row, 14].Value?.ToString() ?? "0"),
-                        AdmissionScore: double.Parse(worksheet.Cells[row, 15].Value?.ToString() ?? "0"),
+                        GroupName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
+                        DecreeNumber: int.Parse(worksheet.Cells[row, 9].Value?.ToString() ?? "0"),
+                        AdmissionScore: double.Parse(worksheet.Cells[row, 10].Value?.ToString() ?? "0"),
                         FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true)
                     );
 

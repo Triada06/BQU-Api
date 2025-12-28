@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.Student.Requests;
+using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
 namespace BGU.Api.Controllers;
 
@@ -102,11 +105,26 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return new ObjectResult(res);
     }
 
+    [HttpPut(ApiEndPoints.Student.GradeIndependentWork)]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> GradeIndependentWork([FromRoute] string studentId,
+        [FromRoute] string independentWorkId, [FromRoute] bool isPassed)
+    {
+        var res = await studentService.GradeIndependentWorkAsync(
+            new GradeIndependentWorkRequest(studentId, independentWorkId, isPassed));
+        return new ObjectResult(res);
+    }
 
-    // [Authorize(Roles = "Teacher")]
-    // [HttpPut(ApiEndPoints.Student.GradeSeminar)]
-    // [Authorize(Roles = "Teacher")]
-    // [HttpPut(ApiEndPoints.Student.GradeIndependentWork)]
+    [Authorize(Roles = "Teacher")]
+    [HttpPut(ApiEndPoints.Student.GradeSeminar)]
+    public async Task<IActionResult> GradeSeminar([FromRoute] string studentId,
+        [FromRoute] string seminarId, [FromRoute] Grade isPassed)
+    {
+        var res = await studentService.GradeSeminarAsync(
+            new GradeSeminarRequest(studentId, seminarId, isPassed));
+        return new ObjectResult(res);
+    }
+    
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]
 }

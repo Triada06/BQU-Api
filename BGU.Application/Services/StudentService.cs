@@ -1,4 +1,3 @@
-using BGU.Application.Contracts.Student;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.AcademicPerformance;
@@ -19,6 +18,8 @@ public class StudentService(
     IStudentRepository studentRepository,
     IUserRepository userRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
+    ISeminarRepository seminarRepository,
+    IIndependentWorkRepository independentWorkRepository,
     IAttendanceService attendanceService,
     IColloquiumRepository colloquiumRepository) : IStudentService
 {
@@ -159,8 +160,7 @@ public class StudentService(
             "Found", true, 200);
     }
 
-    
-    
+
     //TODO: REFACTOR THIS METHOD    
     public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
     {
@@ -184,6 +184,8 @@ public class StudentService(
                 .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
+                .Include(x => x.SeminarGrades)
+                .Include(x => x.Attendances)
         )).FirstOrDefault();
 
         if (student == null)
@@ -199,50 +201,51 @@ public class StudentService(
 
         if (request.Grade == "sessions")
         {
-            // var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
-            //     .Select(c => new ClassSessions(
-            //         c.Subject.Name,
-            //         c.ClassSessions.Select(e => new ClassInfo(e.Date,
-            //             c.Classes.Where(x => x.CreatedAt == e.Date).Select(m => m.ClassType).First(),
-            //             e.Attendances.Where(x => x.CreatedAt == e.Date).Select(m => m.IsAbsent).First(),
-            //             student.SeminarGrades.Where(ex => ex.GotAt == e.Date).Select(m => (int)m.Grade).First())
-            //         ))
-            //     )
-            //     .ToList();
-            // return new StudentGradesResponse(null, sessions,
-            //     "Ok", true, 200);
+            var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
+                .Select(c => new ClassSessions(
+                    c.Subject.Name,
+                    c.Classes.Select(e => new ClassInfo(e.ClassTime.ClassDate,
+                        e.ClassType,
+                        student.Attendances.Where(x => x.ClassId == e.Id).Select(m => m.IsAbsent).First(),
+                        e.ClassType == ClassType.Семинар
+                            ? (int?)student.SeminarGrades.FirstOrDefault(x =>
+                                x.TaughtSubjectId == c.Id && x.GotAt == e.ClassTime.ClassDate)?.Grade
+                            : null)
+                    ))
+                )
+                .ToList();
+            return new StudentGradesResponse(null, sessions,
+                "Ok", true, 200);
         }
 
         var taughtSubjects = student.StudentAcademicInfo.Group.TaughtSubjects;
 
-        // var classes = taughtSubjects
-        //     .Select(c => new AcademicPerformanceDto(
-        //         c.Subject.Name,
-        //         c.Group.Code,
-        //         c.Teacher.AppUser.Name,
-        //         c.Subject.CreditsNumber,
-        //         c.Hours,
-        //         CalculateOverallSubjectScore(
-        //             c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-        //                 .ToList(),
-        //             c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-        //                 .ToList(),
-        //             (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
-        //                 .Count(s => s.IsPassed)),
-        //         c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-        //             .ToList(),
-        //         c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
-        //             .ToList(),
-        //         c.IndependentWorks.Where(x => x.StudentId == student.Id)
-        //             .Count(s => s.IsPassed),
-        //         c.ClassSessions
-        //             .Select(m => m.Attendances.Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent)).Count(),
-        //         c.Hours / 2)
-        //     )
-        //     .ToList();
-        // return new StudentGradesResponse(new StudentGradesDto(classes), null,
-            // "Ok", true, 200);
-        return new StudentGradesResponse(new StudentGradesDto([]), null,
+        var classes = taughtSubjects
+            .Select(c => new AcademicPerformanceDto(
+                c.Subject.Name,
+                c.Group.Code,
+                c.Teacher.AppUser.Name,
+                c.Subject.CreditsNumber,
+                c.Hours,
+                CalculateOverallSubjectScore(
+                    c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                        .ToList(),
+                    c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                        .ToList(),
+                    (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
+                        .Count(s => s.IsPassed)),
+                c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                    .ToList(),
+                c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                    .ToList(),
+                c.IndependentWorks.Where(x => x.StudentId == student.Id)
+                    .Count(s => s.IsPassed),
+                student.Attendances
+                    .Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent).Count(),
+                c.Classes.Count)
+            )
+            .ToList();
+        return new StudentGradesResponse(new StudentGradesDto(classes), null,
             "Ok", true, 200);
     }
 
@@ -284,7 +287,7 @@ public class StudentService(
             );
         }
 
-        var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, student.Id,
+        var studentAcademicInfo = new StudentAcademicInfoDto(user.Pin,user.Name, user.Surname, student.Id,
             student.StudentAcademicInfo.Gpa, nameof(student.StudentAcademicInfo.Group.EducationLevel),
             student.StudentAcademicInfo.AdmissionYear.FirstYear, student.StudentAcademicInfo.Faculty.Name,
             student.StudentAcademicInfo.Specialization.Name);
@@ -440,6 +443,39 @@ public class StudentService(
         return await colloquiumRepository.UpdateAsync(colloquium)
             ? new GradeStudentColloquiumResponse(StatusCode.Ok, true, ResponseMessages.Success)
             : new GradeStudentColloquiumResponse(StatusCode.InternalServerError, false,
+                "An error occured while updating the grade");
+    }
+
+    public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
+        GradeIndependentWorkRequest request)
+    {
+        var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
+        if (independentWork is null)
+        {
+            return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
+                $"independent work with an Id of {request.IndependentWorkId} not found");
+        }
+
+        independentWork.IsPassed = true;
+        return await independentWorkRepository.UpdateAsync(independentWork)
+            ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
+            : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
+                "An error occured while updating the grade");
+    }
+
+    public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
+    {
+        var colloquium = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
+        if (colloquium is null)
+        {
+            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
+                $"Seminar with an Id of {request.SeminarId} not found");
+        }
+
+        colloquium.Grade = request.Grade;
+        return await seminarRepository.UpdateAsync(colloquium)
+            ? new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success)
+            : new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
                 "An error occured while updating the grade");
     }
 

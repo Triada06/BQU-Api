@@ -13,5 +13,4 @@ public record CreateStudentDto(
     string GroupName,
     int DecreeNumber,
     double AdmissionScore,
-    FormOfEducation FormOfEducation
-    );
+    FormOfEducation FormOfEducation);

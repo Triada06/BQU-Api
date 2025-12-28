@@ -12,5 +12,4 @@ public class IndependentWork : BaseEntity
 
     public string TaughtSubjectId { get; set; }
     public TaughtSubject TaughtSubject { get; set; }
-    
 }

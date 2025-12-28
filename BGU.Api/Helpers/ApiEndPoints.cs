@@ -191,4 +191,16 @@ public static class ApiEndPoints
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
     }
+    public static class IndependentWork
+    {
+        private const string Base = $"{ApiBase}/independent-works";
+        public const string Create = $"{Base}";
+        public const string Delete = $"{Base}/{{id}}";
+    }
+    public static class Seminar
+    {
+        private const string Base = $"{ApiBase}/seminars";
+        public const string Create = $"{Base}";
+        public const string Delete = $"{Base}/{{id}}";
+    }
 }

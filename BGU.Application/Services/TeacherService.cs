@@ -59,7 +59,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         }
 
         var teacherPersonalInfoDto = new TeacherPersonalInfoDto(user.Email!, user.BornDate);
-        var teacherAcademicInfoDto = new TeacherAcademicInfoDto(user.Name, user.Surname, teacher.Id,
+        var teacherAcademicInfoDto = new TeacherAcademicInfoDto(user.Pin, user.Name, user.Surname, teacher.Id,
             teacher.TeacherAcademicInfo.Department.Faculty.Name, teacher.TeacherAcademicInfo.Department.Faculty.Name,
             teacherSpecialization);
         return new TeacherProfileResponse(teacherPersonalInfoDto, teacherAcademicInfoDto, ResponseMessages.Success,
@@ -168,6 +168,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                     .ThenInclude(ai => ai.Department)
                     .ThenInclude(g => g.Faculty)
                     .ThenInclude(ts => ts.Specializations)
+                    .Include(x => x.TaughtSubjects)
+                    .ThenInclude(x => x.Subject)
         )).FirstOrDefault();
 
         if (teacher == null)

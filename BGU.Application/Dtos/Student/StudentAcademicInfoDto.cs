@@ -1,6 +1,7 @@
 namespace BGU.Application.Dtos.Student;
 
 public record StudentAcademicInfoDto(
+    string Fin,
     string Name,
     string Surname,
     string StudentId,
