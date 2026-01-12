@@ -1,904 +1,41 @@
-using BGU.Application.Dtos.AdmissionYear;
-using BGU.Application.Dtos.Class;
-using BGU.Application.Dtos.ClassTime;
-using BGU.Application.Dtos.Department;
-using BGU.Application.Dtos.Faculty;
-using BGU.Application.Dtos.Group;
-using BGU.Application.Dtos.LectureHall;
-using BGU.Application.Dtos.Specialization;
+using System.Drawing;
+using BGU.Application.Common;
 using BGU.Application.Dtos.Student;
-using BGU.Application.Dtos.Subject;
-using BGU.Application.Dtos.TaughtSubject;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
-using BGU.Infrastructure.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 
 namespace BGU.Application.Services;
 
-public class ExcelService(IGroupRepository groupRepository) : IExcelService
-{
-    public async Task<List<AdmissionYearDto>> ParseAdmissionYearExcelAsync(Stream fileStream)
-    {
+public class ExcelService : IExcelService {
+    public async Task<List<StudentDto>> ParseStudentExcelAsync(Stream fileStream) {
         ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<AdmissionYearDto>();
+        var students = new List<StudentDto>();
 
-        using (var package = new ExcelPackage(fileStream))
-        {
+        using (var package = new ExcelPackage(fileStream)) {
             var worksheet = package.Workbook.Worksheets[0];
             var rowCount = worksheet.Dimension.Rows;
 
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new AdmissionYearDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        FirstYear: int.Parse(worksheet.Cells[row, 2].Value?.ToString()),
-                        SecondYear: int.Parse(worksheet.Cells[row, 3].Value?.ToString()),
-                        Operation: worksheet.Cells[row, 4].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing AdmissionYear row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateAdmissionYearTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("AdmissionYears");
-
-            // Headers
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "FirstYear";
-            worksheet.Cells[1, 3].Value = "SecondYear";
-            worksheet.Cells[1, 4].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            // Style headers
-            using (var range = worksheet.Cells[1, 1, 1, 4])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            // Example rows
-            worksheet.Cells[2, 1].Value = "";
-            worksheet.Cells[2, 2].Value = 2024;
-            worksheet.Cells[2, 3].Value = 2025;
-            worksheet.Cells[2, 4].Value = "CREATE";
-
-            // Dropdown for Operation
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<FacultyDto>> ParseFacultyExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<FacultyDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new FacultyDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 3].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Faculty row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateFacultyTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Faculties");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 3])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 1].Value = "";
-            worksheet.Cells[2, 2].Value = "Faculty of Computer Science";
-            worksheet.Cells[2, 3].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 3, 1000, 3].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<DepartmentDto>> ParseDepartmentExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<DepartmentDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                bool isRowEmpty = true;
-                for (int col = 1; col <= 4; col++) // Check first 4 columns
-                {
-                    if (worksheet.Cells[row, col].Value != null &&
-                        !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
-                    {
-                        isRowEmpty = false;
-                        break;
-                    }
-                }
-
-                if (isRowEmpty)
-                {
-                    continue; // Skip empty row
-                }
-
-                var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-
-                // Double-check name is not empty
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    items.Add(new DepartmentDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        FacultyId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 4].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Department row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateDepartmentTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Departments");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "FacultyId";
-            worksheet.Cells[1, 4].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 4])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "Department of Software Engineering";
-            worksheet.Cells[2, 3].Value = "faculty-id-here";
-            worksheet.Cells[2, 4].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<SpecializationDto>> ParseSpecializationExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<SpecializationDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new SpecializationDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        FacultyId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 4].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Specialization row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateSpecializationTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Specializations");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "FacultyId";
-            worksheet.Cells[1, 4].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 4])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "Computer Science";
-            worksheet.Cells[2, 3].Value = "faculty-id-here";
-            worksheet.Cells[2, 4].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-
-    public async Task<List<GroupDto>> ParseGroupExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<GroupDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new GroupDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Code: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        AdmissionYearId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        EducationLanguage: ParseEnum<EducationLanguage>(worksheet.Cells[row, 4].Value),
-                        EducationLevel: ParseEnum<EducationLevel>(worksheet.Cells[row, 5].Value),
-                        SpecializationId: worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Group row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateGroupTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Groups");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Code";
-            worksheet.Cells[1, 3].Value = "AdmissionYearId";
-            worksheet.Cells[1, 4].Value = "EducationLanguage (Azerbaijani/Russian/English)";
-            worksheet.Cells[1, 5].Value = "EducationLevel (Бакалавриат/Магистратура/Докторантура)";
-            worksheet.Cells[1, 6].Value = "SpecializationId";
-            worksheet.Cells[1, 7].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 7])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "CS-2024-1";
-            worksheet.Cells[2, 3].Value = "admission-year-id";
-            worksheet.Cells[2, 4].Value = "English";
-            worksheet.Cells[2, 5].Value = "Бакалавриат";
-            worksheet.Cells[2, 6].Value = "spec-id";
-            worksheet.Cells[2, 7].Value = "CREATE";
-
-            var langValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            langValidation.Formula.Values.Add("Azerbaijani");
-            langValidation.Formula.Values.Add("Russian");
-            langValidation.Formula.Values.Add("English");
-
-            var levelValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
-            levelValidation.Formula.Values.Add("Бакалавриат");
-            levelValidation.Formula.Values.Add("Магистратура");
-            levelValidation.Formula.Values.Add("Докторантура");
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 7, 1000, 7].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<SubjectDto>> ParseSubjectExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<SubjectDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new SubjectDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        CreditsNumber: int.Parse(worksheet.Cells[row, 3].Value?.ToString()),
-                        DepartmentId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Subject row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateSubjectTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Subjects");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "CreditsNumber";
-            worksheet.Cells[1, 4].Value = "DepartmentId";
-            worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 6])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "Data Structures";
-            worksheet.Cells[2, 3].Value = 6;
-            worksheet.Cells[2, 4].Value = "dept-id";
-            worksheet.Cells[2, 5].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<LectureHallDto>> ParseLectureHallExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<LectureHallDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new LectureHallDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 3].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing LectureHall row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateLectureHallTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("LectureHalls");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 4])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "Hall A-101";
-            worksheet.Cells[2, 3].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<ClassTimeDto>> ParseClassTimeExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<ClassTimeDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension?.Rows ?? 0;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    // Check if row has data
-                    var startValue = worksheet.Cells[row, 2].Value;
-                    if (startValue == null)
-                    {
-                        continue; // Skip empty row
-                    }
-
-                    // Parse TimeSpan - Excel can store times as DateTime or string
-                    TimeSpan start;
-                    TimeSpan end;
-
-                    // Try parsing Start time
-                    if (worksheet.Cells[row, 2].Value is DateTime startDateTime)
-                    {
-                        // Excel stores time as DateTime
-                        start = startDateTime.TimeOfDay;
-                    }
-                    else
-                    {
-                        // Try parsing as string "HH:MM:SS" or "HH:MM"
-                        var startStr = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-                        if (!TimeSpan.TryParse(startStr, out start))
-                        {
-                            Console.WriteLine($"Failed to parse start time: {startStr}");
-                            continue;
-                        }
-                    }
-
-                    // Try parsing End time
-                    if (worksheet.Cells[row, 3].Value is DateTime endDateTime)
-                    {
-                        end = endDateTime.TimeOfDay;
-                    }
-                    else
-                    {
-                        var endStr = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
-                        if (!TimeSpan.TryParse(endStr, out end))
-                        {
-                            Console.WriteLine($"Failed to parse end time: {endStr}");
-                            continue;
-                        }
-                    }
-
-                    items.Add(new ClassTimeDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Start: start,
-                        End: end,
-                        DaysOfTheWeek: ParseEnum<DaysOfTheWeek>(worksheet.Cells[row, 4].Value),
-                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim()?.ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing ClassTime row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateClassTimeTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("ClassTimes");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "Start (HH:MM:SS or HH:MM)";
-            worksheet.Cells[1, 3].Value = "End (HH:MM:SS or HH:MM)";
-            worksheet.Cells[1, 4].Value = "DayOfWeek (Monday/Tuesday/Wednesday/Thursday/Friday)";
-            worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 5])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            // Format time columns as TEXT to prevent Excel from auto-formatting
-            worksheet.Cells[2, 2, 1000, 2].Style.Numberformat.Format = "@"; // Text format
-            worksheet.Cells[2, 3, 1000, 3].Style.Numberformat.Format = "@"; // Text format
-
-            // Example data
-            worksheet.Cells[2, 2].Value = "09:00:00";
-            worksheet.Cells[2, 3].Value = "10:30:00";
-            worksheet.Cells[2, 4].Value = "Monday";
-            worksheet.Cells[2, 5].Value = "CREATE";
-
-            // Add another example
-            worksheet.Cells[3, 2].Value = "14:00";
-            worksheet.Cells[3, 3].Value = "15:30";
-            worksheet.Cells[3, 4].Value = "Tuesday";
-            worksheet.Cells[3, 5].Value = "CREATE";
-
-            var dayValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 4, 1000, 4].Address);
-            dayValidation.Formula.Values.Add("Monday");
-            dayValidation.Formula.Values.Add("Tuesday");
-            dayValidation.Formula.Values.Add("Wednesday");
-            dayValidation.Formula.Values.Add("Thursday");
-            dayValidation.Formula.Values.Add("Friday");
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<TaughtSubjectDto>> ParseTaughtSubjectExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<TaughtSubjectDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                bool isRowEmpty = true;
-                for (int col = 1; col <= 4; col++) // Check first 4 columns
-                {
-                    if (worksheet.Cells[row, col].Value != null &&
-                        !string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Value.ToString()))
-                    {
-                        isRowEmpty = false;
-                        break;
-                    }
-                }
-
-                if (isRowEmpty)
-                {
-                    continue; // Skip empty row
-                }
-
-                var name = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-
-                // Double-check name is not empty
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    items.Add(new TaughtSubjectDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        SubjectId: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        TeacherId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        GroupId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Code: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Hours: int.Parse(worksheet.Cells[row, 6].Value?.ToString()),
-                        Operation: worksheet.Cells[row, 7].Value?.ToString()?.Trim().ToUpper() ?? "CREATE"
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing TaughtSubject row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateTaughtSubjectTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("TaughtSubjects");
-
-            worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-            worksheet.Cells[1, 2].Value = "SubjectId";
-            worksheet.Cells[1, 3].Value = "TeacherId";
-            worksheet.Cells[1, 4].Value = "GroupId";
-            worksheet.Cells[1, 5].Value = "Code";
-            worksheet.Cells[1, 6].Value = "Hours";
-            worksheet.Cells[1, 7].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-            using (var range = worksheet.Cells[1, 1, 1, 7])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 2].Value = "subject-id-here";
-            worksheet.Cells[2, 3].Value = "teacher-id-here";
-            worksheet.Cells[2, 4].Value = "group-id-here";
-            worksheet.Cells[2, 5].Value = "code-here";
-            worksheet.Cells[2, 6].Value = "hours-here";
-            worksheet.Cells[2, 7].Value = "CREATE";
-
-            var operationValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 7, 1000, 7].Address);
-            operationValidation.Formula.Values.Add("CREATE");
-            operationValidation.Formula.Values.Add("UPDATE");
-            operationValidation.Formula.Values.Add("DELETE");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<TeacherDto>> ParseTeacherExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<TeacherDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    items.Add(new TeacherDto(
-                        Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                        BornDate: DateTime.Parse(worksheet.Cells[row, 7].Value?.ToString()),
-                        DepartmentName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                        Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 9].Value)
-                    ));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Teacher row {row}: {ex.Message}");
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public async Task<byte[]> GenerateTeacherTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Teachers");
-
-            worksheet.Cells[1, 1].Value = "Email";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "Surname";
-            worksheet.Cells[1, 4].Value = "MiddleName";
-            worksheet.Cells[1, 5].Value = "PinCode";
-            worksheet.Cells[1, 6].Value = "Gender (M/F)";
-            worksheet.Cells[1, 7].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 8].Value = "DepartmentName";
-            worksheet.Cells[1, 9].Value = "Position";
-
-
-            using (var range = worksheet.Cells[1, 1, 1, 14])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            worksheet.Cells[2, 1].Value = "teacher@example.com";
-            worksheet.Cells[2, 2].Value = "John";
-            worksheet.Cells[2, 3].Value = "Smith";
-            worksheet.Cells[2, 4].Value = "Michael";
-            worksheet.Cells[2, 5].Value = "1234567";
-            worksheet.Cells[2, 6].Value = "M";
-            worksheet.Cells[2, 7].Value = "1980-05-15";
-            worksheet.Cells[2, 8].Value = "dept-name-here";
-            worksheet.Cells[2, 9].Value = "Профессор";
-
-            var positionValidation =
-                worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 10, 1000, 10].Address);
-            positionValidation.Formula.Values.Add("Teacher");
-            positionValidation.Formula.Values.Add("HeadOfDepartment");
-            positionValidation.Formula.Values.Add("Docent");
-
-            var stateValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 12, 1000, 12].Address);
-            stateValidation.Formula.Values.Add("PartTime");
-            stateValidation.Formula.Values.Add("FullTime");
-            stateValidation.Formula.Values.Add("ПочасHourlyово");
-
-            worksheet.Cells.AutoFitColumns();
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-    public async Task<List<CreateStudentDto>> ParseStudentExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        var students = new List<CreateStudentDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
-            var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension.Rows;
-
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    // Parse enums from string
-                    // var educationLangStr = worksheet.Cells[row, 12].Value?.ToString()?.Trim();
-                    var formOfEducationStr = worksheet.Cells[row, 11].Value?.ToString()?.Trim();
-
-                    // Parse BornDate correctly
-                    var bornCellValue = worksheet.Cells[row, 7].Value;
-                    DateTime bornDate;
-
-                    if (bornCellValue is double numericDate)
-                    {
-                        // Excel stores dates as numbers sometimes
-                        bornDate = DateTime.FromOADate(numericDate);
-                    }
-                    else
-                    {
-                        // fallback to string parsing
-                        bornDate = DateTime.Parse(bornCellValue?.ToString()
-                                                  ?? throw new Exception($"Invalid BornDate at row {row}"));
-                    }
-
-                    var student = new CreateStudentDto(
-                        Email: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        Name: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
-                        Surname: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        MiddleName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        PinCode: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 6].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                        BornDate: bornDate,
-                        GroupName: worksheet.Cells[row, 8].Value?.ToString()?.Trim(),
-                        DecreeNumber: int.Parse(worksheet.Cells[row, 9].Value?.ToString() ?? "0"),
-                        AdmissionScore: double.Parse(worksheet.Cells[row, 10].Value?.ToString() ?? "0"),
-                        FormOfEducation: Enum.Parse<FormOfEducation>(formOfEducationStr, ignoreCase: true)
+            for (int row = 2; row <= rowCount; row++) {
+                try {
+                    var student = new StudentDto(
+                        Name: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                        Surname: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                        MiddleName: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                        UserName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        Gender: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
+                        GroupName: worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
+                        DecreeNumber: int.Parse(worksheet.Cells[row, 7].Value?.ToString() ?? "0"),
+                        AdmissionScore: double.Parse(worksheet.Cells[row, 8].Value?.ToString() ?? "0"),
+                        FormOfEducation: Enum.Parse<FormOfEducation>(worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
+                            ignoreCase: true)
                     );
 
                     students.Add(student);
                 }
-                catch (Exception ex)
-                {
-                    // Log the row number + error, continue parsing next rows
+                catch (Exception ex) {
                     Console.WriteLine($"Error parsing row {row}: {ex.Message}");
                 }
             }
@@ -907,151 +44,159 @@ public class ExcelService(IGroupRepository groupRepository) : IExcelService
         return students;
     }
 
-    public async Task<byte[]> GenerateStudentTemplateAsync()
-    {
+
+    public async Task<List<TeacherDto>> ParseTeacherExcelAsync(Stream fileStream) {
         ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+        var teachers = new List<TeacherDto>();
 
-        using (var package = new ExcelPackage())
-        {
-            var worksheet = package.Workbook.Worksheets.Add("Students");
-
-            // Headers
-            worksheet.Cells[1, 1].Value = "Email";
-            worksheet.Cells[1, 2].Value = "Name";
-            worksheet.Cells[1, 3].Value = "Surname";
-            worksheet.Cells[1, 4].Value = "MiddleName";
-            worksheet.Cells[1, 5].Value = "PinCode";
-            worksheet.Cells[1, 6].Value = "Gender (M/F)";
-            worksheet.Cells[1, 7].Value = "BornDate (YYYY-MM-DD)";
-            worksheet.Cells[1, 8].Value = "GroupName";
-            worksheet.Cells[1, 9].Value = "DecreeNumber";
-            worksheet.Cells[1, 10].Value = "AdmissionScore";
-            worksheet.Cells[1, 11].Value = "FormOfEducation";
-
-
-            // Style headers
-            using (var range = worksheet.Cells[1, 1, 1, 15])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
-
-            // Example row
-            worksheet.Cells[2, 1].Value = "student@example.com";
-            worksheet.Cells[2, 2].Value = "John";
-            worksheet.Cells[2, 3].Value = "Doe";
-            worksheet.Cells[2, 4].Value = "Smith";
-            worksheet.Cells[2, 5].Value = "1234567";
-            worksheet.Cells[2, 6].Value = "M";
-            worksheet.Cells[2, 7].Value = "2000-01-15";
-            worksheet.Cells[2, 8].Value = "group-name-789";
-            worksheet.Cells[2, 9].Value = "12345";
-            worksheet.Cells[2, 10].Value = "650.5";
-            worksheet.Cells[2, 11].Value = "InPerson";
-
-            worksheet.Cells.AutoFitColumns();
-
-            return await Task.FromResult(package.GetAsByteArray());
-        }
-    }
-
-
-    public async Task<List<ClassExcelDto>> ParseClassExcelAsync(Stream fileStream)
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-        var items = new List<ClassExcelDto>();
-
-        using (var package = new ExcelPackage(fileStream))
-        {
+        using (var package = new ExcelPackage(fileStream)) {
             var worksheet = package.Workbook.Worksheets[0];
-            var rowCount = worksheet.Dimension?.Rows ?? 0;
+            var rowCount = worksheet.Dimension.Rows;
 
-            for (int row = 2; row <= rowCount; row++)
-            {
-                try
-                {
-                    // Check if row has data
-                    var taughtSubjectId = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-
-                    if (string.IsNullOrWhiteSpace(taughtSubjectId))
-                    {
-                        continue; // Skip empty row
-                    }
-
-                    items.Add(new ClassExcelDto(
-                        Id: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
-                        ClassType: ParseEnum<ClassType>(worksheet.Cells[row, 2].Value),
-                        TaughtSubjectId: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
-                        ClassTimeId: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Operation: worksheet.Cells[row, 5].Value?.ToString()?.Trim()?.ToUpper() ?? "CREATE"
+            for (int row = 2; row <= rowCount; row++) {
+                try {
+                    teachers.Add(new TeacherDto(
+                        Name: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
+                        Surname: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
+                        MiddleName: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
+                        UserName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
+                        DepartmentName: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 6].Value)
                     ));
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error parsing Class row {row}: {ex.Message}");
+                catch (Exception ex) {
+                    Console.WriteLine($"Error parsing Teacher row {row}: {ex.Message}");
                 }
             }
         }
 
-        return items;
+        return teachers;
     }
 
-    public async Task<byte[]> GenerateClassTemplateAsync()
-    {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
-
-        using var package = new ExcelPackage();
-        var worksheet = package.Workbook.Worksheets.Add("Classes");
-
-        worksheet.Cells[1, 1].Value = "Id (Leave empty for CREATE)";
-        worksheet.Cells[1, 2].Value = "ClassType (Лекция/Семинар)";
-        worksheet.Cells[1, 3].Value = "TaughtSubjectId";
-        worksheet.Cells[1, 4].Value = "ClassTimeId";
-        worksheet.Cells[1, 5].Value = "Operation (CREATE/UPDATE/DELETE)";
-
-        using (var range = worksheet.Cells[1, 1, 1, 5])
-        {
-            range.Style.Font.Bold = true;
-            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-        }
-
-        worksheet.Cells[2, 2].Value = "Лекция";
-        worksheet.Cells[2, 3].Value = "taught-subject-id-here";
-        worksheet.Cells[2, 4].Value = "class-time-id-here";
-        worksheet.Cells[2, 5].Value = "CREATE";
-
-        var classTypeValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 2, 1000, 2].Address);
-        classTypeValidation.Formula.Values.Add("Лекция");
-        classTypeValidation.Formula.Values.Add("Семинар");
-
-        var operationValidation = worksheet.DataValidations.AddListValidation(worksheet.Cells[2, 5, 1000, 5].Address);
-        operationValidation.Formula.Values.Add("CREATE");
-        operationValidation.Formula.Values.Add("UPDATE");
-        operationValidation.Formula.Values.Add("DELETE");
-
-        worksheet.Cells.AutoFitColumns();
-        return await Task.FromResult(package.GetAsByteArray());
-    }
-
-
-    private T ParseEnum<T>(object cellValue) where T : struct, Enum
-    {
+    private T ParseEnum<T>(object cellValue) where T : struct, Enum {
         if (cellValue == null)
             throw new ArgumentException("Cell value is null");
 
         var stringValue = cellValue.ToString()?.Trim();
 
-        if (int.TryParse(stringValue, out int numValue))
-        {
+        if (int.TryParse(stringValue, out int numValue)) {
             if (Enum.IsDefined(typeof(T), numValue))
                 return (T)(object)numValue;
         }
 
-        if (Enum.TryParse<T>(stringValue, ignoreCase: true, out T result))
+        if (Enum.TryParse(stringValue, ignoreCase: true, out T result))
             return result;
 
         throw new ArgumentException($"Cannot parse '{stringValue}' to {typeof(T).Name}");
+    }
+
+    public byte[] GenerateUserResultsExcel(List<BulkImportResult> results) {
+        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+
+        using var package = new ExcelPackage();
+        var ws = package.Workbook.Worksheets.Add("Import Results");
+
+        // Split + order (successful with non-empty temp password first)
+        var successful = results
+            .Where(r => r.Success)
+            .OrderByDescending(r => !string.IsNullOrWhiteSpace(r.TemporaryPassword))
+            .ThenBy(r => r.FullName)
+            .ToList();
+
+        var failed = results
+            .Where(r => !r.Success)
+            .ToList();
+
+        // Layout
+        const int titleRow = 1;
+        const int headerRow = 2;
+        const int dataStartRow = 3;
+
+        const int successColStart = 1; // A
+        const int successColCount = 3; // Name, FIN, TempPwd
+
+        const int gapCols = 2; // пустой промежуток между таблицами
+        const int failColStart = successColStart + successColCount + gapCols; // F
+        const int failColCount = 3; // Name, FIN, Message
+        var summaryColLabel = failColStart + failColCount + 2; // after FAILED block => I
+        var summaryColValue = summaryColLabel + 1; // J
+
+        ws.Cells[1, summaryColLabel].Value = "Student Import Summary";
+        ws.Cells[1, summaryColLabel].Style.Font.Bold = true;
+        ws.Cells[1, summaryColLabel].Style.Font.Size = 14;
+
+// optional: merge title across 2 cols (I:J)
+        ws.Cells[1, summaryColLabel, 1, summaryColValue].Merge = true;
+
+        ws.Cells[2, summaryColLabel].Value = "Total Processed:";
+        ws.Cells[2, summaryColValue].Value = results.Count;
+
+        var successCount = results.Count(r => r.Success);
+        var failCount = results.Count - successCount;
+
+        ws.Cells[3, summaryColLabel].Value = "Successful:";
+        ws.Cells[3, summaryColValue].Value = successCount;
+        ws.Cells[3, summaryColValue].Style.Font.Color.SetColor(Color.Green);
+
+        ws.Cells[4, summaryColLabel].Value = "Failed:";
+        ws.Cells[4, summaryColValue].Value = failCount;
+        ws.Cells[4, summaryColValue].Style.Font.Color.SetColor(Color.Red);
+        // Section titles (merged)
+        ws.Cells[titleRow, successColStart, titleRow, successColStart + successColCount - 1].Merge = true;
+        ws.Cells[titleRow, successColStart].Value = "SUCCESSFUL";
+        ws.Cells[titleRow, successColStart].Style.Font.Bold = true;
+
+        ws.Cells[titleRow, failColStart, titleRow, failColStart + failColCount - 1].Merge = true;
+        ws.Cells[titleRow, failColStart].Value = "FAILED";
+        ws.Cells[titleRow, failColStart].Style.Font.Bold = true;
+
+        // Headers - Successful
+        ws.Cells[headerRow, successColStart + 0].Value = "Name Surname";
+        ws.Cells[headerRow, successColStart + 1].Value = "FIN Code";
+        ws.Cells[headerRow, successColStart + 2].Value = "Temporary Password";
+
+        // Headers - Failed
+        ws.Cells[headerRow, failColStart + 0].Value = "Name Surname";
+        ws.Cells[headerRow, failColStart + 1].Value = "FIN Code";
+        ws.Cells[headerRow, failColStart + 2].Value = "Message";
+
+        // Header style (одинаковый для обоих блоков)
+        void StyleHeaderRange(int row, int colStart, int colCount) {
+            using var range = ws.Cells[row, colStart, row, colStart + colCount - 1];
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(Color.LightGray);
+            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+        }
+
+        StyleHeaderRange(headerRow, successColStart, successColCount);
+        StyleHeaderRange(headerRow, failColStart, failColCount);
+
+        // Data - Successful
+        var r1 = dataStartRow;
+        foreach (var r in successful) {
+            ws.Cells[r1, successColStart + 0].Value = r.FullName ?? "";
+            ws.Cells[r1, successColStart + 1].Value = r.UserName ?? "";
+            ws.Cells[r1, successColStart + 2].Value = r.TemporaryPassword ?? "";
+            r1++;
+        }
+
+        // Data - Failed
+        var r2 = dataStartRow;
+        foreach (var r in failed) {
+            ws.Cells[r2, failColStart + 0].Value = r.FullName ?? "";
+            ws.Cells[r2, failColStart + 1].Value = r.UserName ?? "";
+            ws.Cells[r2, failColStart + 2].Value = r.Message ?? "";
+            r2++;
+        }
+
+        // Nice-to-have: freeze pane at first data row (optional)
+        ws.View.FreezePanes(dataStartRow, 1);
+
+        // Autofit only used area
+        if (ws.Dimension != null)
+            ws.Cells[ws.Dimension.Address].AutoFitColumns();
+
+        return package.GetAsByteArray();
     }
 }

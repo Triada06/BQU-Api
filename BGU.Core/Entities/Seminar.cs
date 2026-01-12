@@ -9,7 +9,7 @@ public class Seminar : BaseEntity
 
     public string TaughtSubjectId { get; set; }
     public TaughtSubject TaughtSubject { get; set; }
-    public DateTime GotAt { get; set; } = DateTime.UtcNow;
+    public DateTime GotAt { get; set; }
 
     public Grade Grade { get; set; }
 }

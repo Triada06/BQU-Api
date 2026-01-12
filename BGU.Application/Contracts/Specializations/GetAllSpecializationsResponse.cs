@@ -4,7 +4,7 @@ using BGU.Infrastructure.Constants;
 namespace BGU.Application.Contracts.Specializations;
 
 public sealed record GetAllSpecializationsResponse(
-    IEnumerable<GetSpecializationDto> Specializations,
+    IEnumerable<SpecializationDto> Specializations,
     StatusCode StatusCode,
     bool IsSucceeded,
     string ResponseMessage);

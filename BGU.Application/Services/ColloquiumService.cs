@@ -13,25 +13,19 @@ namespace BGU.Application.Services;
 public class ColloquiumService(
     ITaughtSubjectRepository taughtSubjectRepository,
     IStudentRepository studentRepository,
-    IColloquiumRepository colloquiumRepository)
-    : IColloquiumService
-{
-    public async Task<CreateColloquiumResponse> CreateAsync(CreateColloquiumRequest request)
-    {
-        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == request.TaughtSubjectId))
-        {
+    IColloquiumRepository colloquiumRepository): IColloquiumService {
+    public async Task<CreateColloquiumResponse> CreateAsync(CreateColloquiumRequest request) {
+        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == request.TaughtSubjectId)) {
             return new CreateColloquiumResponse(null, StatusCode.BadRequest, false,
                 $"Subject with an Id of {request.TaughtSubjectId} does not exist");
         }
 
-        if (!await studentRepository.AnyAsync(x => x.Id == request.StudentId))
-        {
+        if (!await studentRepository.AnyAsync(x => x.Id == request.StudentId)) {
             return new CreateColloquiumResponse(null, StatusCode.BadRequest, false,
                 $"Student with an Id of {request.StudentId} does not exist");
         }
 
-        var colloquium = new Colloquiums
-        {
+        var colloquium = new Colloquiums {
             Grade = request.Grade ?? Grade.Zero,
             Date = request.Date,
             IsConfirmed = false,
@@ -45,11 +39,9 @@ public class ColloquiumService(
                 "An error occured while creating colloquium");
     }
 
-    public async Task<DeleteColloquiumResponse> DeleteAsync(string id)
-    {
+    public async Task<DeleteColloquiumResponse> DeleteAsync(string id) {
         var coll = await colloquiumRepository.GetByIdAsync(id, tracking: true);
-        if (coll == null)
-        {
+        if (coll == null) {
             return new DeleteColloquiumResponse(StatusCode.BadRequest, false,
                 "Not Found");
         }
@@ -60,16 +52,14 @@ public class ColloquiumService(
             : new DeleteColloquiumResponse(StatusCode.BadRequest, false, "An error occured while deleting colloquium");
     }
 
-    public async Task<GetAllColloquiumResponse> GetAllAsync(string taughtSubjectId)
-    {   
+    public async Task<GetAllColloquiumResponse> GetAllAsync(string taughtSubjectId) {
         var colls = await colloquiumRepository.FindAsync(x => x.TaughtSubjectId == taughtSubjectId,
             include: x => x
                 .Include(c => c.Student)
                 .ThenInclude(st => st.AppUser)
                 .Include(c => c.TaughtSubject), tracking: false);
 
-        if (colls.Count == 0 || colls.Any(x => x is null))
-        {
+        if (colls.Count == 0 || colls.Any(x => x is null)) {
             return new GetAllColloquiumResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }
 

@@ -21,35 +21,28 @@ namespace BGU.Application.Services;
 public class TaughtSubjectService(
     ITaughtSubjectRepository taughtSubjectRepository,
     ISubjectRepository subjectRepository,
-    IClassTimeService classTimeService,
     IClassTimeRepository classTimeRepository,
     IClassRepository classRepository,
     IStudentRepository studentRepository,
     IAttendanceRepository attendanceRepository,
-    IAttendanceService attendanceService) : ITaughtSubjectService
-{
-    public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id)
-    {
+    ISeminarRepository seminarRepository) : ITaughtSubjectService {
+    public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id) {
         var taughtSubject = await taughtSubjectRepository.GetByIdAsync(id, tracking: true);
-        if (taughtSubject is null)
-        {
+        if (taughtSubject is null) {
             return new DeleteTaughtSubjectResponse(StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        if (!await taughtSubjectRepository.DeleteAsync(taughtSubject))
-        {
+        if (!await taughtSubjectRepository.DeleteAsync(taughtSubject)) {
             return new DeleteTaughtSubjectResponse(StatusCode.InternalServerError, false, ResponseMessages.Failed);
         }
 
         return new DeleteTaughtSubjectResponse(StatusCode.Ok, false, ResponseMessages.Success);
     }
 
-    public async Task<UpdateTaughtSubjectResponse> UpdateAsync(string id, UpdateTaughtSubjectRequest taughtSubject)
-    {
+    public async Task<UpdateTaughtSubjectResponse> UpdateAsync(string id, UpdateTaughtSubjectRequest taughtSubject) {
         var subjectToUpdate =
             await taughtSubjectRepository.GetByIdAsync(id, include: i => i.Include(x => x.Subject), tracking: true);
-        if (subjectToUpdate is null)
-        {
+        if (subjectToUpdate is null) {
             return new UpdateTaughtSubjectResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
@@ -59,8 +52,7 @@ public class TaughtSubjectService(
         subjectToUpdate.GroupId = taughtSubject.GroupId;
         subjectToUpdate.Subject.Name = taughtSubject.Title;
         subjectToUpdate.TeacherId = taughtSubject.TeacherId;
-        if (!await taughtSubjectRepository.UpdateAsync(subjectToUpdate))
-        {
+        if (!await taughtSubjectRepository.UpdateAsync(subjectToUpdate)) {
             return new UpdateTaughtSubjectResponse(null, StatusCode.InternalServerError, false,
                 ResponseMessages.Failed);
         }
@@ -69,8 +61,7 @@ public class TaughtSubjectService(
             StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
-    {
+    public async Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false) {
         var subjects =
             (await taughtSubjectRepository.GetAllAsync(page, pageSize: pageSize,
                 include: i => i
@@ -85,8 +76,7 @@ public class TaughtSubjectService(
         return new GetAllTaughtSubjectResponse(subjects, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<GetByIdTaughtSubjectResponse> GetByIdAsync(string id, bool tracking = false)
-    {
+    public async Task<GetByIdTaughtSubjectResponse> GetByIdAsync(string id, bool tracking = false) {
         var subject =
             await taughtSubjectRepository.GetByIdAsync(id, include: i => i
                 .Include(x => x.Group)
@@ -94,8 +84,7 @@ public class TaughtSubjectService(
                 .Include(x => x.Teacher)
                 .ThenInclude(x => x.AppUser), tracking: false);
 
-        if (subject is null)
-        {
+        if (subject is null) {
             return new GetByIdTaughtSubjectResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
@@ -104,10 +93,8 @@ public class TaughtSubjectService(
             subject.Subject.CreditsNumber), StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request)
-    {
-        if (await taughtSubjectRepository.AnyAsync(x => x.Code == request.Code))
-        {
+    public async Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request) {
+        if (await taughtSubjectRepository.AnyAsync(x => x.Code == request.Code)) {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.Conflict,
                 "Course with this name already exists.");
         }
@@ -116,23 +103,19 @@ public class TaughtSubjectService(
             (await subjectRepository.FindAsync(x => x.Name.ToLower().Trim() == request.Title.ToLower().Trim(),
                 tracking: true))
             .FirstOrDefault();
-        if (subject == null)
-        {
-            subject = new Subject
-            {
+        if (subject == null) {
+            subject = new Subject {
                 CreditsNumber = request.Credits,
                 Name = request.Title,
                 DepartmentId = request.DepartmentId,
             };
-            if (!await subjectRepository.CreateAsync(subject))
-            {
+            if (!await subjectRepository.CreateAsync(subject)) {
                 return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                     "Failed to create subject");
             }
         }
 
-        var taughtSubject = new TaughtSubject
-        {
+        var taughtSubject = new TaughtSubject {
             Code = request.Code,
             TeacherId = request.TeacherId,
             GroupId = request.GroupId,
@@ -140,8 +123,7 @@ public class TaughtSubjectService(
             Hours = request.Hours,
         };
 
-        if (!await taughtSubjectRepository.CreateAsync(taughtSubject))
-        {
+        if (!await taughtSubjectRepository.CreateAsync(taughtSubject)) {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating the course");
         }
@@ -157,16 +139,14 @@ public class TaughtSubjectService(
         );
 
         // First create all ClassTimes
-        if (!await classTimeRepository.BulkCreateAsync(classTimes))
-        {
+        if (!await classTimeRepository.BulkCreateAsync(classTimes)) {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Failed to create class times");
         }
 
         // Then create all Classes
 
-        if (!await classRepository.BulkCreateAsync(classes))
-        {
+        if (!await classRepository.BulkCreateAsync(classes)) {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating classes");
         }
@@ -176,21 +156,34 @@ public class TaughtSubjectService(
         //creating an attendance system
         var studentsInGroup =
             await studentRepository.FindAsync(st => st.StudentAcademicInfo.GroupId == request.GroupId);
+        var seminarTypes = classes.FindAll(x => x.ClassType == ClassType.Семинар);
 
-        if (studentsInGroup.Count != 0 && studentsInGroup.All(x => x is not null))
-        {
+        if (studentsInGroup.Count != 0 && studentsInGroup.All(x => x is not null)) {
             var attendances = new List<Attendance>();
+            var seminars = new List<Seminar>();
+
+            foreach (var seminarType in seminarTypes) {
+                seminars.AddRange(studentsInGroup.Where(s => s != null).Select(student => new Seminar {
+                    StudentId = student.Id,
+                    TaughtSubjectId = seminarType.TaughtSubjectId,
+                    GotAt = seminarType.ClassTime.ClassDate.UtcDateTime,
+                    Grade = Grade.Zero
+                }));
+            }
+
+            if (!await seminarRepository.BulkCreate(seminars)) {
+                return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+                    "Failed to create seminars");
+            }
 
             // For EACH class, create attendance for EACH student
-            foreach (var classItem in classes)
-            {
+            foreach (var classItem in classes) {
                 attendances.AddRange(studentsInGroup.Select(student => new Attendance
                     { StudentId = student!.Id, ClassId = classItem.Id, IsAbsent = false }));
             }
 
 
-            if (!await attendanceRepository.BulkCreateAsync(attendances))
-            {
+            if (!await attendanceRepository.BulkCreateAsync(attendances)) {
                 return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                     "Failed to create attendances");
             }
@@ -206,8 +199,7 @@ public class TaughtSubjectService(
         CreateClassDto[] classDtos,
         int year,
         int semester,
-        string taughtSubjectId)
-    {
+        string taughtSubjectId) {
         // Adjust hours if odd
         if (hours % 2 != 0) hours += 1;
 
@@ -231,16 +223,14 @@ public class TaughtSubjectService(
         var classesCreated = 0;
         var weekNumber = 1; // Week counter starting from 1
 
-        while (classesCreated < totalClasses)
-        {
+        while (classesCreated < totalClasses) {
             var isUpperWeek = weekNumber % 2 == 1; // Week 1, 3, 5... = upper; Week 2, 4, 6... = lower
 
             // Calculate the Monday of the current week
             var currentWeekMonday = firstMonday.AddDays((weekNumber - 1) * 7);
 
             // Go through each class schedule for this week
-            foreach (var classDto in classDtos)
-            {
+            foreach (var classDto in classDtos) {
                 if (classesCreated >= totalClasses) break;
 
                 // Check if this class should occur this week based on frequency
@@ -256,8 +246,7 @@ public class TaughtSubjectService(
                 var classDate = currentWeekMonday.AddDays(daysToAdd);
 
                 // Create ClassTime
-                var classTime = new ClassTime
-                {
+                var classTime = new ClassTime {
                     Id = Guid.NewGuid().ToString(),
                     IsUpperWeek = isUpperWeek,
                     Start = classDto.Start,
@@ -269,8 +258,7 @@ public class TaughtSubjectService(
                 classTimes.Add(classTime);
 
                 // Create Class
-                var classItem = new Class
-                {
+                var classItem = new Class {
                     Id = Guid.NewGuid().ToString(),
                     Room = classDto.Room,
                     ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,

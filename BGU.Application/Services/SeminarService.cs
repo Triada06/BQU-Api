@@ -11,36 +11,29 @@ namespace BGU.Application.Services;
 public class SeminarService(
     ISeminarRepository seminarRepository,
     IStudentRepository studentRepository,
-    ITaughtSubjectRepository taughtSubjectRepository) : ISeminarService
-{
-    public async Task<CreateSeminarResponse> CreateAsync(CreateSeminarRequest seminar)
-    {
-        if (!await studentRepository.AnyAsync(x => x.Id == seminar.StudentId))
-        {
+    ITaughtSubjectRepository taughtSubjectRepository): ISeminarService {
+    public async Task<CreateSeminarResponse> CreateAsync(CreateSeminarRequest seminar) {
+        if (!await studentRepository.AnyAsync(x => x.Id == seminar.StudentId)) {
             return new CreateSeminarResponse(null, StatusCode.BadRequest, false,
                 $"Student with an Id of {seminar.StudentId} not found. ");
         }
 
-        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == seminar.TaughtSubjectId))
-        {
+        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == seminar.TaughtSubjectId)) {
             return new CreateSeminarResponse(null, StatusCode.Conflict, false,
                 $"Subject with an Id of {seminar.TaughtSubjectId} not found. ");
         }
 
         if (await seminarRepository.AnyAsync(x =>
-                x.StudentId == seminar.StudentId && seminar.TaughtSubjectId == x.TaughtSubjectId))
-        {
+                x.StudentId == seminar.StudentId && seminar.TaughtSubjectId == x.TaughtSubjectId)) {
             return new CreateSeminarResponse(null, StatusCode.Conflict, false,
                 $"This seminar already exist");
         }
 
-        var seminarToCreate = new Seminar
-        {
+        var seminarToCreate = new Seminar {
             StudentId = seminar.StudentId,
             TaughtSubjectId = seminar.TaughtSubjectId,
         };
-        if (!await seminarRepository.CreateAsync(seminarToCreate))
-        {
+        if (!await seminarRepository.CreateAsync(seminarToCreate)) {
             return new CreateSeminarResponse(null, StatusCode.InternalServerError, false,
                 ResponseMessages.Failed);
         }
@@ -48,11 +41,9 @@ public class SeminarService(
         return new CreateSeminarResponse(seminarToCreate.Id, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<DeleteSeminarResponse> DeleteAsync(string id)
-    {
+    public async Task<DeleteSeminarResponse> DeleteAsync(string id) {
         var seminar = await seminarRepository.GetByIdAsync(id, tracking: true);
-        if (seminar is null)
-        {
+        if (seminar is null) {
             return new DeleteSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with and id of {id} not found. ");
         }

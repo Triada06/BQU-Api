@@ -12,8 +12,7 @@ namespace BGU.Application.Services;
 public class SyllabusService(
     ISyllabusRepository syllabusRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
-    IWebHostEnvironment env)
-    : ISyllabusService
+    IWebHostEnvironment env): ISyllabusService
 {
     public async Task<CreateSyllabusResponse> CreateAsync(CreateSyllabusRequest request)
     {

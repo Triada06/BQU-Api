@@ -18,7 +18,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Faculty> Faculties { get; set; }
     public DbSet<Group> Groups { get; set; }
     public DbSet<IndependentWork> IndependentWorks { get; set; }
-    public DbSet<LectureHall> LectureHalls { get; set; }
     public DbSet<Specialization> Specializations { get; set; }
     public DbSet<Student> Students { get; set; }
     public DbSet<StudentAcademicInfo> StudentAcademicInfos { get; set; }
@@ -34,12 +33,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        builder.Entity<AppUser>()
-            .Property(x => x.BornDate)
-            .HasColumnType("date");
-        builder.Entity<AppUser>()
-            .HasIndex(p => p.Pin)
-            .IsUnique();
+        builder.Entity<AppUser>(b =>
+        {
+            b.Property(u => u.UserName)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            b.Property(u => u.NormalizedUserName)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            b.HasIndex(u => u.NormalizedUserName).IsUnique();
+        });
+        
         builder.Entity<Room>()
             .Property(x => x.Name)
             .HasMaxLength(20);

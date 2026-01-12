@@ -94,14 +94,18 @@ builder.Services.AddIdentityCore<AppUser>(options =>
         options.SignIn.RequireConfirmedEmail = false;
 
         options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-        options.User.RequireUniqueEmail = true;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-var jwtSettings = configuration.GetSection("Jwt");
+builder.Services.Configure<IdentityOptions>(o =>
+{
+    o.User.RequireUniqueEmail = false;
+    o.SignIn.RequireConfirmedEmail = false;
+});
 
+var jwtSettings = configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -114,25 +118,141 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"])),
-            NameClaimType = ClaimTypes.NameIdentifier,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings["Key"])
+            ),
         };
     });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCors", p => p
+        .WithOrigins(
+            "http://localhost:3000",
+            "http://localhost:5173"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        // .AllowCredentials() // включай ТОЛЬКО если используешь куки/credentials
+    );
+});
+
+
 var app = builder.Build();
 
-var controllers = typeof(Program).Assembly.GetTypes()
-    .Where(t => t.Name.EndsWith("Controller"))
-    .Select(t => t.Name);
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+    if (!await roleManager.RoleExistsAsync("Dean"))
+        await roleManager.CreateAsync(new IdentityRole("Dean"));
+
+    if (!await roleManager.RoleExistsAsync("Student"))
+        await roleManager.CreateAsync(new IdentityRole("Student"));
+    
+    if (!await roleManager.RoleExistsAsync("Teacher"))
+        await roleManager.CreateAsync(new IdentityRole("Teacher"));
+    
+    
+    const string roomName = "Otaq 317";
+    
+    var room = await db.Rooms.SingleOrDefaultAsync(f => f.Name == roomName);
+    if (room == null)
+    {
+        room = new Room {
+            Name = roomName,
+            Capacity = 20,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Rooms.Add(room);
+        await db.SaveChangesAsync();
+    }
+    
+    const string facultyName = "Tetbiqi Riyaziyyat";
+    
+    var faculty = await db.Faculties.SingleOrDefaultAsync(f => f.Name == facultyName);
+    if (faculty == null)
+    {
+        faculty = new Faculty {
+            Name = facultyName,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Faculties.Add(faculty);
+        await db.SaveChangesAsync();
+    }
+
+    
+    const string specializationName = "Komputer Elmleri";
+    
+    var specialization = await db.Specializations.SingleOrDefaultAsync(f => f.Name == specializationName);
+    if (specialization == null)
+    {
+        specialization = new Specialization {
+            Name = specializationName,
+            FacultyId = faculty.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Specializations.Add(specialization);
+        await db.SaveChangesAsync();
+    }
+    
+    const string departmentName = "Riyazi Kibernetika";
+    
+    var department = await db.Departments.SingleOrDefaultAsync(f => f.Name == departmentName);
+    if (department == null)
+    {
+        department = new Department {
+            Name = departmentName,
+            FacultyId = faculty.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Departments.Add(department);
+        await db.SaveChangesAsync();
+    }
+    
+    const string username = "7KW323K";
+    const string password = "Atilla123";
+    
+    var user = await userManager.FindByNameAsync(username);
+    if (user == null)
+    {
+        user = new AppUser {
+            UserName = username,
+            Name = "Resad",
+            Surname = "Mehdiev",
+            MiddleName = "Ali",
+            Gender = 'M',
+        };
+
+        var res = await userManager.CreateAsync(user, password);
+        if (!res.Succeeded) throw new Exception(string.Join("; ", res.Errors.Select(e => e.Description)));
+
+        await userManager.AddToRoleAsync(user, "Dean");
+
+        db.Deans.Add(new Dean
+        {
+            AppUserId = user.Id,
+            FacultyId = faculty.Id,
+            RoleName = "Dekan",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await db.SaveChangesAsync();
+    }
+}
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseHttpsRedirection();
+
+app.UseCors("DevCors");
+
+// app.UseHttpsRedirection();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-
-    // Configure Scalar with authentication options
     app.MapScalarApiReference(options =>
     {
         options.Theme = ScalarTheme.BluePlanet;
@@ -144,14 +264,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// app.UseSwagger();
-// app.UseSwaggerUI();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-app.MapGet("/healthcheck", () => TypedResults.Ok(new { works = "Works" }))
-    .AllowAnonymous();
+app.MapGet("/healthcheck", () => Results.Text("WHOAMI"));
 
 app.Run();

@@ -26,7 +26,7 @@ public class ApiResult<T>
             StatusCode = 404
         };
 
-    public static ApiResult<T> BadRequest(string message = "Bad Request")
+    public static ApiResult<T> BadRequest(T data, string message = "Bad Request")
         => new()
         {
             Data = default,

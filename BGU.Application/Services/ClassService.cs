@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace BGU.Application.Services;
 
-public class ClassService(IClassRepository classRepository, UserManager<AppUser> userManager) : IClassService
+public class ClassService(IClassRepository classRepository, UserManager<AppUser> userManager): IClassService
 {
     public async Task<ClassGetAllResponse> GetAll(string userId)
     {

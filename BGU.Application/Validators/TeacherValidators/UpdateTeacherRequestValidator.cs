@@ -7,14 +7,9 @@ public class UpdateTeacherRequestValidator : AbstractValidator<UpdateTeacherRequ
 {
     public UpdateTeacherRequestValidator()
     {
-        RuleFor(model => model.Email)
-            .NotNull().WithMessage("Email address can't be null")
-            .NotEmpty().WithMessage("Email address can't be empty.")
-            .EmailAddress().WithMessage("Email address format is invalid.");
-        
         RuleFor(model => model.DepartmentId)
-            .NotNull().WithMessage("Email address can't be null")
-            .NotEmpty().WithMessage("Email address can't be empty.");
+            .NotNull().WithMessage("Department can't be null")
+            .NotEmpty().WithMessage("Department can't be empty.");
 
         RuleFor(model => model.Name)
             .NotNull().WithMessage("Name is required.")

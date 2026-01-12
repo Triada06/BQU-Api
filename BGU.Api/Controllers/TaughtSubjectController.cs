@@ -28,14 +28,14 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
-    [HttpGet(ApiEndPoints.TaughtSubject.Update)]
+    [HttpPut(ApiEndPoints.TaughtSubject.Update)]
     public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTaughtSubjectRequest request)
     {
         var res = await taughtSubjectService.UpdateAsync(id, request);
         return new ObjectResult(res);
     }
 
-    [HttpGet(ApiEndPoints.TaughtSubject.Delete)]
+    [HttpDelete(ApiEndPoints.TaughtSubject.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
         var res = await taughtSubjectService.DeleteAsync(id);

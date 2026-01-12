@@ -1,8 +1,8 @@
 namespace BGU.Application.Dtos.Student;
 
 public sealed record GetStudentDto(
-    string StudentId,
     string FullName,
+    string UserName,
     string GroupName,
     int Year,
     char Gender,

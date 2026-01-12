@@ -8,33 +8,27 @@ using BGU.Infrastructure.Repositories.Interfaces;
 namespace BGU.Application.Services;
 
 public class IndependentWorkService(
-        IIndependentWorkRepository independentWorkRepository,
-        IStudentRepository studentRepository,
-        ITaughtSubjectRepository taughtSubjectRepository) : IIndependentWorkService
-{
-    public async Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest request)
-    {
-        if (!await studentRepository.AnyAsync(x => x.Id == request.StudentId))
-        {
+    IIndependentWorkRepository independentWorkRepository,
+    IStudentRepository studentRepository,
+    ITaughtSubjectRepository taughtSubjectRepository) : IIndependentWorkService {
+    public async Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest request) {
+        if (!await studentRepository.AnyAsync(x => x.Id == request.StudentId)) {
             return new CreateIndependentWorkResponse(null, StatusCode.BadRequest, false,
                 $"Student with an Id of {request.StudentId} not found. ");
         }
 
-        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == request.TaughtSubjectId))
-        {
+        if (!await taughtSubjectRepository.AnyAsync(x => x.Id == request.TaughtSubjectId)) {
             return new CreateIndependentWorkResponse(null, StatusCode.Conflict, false,
                 $"Subject with an Id of {request.TaughtSubjectId} not found. ");
         }
 
         if (await independentWorkRepository.AnyAsync(x =>
-                x.StudentId == request.StudentId && request.TaughtSubjectId == x.TaughtSubjectId))
-        {
+                x.StudentId == request.StudentId && request.TaughtSubjectId == x.TaughtSubjectId)) {
             return new CreateIndependentWorkResponse(null, StatusCode.Conflict, false,
                 $"This independent work already exist");
         }
 
-        var independentWork = new IndependentWork
-        {
+        var independentWork = new IndependentWork {
             IsAccepted = false,
             IsConfirmed = false,
             IsPassed = false,
@@ -42,8 +36,7 @@ public class IndependentWorkService(
             StudentId = request.StudentId,
             TaughtSubjectId = request.TaughtSubjectId,
         };
-        if (!await independentWorkRepository.CreateAsync(independentWork))
-        {
+        if (!await independentWorkRepository.CreateAsync(independentWork)) {
             return new CreateIndependentWorkResponse(null, StatusCode.InternalServerError, false,
                 ResponseMessages.Failed);
         }
@@ -51,11 +44,9 @@ public class IndependentWorkService(
         return new CreateIndependentWorkResponse(independentWork.Id, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<DeleteIndependentWorkResponse> DeleteAsync(string id)
-    {
+    public async Task<DeleteIndependentWorkResponse> DeleteAsync(string id) {
         var work = await independentWorkRepository.GetByIdAsync(id, tracking: true);
-        if (work is null)
-        {
+        if (work is null) {
             return new DeleteIndependentWorkResponse(StatusCode.BadRequest, false,
                 $"Independent work with and id of {id} not found. ");
         }

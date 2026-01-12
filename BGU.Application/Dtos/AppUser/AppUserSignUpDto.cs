@@ -3,30 +3,19 @@ using FluentValidation;
 namespace BGU.Application.Dtos.AppUser;
 
 public record AppUserSignUpDto(
-    string UserName,
-    string Email,
-    string PassWord,
+    string Password,
     string Name,
     string Surname,
     string MiddleName,
-    string PinCode,
-    char Gender);
+    string Username,
+    char Gender
+);
 
 public class AppUserCreateValidator : AbstractValidator<AppUserSignUpDto>
 {
     public AppUserCreateValidator()
     {
-        RuleFor(model => model.UserName)
-            .NotEmpty().WithMessage("Username must not be empty.")
-            .NotNull().WithMessage("Username must not be empty.")
-            .MaximumLength(30).WithMessage("Username must not exceed 30 characters.");
-
-        RuleFor(model => model.Email)
-            .NotNull().WithMessage("Email address can't be null")
-            .NotEmpty().WithMessage("Email address can't be empty.")
-            .EmailAddress().WithMessage("Email address format is invalid.");
-
-        RuleFor(model => model.PassWord)
+        RuleFor(model => model.Password)
             .NotNull().WithMessage("Password can't be null")
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
@@ -55,7 +44,7 @@ public class AppUserCreateValidator : AbstractValidator<AppUserSignUpDto>
             .Matches("^[a-zA-ZçÇğĞıİöÖşŞüÜəƏ]+$")
             .WithMessage("Middle name must contain only letters.");
 
-        RuleFor(model => model.PinCode)
+        RuleFor(model => model.Username)
             .NotEmpty().WithMessage("FIN code is required.")
             .Length(7).WithMessage("FIN code must be exactly 7 characters.")
             .Matches("^[A-HJ-NP-Z0-9]{7}$")
@@ -63,7 +52,7 @@ public class AppUserCreateValidator : AbstractValidator<AppUserSignUpDto>
 
         RuleFor(model => model.Gender)
             .NotEmpty().WithMessage("Gender is required.")
-            .Must(g => g is 'M' or 'F' or 'm' or 'f')
-            .WithMessage("Gender must be 'M' (Male) or 'F' (Female).");
+            .Must(g => g is 'K' or 'Q')
+        .WithMessage("Gender must be 'K' (Kisi) or 'Q' (Qadin).");
     }
 }

@@ -7,6 +7,7 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
+using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,18 +17,13 @@ namespace BGU.Application.Services;
 public class StudentService(
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
-    IUserRepository userRepository,
-    ITaughtSubjectRepository taughtSubjectRepository,
     ISeminarRepository seminarRepository,
     IIndependentWorkRepository independentWorkRepository,
     IAttendanceService attendanceService,
-    IColloquiumRepository colloquiumRepository) : IStudentService
-{
-    public async Task<StudentDashboardResponse> Dashboard(string userId)
-    {
+    IColloquiumRepository colloquiumRepository) : IStudentService {
+    public async Task<StudentDashboardResponse> Dashboard(string userId) {
         var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
+        if (user is null) {
             return new StudentDashboardResponse(null,
                 ResponseMessages.Unauthorized, false,
                 (int)StatusCode.Unauthorized);
@@ -46,8 +42,7 @@ public class StudentService(
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
-        if (student == null)
-        {
+        if (student == null) {
             return new StudentDashboardResponse(
                 null,
                 ResponseMessages.NotFound,
@@ -65,18 +60,17 @@ public class StudentService(
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
-                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start))
+                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
+                c.Room, c.TaughtSubject.Code
             ))
             .OrderBy(c => c.Period)
             .ToList();
         return new StudentDashboardResponse(new StudentDashboardDto(user.Name, classesToday), "Found", true, 200);
     }
 
-    public async Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request)
-    {
+    public async Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request) {
         var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
+        if (user is null) {
             return new StudentScheduleResponse(null,
                 ResponseMessages.Unauthorized, false,
                 (int)StatusCode.Unauthorized);
@@ -96,8 +90,7 @@ public class StudentService(
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
 
-        if (student == null)
-        {
+        if (student == null) {
             return new StudentScheduleResponse(
                 null,
                 ResponseMessages.NotFound,
@@ -106,8 +99,7 @@ public class StudentService(
             );
         }
 
-        if (request.Schedule == "week")
-        {
+        if (request.Schedule == "week") {
             var todayDate = DateTime.Today;
 
             int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
@@ -116,15 +108,13 @@ public class StudentService(
 
             var classesThisWeek = student.StudentAcademicInfo.Group.TaughtSubjects
                 .SelectMany(gs => gs.Classes)
-                .Where(c =>
-                {
+                .Where(c => {
                     // Map DaysOfTheWeek (1–5) to actual date
                     var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
 
                     return classDate >= weekStart && classDate <= weekEnd;
                 })
-                .Select(c =>
-                {
+                .Select(c => {
                     var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
                     var classDateTime = classDate.Add(c.ClassTime.Start);
 
@@ -133,7 +123,8 @@ public class StudentService(
                         c.TaughtSubject.Subject.Name,
                         c.ClassType.ToString(),
                         c.TaughtSubject.Teacher.AppUser.Name,
-                        new DateTimeOffset(classDateTime)
+                        new DateTimeOffset(classDateTime),
+                        c.Room, c.TaughtSubject.Code
                     );
                 })
                 .OrderBy(c => c.Period)
@@ -152,7 +143,8 @@ public class StudentService(
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
-                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start))
+                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
+                c.Room, c.TaughtSubject.Code
             ))
             .OrderBy(c => c.Period)
             .ToList();
@@ -162,11 +154,9 @@ public class StudentService(
 
 
     //TODO: REFACTOR THIS METHOD    
-    public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
-    {
+    public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request) {
         var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
+        if (user is null) {
             return new StudentGradesResponse(null, null,
                 ResponseMessages.Unauthorized, false,
                 (int)StatusCode.Unauthorized);
@@ -188,8 +178,7 @@ public class StudentService(
                 .Include(x => x.Attendances)
         )).FirstOrDefault();
 
-        if (student == null)
-        {
+        if (student == null) {
             return new StudentGradesResponse(
                 null,
                 null,
@@ -199,8 +188,7 @@ public class StudentService(
             );
         }
 
-        if (request.Grade == "sessions")
-        {
+        if (request.Grade == "sessions") {
             var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
                 .Select(c => new ClassSessions(
                     c.Subject.Name,
@@ -249,12 +237,10 @@ public class StudentService(
             "Ok", true, 200);
     }
 
-    public async Task<StudentProfileResponse> GetProfile(string userId)
-    {
+    public async Task<StudentProfileResponse> GetProfile(string userId) {
         var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            return new StudentProfileResponse(null, null,
+        if (user is null) {
+            return new StudentProfileResponse(null,
                 ResponseMessages.Unauthorized, false,
                 (int)StatusCode.Unauthorized);
         }
@@ -276,10 +262,8 @@ public class StudentService(
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
 
-        if (student == null)
-        {
+        if (student == null) {
             return new StudentProfileResponse(
-                null,
                 null,
                 ResponseMessages.NotFound,
                 false,
@@ -287,44 +271,40 @@ public class StudentService(
             );
         }
 
-        var studentAcademicInfo = new StudentAcademicInfoDto(user.Pin,user.Name, user.Surname, student.Id,
+        var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, user.UserName, student.Id,
             student.StudentAcademicInfo.Gpa, nameof(student.StudentAcademicInfo.Group.EducationLevel),
             student.StudentAcademicInfo.AdmissionYear.FirstYear, student.StudentAcademicInfo.Faculty.Name,
             student.StudentAcademicInfo.Specialization.Name);
 
-        var studentProfileInfo = new StudentPersonalInfo(user.Email!, user.BornDate);
-        return new StudentProfileResponse(studentAcademicInfo, studentProfileInfo, ResponseMessages.Success, true,
+        return new StudentProfileResponse(studentAcademicInfo, ResponseMessages.Success, true,
             (int)StatusCode.Ok);
     }
 
-    public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
-    {
+    public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year) {
         var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
             .Include(st => st.StudentAcademicInfo)
             .ThenInclude(st => st.Group)
             .Include(st => st.StudentAcademicInfo.AdmissionYear)
             .Include(st => st.StudentAcademicInfo.Specialization)
             .Include(st => st.AppUser))).ToList();
-        if (students.Count == 0)
-        {
+        if (students.Count == 0) {
             return new GetStudentResponse([], StatusCode.NotFound, true, ResponseMessages.NotFound);
         }
 
-        if (groupId is not null)
-        {
+        if (groupId is not null) {
             students = students.Where(x => x.StudentAcademicInfo.GroupId == groupId).ToList();
         }
 
-        if (year is not null && students.Count is not 0)
-        {
+        if (year is not null && students.Count is not 0) {
             students = students.Where(x => GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now) == year)
                 .ToList();
         }
 
         return new GetStudentResponse(students.Count == 0
                 ? []
-                : students.Select(x => new GetStudentDto(x.Id,
-                    x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
+                : students.Select(x => new GetStudentDto(
+                    x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName, x.AppUser.UserName,
+                    x.StudentAcademicInfo.Group.Code,
                     GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
@@ -333,16 +313,13 @@ public class StudentService(
             ResponseMessages.Success);
     }
 
-    public async Task<GetStudentResponse> SearchAsync(string? searchString)
-    {
+    public async Task<GetStudentResponse> SearchAsync(string? searchString) {
         var users = await userManager.GetUsersInRoleAsync("Student");
-        if (users.Count is 0)
-        {
+        if (users.Count is 0) {
             return new GetStudentResponse([], StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        if (searchString is null)
-        {
+        if (searchString is null) {
             return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }
 
@@ -366,8 +343,8 @@ public class StudentService(
         return new GetStudentResponse(students.Count == 0
                 ? []
                 : students.Select(x => new GetStudentDto(
-                    x!.Id,
-                    x.AppUser.Name + " " + x.AppUser.Surname,
+                    x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
+                    x.AppUser.UserName,
                     x.StudentAcademicInfo.Group.Code,
                     GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
                     x.StudentAcademicInfo.Specialization.Name,
@@ -380,8 +357,7 @@ public class StudentService(
         );
     }
 
-    public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize)
-    {
+    public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize) {
         var students =
             (await studentRepository.GetAllAsync(page, pageSize, false,
                 x => x
@@ -391,7 +367,8 @@ public class StudentService(
                     .Include(st => st.StudentAcademicInfo.Specialization)
                     .Include(st => st.AppUser)))
             .Select(x =>
-                new GetStudentDto(x.Id, x.AppUser.Name + "  " + x.AppUser.Surname, x.StudentAcademicInfo.Group.Code,
+                new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
+                    x.AppUser.UserName, x.StudentAcademicInfo.Group.Code,
                     GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
@@ -400,27 +377,23 @@ public class StudentService(
     }
 
     public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string teacherId,
-        string taughtSubjectId, string classId)
-    {
+        string taughtSubjectId, string classId) {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
                 .Include(e => e.StudentAcademicInfo)
                 .ThenInclude(e => e.Group), tracking: true);
-        if (student is null)
-        {
+        if (student is null) {
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
                 $"Student with id {studentId} not found ");
         }
 
         var attendance = student.Attendances.FirstOrDefault(x => x.ClassId == classId);
-        if (attendance is null)
-        {
+        if (attendance is null) {
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
         }
 
         var res = await attendanceService.UpdateAttendanceAsync(attendance);
-        if (!res.IsSucceeded)
-        {
+        if (!res.IsSucceeded) {
             return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
                 $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
         }
@@ -429,12 +402,11 @@ public class StudentService(
             $"Attendance status of the student with an Id of {student.Id} updated successfully");
     }
 
-    public async Task<GradeStudentColloquiumResponse> GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request)
-    {
+    public async Task<GradeStudentColloquiumResponse>
+        GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request) {
         // var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: true);
         var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
-        if (colloquium is null)
-        {
+        if (colloquium is null) {
             return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false,
                 $"Colloquium with an Id of {request.ColloquiumId} not found");
         }
@@ -447,11 +419,9 @@ public class StudentService(
     }
 
     public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
-        GradeIndependentWorkRequest request)
-    {
+        GradeIndependentWorkRequest request) {
         var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
-        if (independentWork is null)
-        {
+        if (independentWork is null) {
             return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
                 $"independent work with an Id of {request.IndependentWorkId} not found");
         }
@@ -463,11 +433,9 @@ public class StudentService(
                 "An error occured while updating the grade");
     }
 
-    public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
-    {
+    public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request) {
         var colloquium = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
-        if (colloquium is null)
-        {
+        if (colloquium is null) {
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with an Id of {request.SeminarId} not found");
         }
@@ -486,8 +454,7 @@ public class StudentService(
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
 
-    private static int GetYear(DateTime start, DateTime end)
-    {
+    private static int GetYear(DateTime start, DateTime end) {
         var years = (end - start).TotalDays / 365.2425;
         return years < 1 ? 1 : (int)years;
     }

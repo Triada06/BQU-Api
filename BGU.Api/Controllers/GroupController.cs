@@ -1,5 +1,6 @@
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.Group.Requests;
+using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,13 @@ public class GroupController(IGroupService groupService) : ControllerBase
         var res = await groupService.GetByIdAsync(id);
         return new ObjectResult(res);
     }
-
+    
+    [HttpGet(ApiEndPoints.Group.Schedule)]
+    public async Task<IActionResult> Schedule(string id)
+    {
+        var data = await groupService.GetSchedule(id);
+        return Ok(data);
+    }
     [HttpDelete(ApiEndPoints.Group.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {

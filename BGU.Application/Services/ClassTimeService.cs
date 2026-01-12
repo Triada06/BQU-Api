@@ -8,8 +8,7 @@ using BGU.Infrastructure.Repositories.Interfaces;
 
 namespace BGU.Application.Services;
 
-public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRepository classRepository)
-    : IClassTimeService
+public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRepository classRepository): IClassTimeService
 {
     public async Task<CreateClassTimeResponse> CreateAsync(CreateClassTimeRequest request)
     {

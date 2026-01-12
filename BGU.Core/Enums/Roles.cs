@@ -1,8 +1,7 @@
 namespace BGU.Core.Enums;
 
-public enum Roles
-{
+public enum Roles {
     Student,
     Teacher,
     Dean,
-    }
+}

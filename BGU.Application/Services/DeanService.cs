@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
-public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> userManager) : IDeanService
+public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> userManager): IDeanService
 {
     public async Task<DeanProfileResponse> GetProfile(string userId)
     {
@@ -35,8 +35,7 @@ public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> us
             );
         }
 
-        var dto = new DeanProfileDto(dean.AppUser.Name, dean.AppUser.Surname, dean.Id, dean.Faculty.Name,
-            dean.AppUser.Email!, dean.PhoneNumber, dean.AppUser.Pin, dean.AppUser.BornDate);
+        var dto = new DeanProfileDto(dean.AppUser.Name, dean.AppUser.Surname, dean.AppUser.UserName, dean.Faculty.Name, dean.RoleName);
         return new DeanProfileResponse(
             dto,
             ResponseMessages.Success,
