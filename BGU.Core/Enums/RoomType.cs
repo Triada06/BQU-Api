@@ -1,1 +1,0 @@
-namespace BGU.Core.Enums;

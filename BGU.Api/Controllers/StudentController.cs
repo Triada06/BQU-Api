@@ -39,7 +39,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Grades)]
-    public async Task<IActionResult> Grades(string grade) //todo: test this feat with data
+    public async Task<IActionResult> Grades(string grade) 
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)

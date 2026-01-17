@@ -91,6 +91,8 @@ public static class ApiEndPoints
         public const string Delete = $"{Base}/{{id}}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetAllColloquiums = $"{Base}/{{taughtSubjectId}}/colloquiums";
+        public const string GetStudentsAndAttendances = $"{Base}/{{taughtSubjectId}}/classes";
+        public const string GetStudentsInSubject = $"{Base}/{{taughtSubjectId}}/students";
         
     }
 

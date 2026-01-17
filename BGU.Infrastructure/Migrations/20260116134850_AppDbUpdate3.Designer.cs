@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260104094431_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260116134850_AppDbUpdate3")]
+    partial class AppDbUpdate3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

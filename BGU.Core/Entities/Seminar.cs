@@ -4,6 +4,8 @@ namespace BGU.Core.Entities;
 
 public class Seminar : BaseEntity
 {
+    public string? Topic { get; set; }
+    
     public string StudentId { get; set; }
     public Student Student { get; set; }
 

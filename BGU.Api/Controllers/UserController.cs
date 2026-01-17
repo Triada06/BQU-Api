@@ -1,10 +1,7 @@
 using BGU.Api.Helpers;
 using BGU.Application.Dtos.AppUser;
-using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
-using BGU.Core.Entities;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;
@@ -23,5 +20,9 @@ public class UserController(IUserService userService) : ControllerBase
         }
         return Ok(res);
     }
-    
+    //TODO: Manage grades teacher + 
+    //TODO: Add a column to seminar "Topic" + ( awaits migration ) 
+    //TODO: Get Current Taught Subject Students + 
+    //TODO: Remove IsSucceeded, ResponseMessage ( will be discussed again ) 
+    //TODO: Update the Formula for GPA + 
 }

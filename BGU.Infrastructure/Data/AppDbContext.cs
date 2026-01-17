@@ -45,7 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
             b.HasIndex(u => u.NormalizedUserName).IsUnique();
         });
-        
+
         builder.Entity<Room>()
             .Property(x => x.Name)
             .HasMaxLength(20);
@@ -57,6 +57,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(f => f.Dean)
             .WithOne(d => d.Faculty)
             .HasForeignKey<Dean>(d => d.FacultyId);
+
+        builder.Entity<Seminar>().Property(x => x.Topic).HasMaxLength(50);
 
         foreach (var entityType in builder.Model.GetEntityTypes())
         {

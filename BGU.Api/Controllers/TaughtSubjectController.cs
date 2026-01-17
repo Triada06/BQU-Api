@@ -10,7 +10,6 @@ namespace BGU.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Dean")]
-//todo: test the whole controller
 public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService, IColloquiumService colloquiumService)
     : ControllerBase
 {
@@ -53,6 +52,20 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
     public async Task<IActionResult> GetAllColloquiums([FromRoute] string taughtSubjectId)
     {
         var res = await colloquiumService.GetAllAsync(taughtSubjectId);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsAndAttendances)]
+    public async Task<IActionResult> GetStudentsAndAttendances([FromRoute] string taughtSubjectId)
+    {
+        var res = await taughtSubjectService.GetStudentsAndAttendances(taughtSubjectId);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsInSubject)]
+    public async Task<IActionResult> GetStudentsInSubject([FromRoute] string taughtSubjectId)
+    {
+        var res = await taughtSubjectService.GetStudentsAsync(taughtSubjectId);
         return new ObjectResult(res);
     }
 }
