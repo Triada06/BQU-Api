@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,12 +48,10 @@ namespace BGU.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
                     Surname = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
                     MiddleName = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
-                    Pin = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    Sex = table.Column<char>(type: "character(1)", nullable: false),
-                    BornDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Gender = table.Column<char>(type: "character(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
@@ -77,28 +75,16 @@ namespace BGU.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
+                    IsUpperWeek = table.Column<bool>(type: "boolean", nullable: false),
                     Start = table.Column<TimeSpan>(type: "interval", nullable: false),
                     End = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    DaysOfTheWeek = table.Column<int>(type: "integer", nullable: false),
+                    DaysOfTheWeek = table.Column<string>(type: "text", nullable: false),
+                    ClassDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ClassTimes", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Decrees",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    Number = table.Column<string>(type: "text", nullable: false),
-                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Decrees", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -115,17 +101,17 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LectureHalls",
+                name: "Rooms",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Capacity = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LectureHalls", x => x.Id);
+                    table.PrimaryKey("PK_Rooms", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -235,6 +221,71 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Students",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    AppUserId = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Students", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Students_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Teachers",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    AppUserId = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Teachers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Teachers_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Deans",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    AppUserId = table.Column<string>(type: "text", nullable: false),
+                    FacultyId = table.Column<string>(type: "text", nullable: false),
+                    RoleName = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Deans", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Deans_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deans_Faculties_FacultyId",
+                        column: x => x.FacultyId,
+                        principalTable: "Faculties",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Departments",
                 columns: table => new
                 {
@@ -281,7 +332,6 @@ namespace BGU.Infrastructure.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     CreditsNumber = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    TeacherCode = table.Column<string>(type: "text", nullable: false),
                     DepartmentId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -302,9 +352,8 @@ namespace BGU.Infrastructure.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     DepartmentId = table.Column<string>(type: "text", nullable: false),
-                    TeachingPosition = table.Column<int>(type: "integer", nullable: false),
-                    TypeOfContract = table.Column<int>(type: "integer", nullable: false),
-                    State = table.Column<int>(type: "integer", nullable: false),
+                    TeachingPosition = table.Column<string>(type: "text", nullable: false),
+                    TeacherId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -316,6 +365,12 @@ namespace BGU.Infrastructure.Migrations
                         principalTable: "Departments",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TeacherAcademicInfos_Teachers_TeacherId",
+                        column: x => x.TeacherId,
+                        principalTable: "Teachers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -325,8 +380,8 @@ namespace BGU.Infrastructure.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     Code = table.Column<string>(type: "text", nullable: false),
                     AdmissionYearId = table.Column<string>(type: "text", nullable: false),
-                    EducationLanguage = table.Column<int>(type: "integer", nullable: false),
-                    EducationLevel = table.Column<int>(type: "integer", nullable: false),
+                    EducationLanguage = table.Column<string>(type: "text", nullable: false),
+                    EducationLevel = table.Column<string>(type: "text", nullable: false),
                     SpecializationId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -348,25 +403,6 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Teachers",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    TeacherAcademicInfoId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Teachers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Teachers_TeacherAcademicInfos_TeacherAcademicInfoId",
-                        column: x => x.TeacherAcademicInfoId,
-                        principalTable: "TeacherAcademicInfos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "StudentAcademicInfos",
                 columns: table => new
                 {
@@ -376,8 +412,10 @@ namespace BGU.Infrastructure.Migrations
                     SpecializationId = table.Column<string>(type: "text", nullable: false),
                     GroupId = table.Column<string>(type: "text", nullable: false),
                     AdmissionYearId = table.Column<string>(type: "text", nullable: false),
-                    EducationLanguage = table.Column<int>(type: "integer", nullable: false),
-                    FormOfEducation = table.Column<int>(type: "integer", nullable: false),
+                    EducationLanguage = table.Column<string>(type: "text", nullable: false),
+                    FormOfEducation = table.Column<string>(type: "text", nullable: false),
+                    StudentId = table.Column<string>(type: "text", nullable: false),
+                    Gpa = table.Column<double>(type: "double precision", nullable: false),
                     AdmissionScore = table.Column<double>(type: "double precision", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -408,6 +446,12 @@ namespace BGU.Infrastructure.Migrations
                         principalTable: "Specializations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StudentAcademicInfos_Students_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Students",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -415,9 +459,11 @@ namespace BGU.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
+                    Code = table.Column<string>(type: "text", nullable: false),
                     SubjectId = table.Column<string>(type: "text", nullable: false),
                     TeacherId = table.Column<string>(type: "text", nullable: false),
                     GroupId = table.Column<string>(type: "text", nullable: false),
+                    Hours = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -444,31 +490,12 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Students",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    AcademicInfoId = table.Column<string>(type: "text", nullable: false),
-                    StudentAcademicInfoId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Students", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Students_StudentAcademicInfos_StudentAcademicInfoId",
-                        column: x => x.StudentAcademicInfoId,
-                        principalTable: "StudentAcademicInfos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Classes",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    ClassType = table.Column<int>(type: "integer", nullable: false),
+                    Room = table.Column<string>(type: "text", nullable: false),
+                    ClassType = table.Column<string>(type: "text", nullable: false),
                     TaughtSubjectId = table.Column<string>(type: "text", nullable: false),
                     ClassTimeId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -491,11 +518,11 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Colloquia",
+                name: "Colloquiums",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    Grade = table.Column<int>(type: "integer", nullable: false),
+                    Grade = table.Column<string>(type: "text", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     StudentId = table.Column<string>(type: "text", nullable: false),
@@ -504,15 +531,15 @@ namespace BGU.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Colloquia", x => x.Id);
+                    table.PrimaryKey("PK_Colloquiums", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Colloquia_Students_StudentId",
+                        name: "FK_Colloquiums_Students_StudentId",
                         column: x => x.StudentId,
                         principalTable: "Students",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Colloquia_TaughtSubjects_TaughtSubjectId",
+                        name: "FK_Colloquiums_TaughtSubjects_TaughtSubjectId",
                         column: x => x.TaughtSubjectId,
                         principalTable: "TaughtSubjects",
                         principalColumn: "Id",
@@ -524,7 +551,7 @@ namespace BGU.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    Grade = table.Column<int>(type: "integer", nullable: false),
+                    Grade = table.Column<string>(type: "text", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     StudentId = table.Column<string>(type: "text", nullable: false),
@@ -555,6 +582,7 @@ namespace BGU.Infrastructure.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     IsAccepted = table.Column<bool>(type: "boolean", nullable: false),
                     IsConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    IsPassed = table.Column<bool>(type: "boolean", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StudentId = table.Column<string>(type: "text", nullable: false),
                     TaughtSubjectId = table.Column<string>(type: "text", nullable: false),
@@ -578,20 +606,102 @@ namespace BGU.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Seminars",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Topic = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    StudentId = table.Column<string>(type: "text", nullable: false),
+                    TaughtSubjectId = table.Column<string>(type: "text", nullable: false),
+                    GotAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Grade = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Seminars", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Seminars_Students_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Students",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Seminars_TaughtSubjects_TaughtSubjectId",
+                        column: x => x.TaughtSubjectId,
+                        principalTable: "TaughtSubjects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Syllabus",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FilePath = table.Column<string>(type: "text", nullable: false),
+                    TaughtSubjectId = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Syllabus", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Syllabus_TaughtSubjects_TaughtSubjectId",
+                        column: x => x.TaughtSubjectId,
+                        principalTable: "TaughtSubjects",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Attendances",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    StudentId = table.Column<string>(type: "text", nullable: false),
+                    ClassId = table.Column<string>(type: "text", nullable: false),
+                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsAbsent = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Attendances", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Attendances_Classes_ClassId",
+                        column: x => x.ClassId,
+                        principalTable: "Classes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Attendances_Students_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Students",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AcademicPerformances",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     StudentId = table.Column<string>(type: "text", nullable: false),
                     ClassId = table.Column<string>(type: "text", nullable: false),
-                    Grade = table.Column<int>(type: "integer", nullable: false),
-                    Attendance = table.Column<int>(type: "integer", nullable: false),
+                    Grade = table.Column<string>(type: "text", nullable: false),
+                    AttendanceId = table.Column<string>(type: "text", nullable: true),
                     IsConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AcademicPerformances", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AcademicPerformances_Attendances_AttendanceId",
+                        column: x => x.AttendanceId,
+                        principalTable: "Attendances",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AcademicPerformances_Classes_ClassId",
                         column: x => x.ClassId,
@@ -605,6 +715,11 @@ namespace BGU.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AcademicPerformances_AttendanceId",
+                table: "AcademicPerformances",
+                column: "AttendanceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AcademicPerformances_ClassId",
@@ -654,6 +769,16 @@ namespace BGU.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Attendances_ClassId",
+                table: "Attendances",
+                column: "ClassId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attendances_StudentId",
+                table: "Attendances",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Classes_ClassTimeId",
                 table: "Classes",
                 column: "ClassTimeId");
@@ -664,14 +789,25 @@ namespace BGU.Infrastructure.Migrations
                 column: "TaughtSubjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Colloquia_StudentId",
-                table: "Colloquia",
+                name: "IX_Colloquiums_StudentId",
+                table: "Colloquiums",
                 column: "StudentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Colloquia_TaughtSubjectId",
-                table: "Colloquia",
+                name: "IX_Colloquiums_TaughtSubjectId",
+                table: "Colloquiums",
                 column: "TaughtSubjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deans_AppUserId",
+                table: "Deans",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deans_FacultyId",
+                table: "Deans",
+                column: "FacultyId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Departments_FacultyId",
@@ -709,6 +845,16 @@ namespace BGU.Infrastructure.Migrations
                 column: "TaughtSubjectId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Seminars_StudentId",
+                table: "Seminars",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Seminars_TaughtSubjectId",
+                table: "Seminars",
+                column: "TaughtSubjectId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Specializations_FacultyId",
                 table: "Specializations",
                 column: "FacultyId");
@@ -734,14 +880,26 @@ namespace BGU.Infrastructure.Migrations
                 column: "SpecializationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Students_StudentAcademicInfoId",
+                name: "IX_StudentAcademicInfos_StudentId",
+                table: "StudentAcademicInfos",
+                column: "StudentId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Students_AppUserId",
                 table: "Students",
-                column: "StudentAcademicInfoId");
+                column: "AppUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Subjects_DepartmentId",
                 table: "Subjects",
                 column: "DepartmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Syllabus_TaughtSubjectId",
+                table: "Syllabus",
+                column: "TaughtSubjectId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TaughtSubjects_GroupId",
@@ -764,9 +922,15 @@ namespace BGU.Infrastructure.Migrations
                 column: "DepartmentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Teachers_TeacherAcademicInfoId",
+                name: "IX_TeacherAcademicInfos_TeacherId",
+                table: "TeacherAcademicInfos",
+                column: "TeacherId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Teachers_AppUserId",
                 table: "Teachers",
-                column: "TeacherAcademicInfoId");
+                column: "AppUserId");
         }
 
         /// <inheritdoc />
@@ -791,10 +955,10 @@ namespace BGU.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Colloquia");
+                name: "Colloquiums");
 
             migrationBuilder.DropTable(
-                name: "Decrees");
+                name: "Deans");
 
             migrationBuilder.DropTable(
                 name: "Exams");
@@ -803,16 +967,28 @@ namespace BGU.Infrastructure.Migrations
                 name: "IndependentWorks");
 
             migrationBuilder.DropTable(
-                name: "LectureHalls");
+                name: "Rooms");
 
             migrationBuilder.DropTable(
-                name: "Classes");
+                name: "Seminars");
+
+            migrationBuilder.DropTable(
+                name: "StudentAcademicInfos");
+
+            migrationBuilder.DropTable(
+                name: "Syllabus");
+
+            migrationBuilder.DropTable(
+                name: "TeacherAcademicInfos");
+
+            migrationBuilder.DropTable(
+                name: "Attendances");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Classes");
 
             migrationBuilder.DropTable(
                 name: "Students");
@@ -824,19 +1000,13 @@ namespace BGU.Infrastructure.Migrations
                 name: "TaughtSubjects");
 
             migrationBuilder.DropTable(
-                name: "StudentAcademicInfos");
+                name: "Groups");
 
             migrationBuilder.DropTable(
                 name: "Subjects");
 
             migrationBuilder.DropTable(
                 name: "Teachers");
-
-            migrationBuilder.DropTable(
-                name: "Groups");
-
-            migrationBuilder.DropTable(
-                name: "TeacherAcademicInfos");
 
             migrationBuilder.DropTable(
                 name: "AdmissionYears");
@@ -846,6 +1016,9 @@ namespace BGU.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Departments");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Faculties");

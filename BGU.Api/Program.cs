@@ -137,7 +137,6 @@ builder.Services.AddCors(options =>
     );
 });
 
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -146,15 +145,12 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-    if (!await roleManager.RoleExistsAsync("Dean"))
-        await roleManager.CreateAsync(new IdentityRole("Dean"));
+    Console.WriteLine("=== SEED START ===");
+    await db.Database.MigrateAsync();
 
-    if (!await roleManager.RoleExistsAsync("Student"))
-        await roleManager.CreateAsync(new IdentityRole("Student"));
-    
-    if (!await roleManager.RoleExistsAsync("Teacher"))
-        await roleManager.CreateAsync(new IdentityRole("Teacher"));
-    
+    foreach (var role in new[] { "Dean", "Student", "Teacher" })
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));    
     
     const string roomName = "Otaq 317";
     
@@ -241,6 +237,7 @@ using (var scope = app.Services.CreateScope())
 
         await db.SaveChangesAsync();
     }
+    Console.WriteLine("=== SEED END ===");
 }
 
 app.UseStaticFiles();

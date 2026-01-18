@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251119172006_RefactoredDb")]
-    partial class RefactoredDb
+    [Migration("20260118162543_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,8 +40,9 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Grade")
-                        .HasColumnType("integer");
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsConfirmed")
                         .HasColumnType("boolean");
@@ -88,9 +89,6 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("BornDate")
-                        .HasColumnType("date");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
@@ -129,6 +127,7 @@ namespace BGU.Infrastructure.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<string>("NormalizedUserName")
+                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -140,11 +139,6 @@ namespace BGU.Infrastructure.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("Pin")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
@@ -158,6 +152,7 @@ namespace BGU.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("UserName")
+                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -182,9 +177,6 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ClassSessionId")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -202,8 +194,6 @@ namespace BGU.Infrastructure.Migrations
 
                     b.HasIndex("ClassId");
 
-                    b.HasIndex("ClassSessionId");
-
                     b.HasIndex("StudentId");
 
                     b.ToTable("Attendances");
@@ -218,11 +208,16 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("ClassType")
-                        .HasColumnType("integer");
+                    b.Property<string>("ClassType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Room")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("TaughtSubjectId")
                         .IsRequired()
@@ -237,41 +232,26 @@ namespace BGU.Infrastructure.Migrations
                     b.ToTable("Classes");
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.ClassSession", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TaughtSubjectId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TaughtSubjectId");
-
-                    b.ToTable("ClassSessions");
-                });
-
             modelBuilder.Entity("BGU.Core.Entities.ClassTime", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset>("ClassDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("DaysOfTheWeek")
-                        .HasColumnType("integer");
+                    b.Property<string>("DaysOfTheWeek")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<TimeSpan>("End")
                         .HasColumnType("interval");
+
+                    b.Property<bool>("IsUpperWeek")
+                        .HasColumnType("boolean");
 
                     b.Property<TimeSpan>("Start")
                         .HasColumnType("interval");
@@ -292,8 +272,9 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Grade")
-                        .HasColumnType("integer");
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsConfirmed")
                         .HasColumnType("boolean");
@@ -315,24 +296,34 @@ namespace BGU.Infrastructure.Migrations
                     b.ToTable("Colloquiums");
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.Decree", b =>
+            modelBuilder.Entity("BGU.Core.Entities.Dean", b =>
                 {
                     b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("FacultyId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<string>("Number")
+                    b.Property<string>("RoleName")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Decrees");
+                    b.HasIndex("AppUserId");
+
+                    b.HasIndex("FacultyId")
+                        .IsUnique();
+
+                    b.ToTable("Deans");
                 });
 
             modelBuilder.Entity("BGU.Core.Entities.Department", b =>
@@ -369,8 +360,9 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Grade")
-                        .HasColumnType("integer");
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsConfirmed")
                         .HasColumnType("boolean");
@@ -425,11 +417,13 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("EducationLanguage")
-                        .HasColumnType("integer");
+                    b.Property<string>("EducationLanguage")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int>("EducationLevel")
-                        .HasColumnType("integer");
+                    b.Property<string>("EducationLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("SpecializationId")
                         .IsRequired()
@@ -481,7 +475,7 @@ namespace BGU.Infrastructure.Migrations
                     b.ToTable("IndependentWorks");
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.LectureHall", b =>
+            modelBuilder.Entity("BGU.Core.Entities.Room", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -494,11 +488,12 @@ namespace BGU.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("LectureHalls");
+                    b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("BGU.Core.Entities.Seminar", b =>
@@ -512,8 +507,9 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("GotAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Grade")
-                        .HasColumnType("integer");
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("StudentId")
                         .IsRequired()
@@ -522,6 +518,10 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<string>("TaughtSubjectId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
@@ -592,15 +592,17 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<int>("DecreeNumber")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EducationLanguage")
-                        .HasColumnType("integer");
+                    b.Property<string>("EducationLanguage")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("FacultyId")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("FormOfEducation")
-                        .HasColumnType("integer");
+                    b.Property<string>("FormOfEducation")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<double>("Gpa")
                         .HasColumnType("double precision");
@@ -652,10 +654,6 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("TeacherCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
@@ -663,9 +661,41 @@ namespace BGU.Infrastructure.Migrations
                     b.ToTable("Subjects");
                 });
 
+            modelBuilder.Entity("BGU.Core.Entities.Syllabus", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TaughtSubjectId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaughtSubjectId")
+                        .IsUnique();
+
+                    b.ToTable("Syllabus");
+                });
+
             modelBuilder.Entity("BGU.Core.Entities.TaughtSubject", b =>
                 {
                     b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -728,18 +758,13 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("State")
-                        .HasColumnType("integer");
-
                     b.Property<string>("TeacherId")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("TeachingPosition")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TypeOfContract")
-                        .HasColumnType("integer");
+                    b.Property<string>("TeachingPosition")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -916,10 +941,6 @@ namespace BGU.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BGU.Core.Entities.ClassSession", null)
-                        .WithMany("Attendances")
-                        .HasForeignKey("ClassSessionId");
-
                     b.HasOne("BGU.Core.Entities.Student", "Student")
                         .WithMany("Attendances")
                         .HasForeignKey("StudentId")
@@ -950,17 +971,6 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("TaughtSubject");
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.ClassSession", b =>
-                {
-                    b.HasOne("BGU.Core.Entities.TaughtSubject", "TaughtSubject")
-                        .WithMany("ClassSessions")
-                        .HasForeignKey("TaughtSubjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TaughtSubject");
-                });
-
             modelBuilder.Entity("BGU.Core.Entities.Colloquiums", b =>
                 {
                     b.HasOne("BGU.Core.Entities.Student", "Student")
@@ -980,6 +990,25 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("TaughtSubject");
                 });
 
+            modelBuilder.Entity("BGU.Core.Entities.Dean", b =>
+                {
+                    b.HasOne("BGU.Core.Entities.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BGU.Core.Entities.Faculty", "Faculty")
+                        .WithOne("Dean")
+                        .HasForeignKey("BGU.Core.Entities.Dean", "FacultyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AppUser");
+
+                    b.Navigation("Faculty");
+                });
+
             modelBuilder.Entity("BGU.Core.Entities.Department", b =>
                 {
                     b.HasOne("BGU.Core.Entities.Faculty", "Faculty")
@@ -994,7 +1023,7 @@ namespace BGU.Infrastructure.Migrations
             modelBuilder.Entity("BGU.Core.Entities.Exam", b =>
                 {
                     b.HasOne("BGU.Core.Entities.Student", "Student")
-                        .WithMany()
+                        .WithMany("Finals")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1019,7 +1048,7 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("BGU.Core.Entities.Specialization", "Specialization")
-                        .WithMany()
+                        .WithMany("Groups")
                         .HasForeignKey("SpecializationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1104,7 +1133,7 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("BGU.Core.Entities.Group", "Group")
-                        .WithMany()
+                        .WithMany("Students")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1143,6 +1172,15 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("Department");
                 });
 
+            modelBuilder.Entity("BGU.Core.Entities.Syllabus", b =>
+                {
+                    b.HasOne("BGU.Core.Entities.TaughtSubject", "TaughtSubject")
+                        .WithOne("Syllabus")
+                        .HasForeignKey("BGU.Core.Entities.Syllabus", "TaughtSubjectId");
+
+                    b.Navigation("TaughtSubject");
+                });
+
             modelBuilder.Entity("BGU.Core.Entities.TaughtSubject", b =>
                 {
                     b.HasOne("BGU.Core.Entities.Group", "Group")
@@ -1158,7 +1196,7 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("BGU.Core.Entities.Teacher", "Teacher")
-                        .WithMany()
+                        .WithMany("TaughtSubjects")
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1251,13 +1289,11 @@ namespace BGU.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("BGU.Core.Entities.ClassSession", b =>
-                {
-                    b.Navigation("Attendances");
-                });
-
             modelBuilder.Entity("BGU.Core.Entities.Faculty", b =>
                 {
+                    b.Navigation("Dean")
+                        .IsRequired();
+
                     b.Navigation("Departments");
 
                     b.Navigation("Specializations");
@@ -1265,7 +1301,14 @@ namespace BGU.Infrastructure.Migrations
 
             modelBuilder.Entity("BGU.Core.Entities.Group", b =>
                 {
+                    b.Navigation("Students");
+
                     b.Navigation("TaughtSubjects");
+                });
+
+            modelBuilder.Entity("BGU.Core.Entities.Specialization", b =>
+                {
+                    b.Navigation("Groups");
                 });
 
             modelBuilder.Entity("BGU.Core.Entities.Student", b =>
@@ -1273,6 +1316,8 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("Attendances");
 
                     b.Navigation("Colloquiums");
+
+                    b.Navigation("Finals");
 
                     b.Navigation("IndependentWorks");
 
@@ -1284,8 +1329,6 @@ namespace BGU.Infrastructure.Migrations
 
             modelBuilder.Entity("BGU.Core.Entities.TaughtSubject", b =>
                 {
-                    b.Navigation("ClassSessions");
-
                     b.Navigation("Classes");
 
                     b.Navigation("Colloquiums");
@@ -1293,10 +1336,14 @@ namespace BGU.Infrastructure.Migrations
                     b.Navigation("IndependentWorks");
 
                     b.Navigation("Seminars");
+
+                    b.Navigation("Syllabus");
                 });
 
             modelBuilder.Entity("BGU.Core.Entities.Teacher", b =>
                 {
+                    b.Navigation("TaughtSubjects");
+
                     b.Navigation("TeacherAcademicInfo")
                         .IsRequired();
                 });
