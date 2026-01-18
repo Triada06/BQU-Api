@@ -1,9 +1,6 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
-using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.Student.Requests;
-using BGU.Application.Contracts.Student.Responses;
-using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
