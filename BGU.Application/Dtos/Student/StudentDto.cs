@@ -1,5 +1,3 @@
-using BGU.Core.Enums;
-
 namespace BGU.Application.Dtos.Student;
 
 public record StudentDto(
@@ -7,9 +5,6 @@ public record StudentDto(
     string Surname,
     string MiddleName,
     string UserName,
-    char Gender,
     string GroupName,
-    int DecreeNumber,
-    double AdmissionScore,
-    FormOfEducation FormOfEducation
+    double AdmissionScore
 );

@@ -221,7 +221,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             return new GetByIdTeacherResponse(null, ResponseMessages.NotFound, false, StatusCode.NotFound);
         return new GetByIdTeacherResponse(
             new GetTeacherDto(teacher.Id,teacher.AppUser.Name, teacher.AppUser.Surname,
-                teacher.AppUser.MiddleName, teacher.AppUser.UserName, teacher.AppUser.Gender,
+                teacher.AppUser.MiddleName, teacher.AppUser.UserName,
                 teacher.TeacherAcademicInfo.DepartmentId, teacher.TeacherAcademicInfo.TeachingPosition),
             ResponseMessages.Success,
             true, StatusCode.Ok);
@@ -235,7 +235,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         return new GetAllTeachersResponse(
             teachers.Select(x => new GetTeacherDto(x.Id,x.AppUser.Name,
                 x.AppUser.Surname, x.AppUser.MiddleName,
-                x.AppUser.UserName!, x.AppUser.Gender,
+                x.AppUser.UserName!, 
                 x.TeacherAcademicInfo.DepartmentId, x.TeacherAcademicInfo.TeachingPosition)),
             ResponseMessages.Success,
             true, StatusCode.Ok);

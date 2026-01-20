@@ -340,7 +340,7 @@ public class StudentService(
                 : students.Select(x => new GetStudentDto(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName, x.AppUser.UserName,
                     x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
                     x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore)),
@@ -384,7 +384,7 @@ public class StudentService(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName,
                     x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), 
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
                     x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore
@@ -408,7 +408,7 @@ public class StudentService(
             .Select(x =>
                 new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), x.AppUser.Gender,
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), 
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
                     x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore));

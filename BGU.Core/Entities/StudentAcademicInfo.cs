@@ -4,8 +4,6 @@ namespace BGU.Core.Entities;
 
 public class StudentAcademicInfo : BaseEntity
 {
-    public int DecreeNumber { get; set; }
-
     public string FacultyId { get; set; }
     public Faculty Faculty { get; set; }
 
@@ -17,9 +15,6 @@ public class StudentAcademicInfo : BaseEntity
 
     public string AdmissionYearId { get; set; }
     public AdmissionYear AdmissionYear { get; set; }
-
-    public EducationLanguage EducationLanguage { get; set; }
-    public FormOfEducation FormOfEducation { get; set; }
 
     public string StudentId { get; set; }
     public Student Student { get; set; }

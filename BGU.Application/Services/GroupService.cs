@@ -20,8 +20,15 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                         .Include(e => e.Students)
                         .Include(e => e.AdmissionYear)
             ))
-            .Select(x => new GroupDto(x.Id, x.Code, x.Specialization.Name,
-                DateTime.Now.Year - x.AdmissionYear.FirstYear, x.Students.Count));
+            .Select(x => new GroupDto(
+                x.Id, 
+                x.Code,
+                x.Specialization.Name,
+                x.EducationLanguage.ToString(),
+                x.EducationLevel.ToString(),
+                DateTime.Now.Year - x.AdmissionYear.FirstYear, 
+                x.Students.Count)
+            );
         return new GetAllGroupsResponse(groups, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
@@ -38,8 +45,16 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
             return new GetByIdGroupsResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        return new GetByIdGroupsResponse(new GroupDto(group.Id, group.Code, group.Specialization.Name,
-                DateTime.Now.Year - group.AdmissionYear.FirstYear, group.Students.Count), StatusCode.Ok, true,
+        return new GetByIdGroupsResponse(
+            new GroupDto(
+                group.Id, 
+                group.Code, 
+                group.Specialization.Name,
+                group.EducationLanguage.ToString(),
+                group.EducationLevel.ToString(),
+                DateTime.Now.Year - group.AdmissionYear.FirstYear, 
+                group.Students.Count), 
+            StatusCode.Ok, true,
             ResponseMessages.Success);
     }
 

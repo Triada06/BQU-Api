@@ -8,6 +8,5 @@ public sealed record GetTeacherDto(
     string Surname,
     string MiddleName,
     string UserName,
-    char Gender,
     string DepartmentId,
     TeachingPosition Position);

@@ -5,7 +5,6 @@ public sealed record GetStudentDto(
     string UserName,
     string GroupName,
     int Year,
-    char Gender,
     string Speciality,
     string YearOfAdmission,
     double AdmissionScore);

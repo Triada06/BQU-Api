@@ -25,12 +25,8 @@ public class ExcelService : IExcelService {
                         Surname: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
                         MiddleName: worksheet.Cells[row, 3].Value?.ToString()?.Trim(),
                         UserName: worksheet.Cells[row, 4].Value?.ToString()?.Trim(),
-                        Gender: worksheet.Cells[row, 5].Value?.ToString()?.Trim().ToUpper().FirstOrDefault() ?? 'U',
-                        GroupName: worksheet.Cells[row, 6].Value?.ToString()?.Trim(),
-                        DecreeNumber: int.Parse(worksheet.Cells[row, 7].Value?.ToString() ?? "0"),
-                        AdmissionScore: double.Parse(worksheet.Cells[row, 8].Value?.ToString() ?? "0"),
-                        FormOfEducation: Enum.Parse<FormOfEducation>(worksheet.Cells[row, 9].Value?.ToString()?.Trim(),
-                            ignoreCase: true)
+                        GroupName: worksheet.Cells[row, 5].Value?.ToString()?.Trim(),
+                        AdmissionScore: double.Parse(worksheet.Cells[row, 6].Value?.ToString() ?? "0")
                     );
 
                     students.Add(student);

@@ -370,11 +370,8 @@ public class TaughtSubjectService(
                     u.Surname,
                     u.MiddleName,
                     u.UserName!,
-                    u.Gender,
                     subject.Group.Code,
-                    gs.DecreeNumber,
-                    gs.AdmissionScore,
-                    gs.FormOfEducation
+                    gs.AdmissionScore
                 );
             })
             .ToList();

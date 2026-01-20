@@ -53,14 +53,10 @@ public class AdminService(
             existingStu.AppUser.Surname = dto.Surname;
             existingStu.AppUser.MiddleName = dto.MiddleName;
             existingStu.AppUser.UserName = dto.UserName;
-            existingStu.AppUser.Gender = dto.Gender;
             existingStu.StudentAcademicInfo.FacultyId = group.Specialization.Faculty.Id;
             existingStu.StudentAcademicInfo.SpecializationId = group.Specialization.Id;
             existingStu.StudentAcademicInfo.GroupId = group.Id;
             existingStu.StudentAcademicInfo.AdmissionYearId = group.AdmissionYear.Id;
-            existingStu.StudentAcademicInfo.EducationLanguage = group.EducationLanguage;
-            existingStu.StudentAcademicInfo.FormOfEducation = dto.FormOfEducation;
-            existingStu.StudentAcademicInfo.DecreeNumber = dto.DecreeNumber;
             existingStu.StudentAcademicInfo.AdmissionScore = dto.AdmissionScore;
             existingStu.StudentAcademicInfo.Gpa = 0.0;
 
@@ -81,7 +77,6 @@ public class AdminService(
             Surname = dto.Surname,
             MiddleName = dto.MiddleName,
             UserName = dto.UserName,
-            Gender = dto.Gender,
         };
 
         var tempPassword = GenerateTemporaryPassword("Student");
@@ -103,9 +98,6 @@ public class AdminService(
                 SpecializationId = group.Specialization.Id,
                 GroupId = group.Id,
                 AdmissionYearId = group.AdmissionYear.Id,
-                EducationLanguage = group.EducationLanguage,
-                FormOfEducation = dto.FormOfEducation,
-                DecreeNumber = dto.DecreeNumber,
                 AdmissionScore = dto.AdmissionScore,
                 Gpa = 0.0
             }
@@ -202,7 +194,6 @@ public class AdminService(
             Surname = dto.Surname,
             MiddleName = dto.MiddleName,
             UserName = dto.UserName,
-            Gender = 'K'
         };
 
         var tempPassword = GenerateTemporaryPassword("Teacher");

@@ -7,4 +7,5 @@ public record CreateGroupRequest(
     string SpecializationId,
     int Year,
     EducationLanguage EducationLanguage,
-    EducationLevel EducationLevel);
+    EducationLevel EducationLevel
+);
