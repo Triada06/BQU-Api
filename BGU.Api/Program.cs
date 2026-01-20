@@ -82,7 +82,6 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<ValidationFilter>(); // Add this
 });
 builder.Services.AddProblemDetails();
-builder.Services.AddValidatorsFromAssemblyContaining<AppUserCreateValidator>();
 
 builder.Services.AddIdentityCore<AppUser>(options =>
     {
@@ -219,7 +218,6 @@ using (var scope = app.Services.CreateScope())
             Name = "Resad",
             Surname = "Mehdiev",
             MiddleName = "Ali",
-            Gender = 'M',
         };
 
         var res = await userManager.CreateAsync(user, password);
