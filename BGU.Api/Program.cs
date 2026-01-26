@@ -20,12 +20,9 @@ var configuration = builder.Configuration;
 
 
 // Configure OpenAPI with JWT authentication
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Info = new OpenApiInfo
-        {
+builder.Services.AddOpenApi(options => {
+    options.AddDocumentTransformer((document, context, cancellationToken) => {
+        document.Info = new OpenApiInfo {
             Title = "BGU API",
             Version = "v1",
             Description = "BGU Application API with JWT Authentication"
@@ -33,10 +30,8 @@ builder.Services.AddOpenApi(options =>
 
         // Add JWT Bearer authentication scheme
         document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
-        {
-            ["Bearer"] = new OpenApiSecurityScheme
-            {
+        document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme> {
+            ["Bearer"] = new OpenApiSecurityScheme {
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
@@ -45,15 +40,11 @@ builder.Services.AddOpenApi(options =>
         };
 
         // Apply security requirement globally
-        document.SecurityRequirements = new List<OpenApiSecurityRequirement>
-        {
-            new OpenApiSecurityRequirement
-            {
+        document.SecurityRequirements = new List<OpenApiSecurityRequirement> {
+            new OpenApiSecurityRequirement {
                 {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
+                    new OpenApiSecurityScheme {
+                        Reference = new OpenApiReference {
                             Type = ReferenceType.SecurityScheme,
                             Id = "Bearer"
                         }
@@ -76,15 +67,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddDataProtection();
 builder.Services.AddAppServices();
 builder.Services.AddAuthorization();
-builder.Services.AddControllers(options =>
-{
+builder.Services.AddControllers(options => {
     options.Filters.Add<ResponseStatusCodeFilter>();
     options.Filters.Add<ValidationFilter>(); // Add this
 });
 builder.Services.AddProblemDetails();
 
-builder.Services.AddIdentityCore<AppUser>(options =>
-    {
+builder.Services.AddIdentityCore<AppUser>(options => {
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
@@ -98,8 +87,7 @@ builder.Services.AddIdentityCore<AppUser>(options =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.Configure<IdentityOptions>(o =>
-{
+builder.Services.Configure<IdentityOptions>(o => {
     o.User.RequireUniqueEmail = false;
     o.SignIn.RequireConfirmedEmail = false;
 });
@@ -107,10 +95,8 @@ builder.Services.Configure<IdentityOptions>(o =>
 var jwtSettings = configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
+    .AddJwtBearer(options => {
+        options.TokenValidationParameters = new TokenValidationParameters {
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
@@ -123,39 +109,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddCors(options =>
-{
+builder.Services.AddCors(options => {
     options.AddPolicy("DevCors", p => p
-        .WithOrigins(
-            "http://localhost:3000",
-            "http://localhost:5173"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod()
+            .WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:3001"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
         // .AllowCredentials() // включай ТОЛЬКО если используешь куки/credentials
     );
 });
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
+using (var scope = app.Services.CreateScope()) {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
     Console.WriteLine("=== SEED START ===");
     await db.Database.MigrateAsync();
 
     foreach (var role in new[] { "Dean", "Student", "Teacher" })
         if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));    
-    
+            await roleManager.CreateAsync(new IdentityRole(role));
+
     const string roomName = "Otaq 317";
-    
+
     var room = await db.Rooms.SingleOrDefaultAsync(f => f.Name == roomName);
-    if (room == null)
-    {
+    if (room == null) {
         room = new Room {
             Name = roomName,
             Capacity = 20,
@@ -164,12 +147,11 @@ using (var scope = app.Services.CreateScope())
         db.Rooms.Add(room);
         await db.SaveChangesAsync();
     }
-    
+
     const string facultyName = "Tetbiqi Riyaziyyat";
-    
+
     var faculty = await db.Faculties.SingleOrDefaultAsync(f => f.Name == facultyName);
-    if (faculty == null)
-    {
+    if (faculty == null) {
         faculty = new Faculty {
             Name = facultyName,
             CreatedAt = DateTime.UtcNow
@@ -178,12 +160,11 @@ using (var scope = app.Services.CreateScope())
         await db.SaveChangesAsync();
     }
 
-    
+
     const string specializationName = "Komputer Elmleri";
-    
+
     var specialization = await db.Specializations.SingleOrDefaultAsync(f => f.Name == specializationName);
-    if (specialization == null)
-    {
+    if (specialization == null) {
         specialization = new Specialization {
             Name = specializationName,
             FacultyId = faculty.Id,
@@ -192,27 +173,26 @@ using (var scope = app.Services.CreateScope())
         db.Specializations.Add(specialization);
         await db.SaveChangesAsync();
     }
-    
-    const string departmentName = "Riyazi Kibernetika";
-    
-    var department = await db.Departments.SingleOrDefaultAsync(f => f.Name == departmentName);
-    if (department == null)
-    {
-        department = new Department {
-            Name = departmentName,
-            FacultyId = faculty.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Departments.Add(department);
-        await db.SaveChangesAsync();
+
+
+    foreach (var dep in new[] { "Riyaziyyat və təbiət fənnləri", "Tarix", "Xarici dillər", "Psixologiya"}) {
+        var department = await db.Departments.SingleOrDefaultAsync(f => f.Name == dep);
+        if (department == null) {
+            department = new Department {
+                Name = dep,
+                FacultyId = faculty.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Departments.Add(department);
+        }
     }
-    
+    await db.SaveChangesAsync();
+
     const string username = "7KW323K";
     const string password = "Atilla123";
-    
+
     var user = await userManager.FindByNameAsync(username);
-    if (user == null)
-    {
+    if (user == null) {
         user = new AppUser {
             UserName = username,
             Name = "Resad",
@@ -225,8 +205,7 @@ using (var scope = app.Services.CreateScope())
 
         await userManager.AddToRoleAsync(user, "Dean");
 
-        db.Deans.Add(new Dean
-        {
+        db.Deans.Add(new Dean {
             AppUserId = user.Id,
             FacultyId = faculty.Id,
             RoleName = "Dekan",
@@ -235,6 +214,7 @@ using (var scope = app.Services.CreateScope())
 
         await db.SaveChangesAsync();
     }
+
     Console.WriteLine("=== SEED END ===");
 }
 
@@ -245,15 +225,12 @@ app.UseCors("DevCors");
 
 // app.UseHttpsRedirection();
 
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     app.MapOpenApi();
-    app.MapScalarApiReference(options =>
-    {
+    app.MapScalarApiReference(options => {
         options.Theme = ScalarTheme.BluePlanet;
         options.Title = "BGU API Documentation";
-        options.Authentication = new ScalarAuthenticationOptions
-        {
+        options.Authentication = new ScalarAuthenticationOptions {
             PreferredSecurityScheme = "Bearer"
         };
     });

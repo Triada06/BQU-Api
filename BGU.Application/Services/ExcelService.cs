@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 using BGU.Application.Common;
 using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;
@@ -75,12 +76,8 @@ public class ExcelService : IExcelService {
 
         var stringValue = cellValue.ToString()?.Trim();
 
-        if (int.TryParse(stringValue, out int numValue)) {
-            if (Enum.IsDefined(typeof(T), numValue))
-                return (T)(object)numValue;
-        }
-
-        if (Enum.TryParse(stringValue, ignoreCase: true, out T result))
+        if (Enum.TryParse(stringValue, ignoreCase: true, out T result) &&
+            Enum.IsDefined(typeof(T), result))
             return result;
 
         throw new ArgumentException($"Cannot parse '{stringValue}' to {typeof(T).Name}");
@@ -117,7 +114,7 @@ public class ExcelService : IExcelService {
         var summaryColLabel = failColStart + failColCount + 2; // after FAILED block => I
         var summaryColValue = summaryColLabel + 1; // J
 
-        ws.Cells[1, summaryColLabel].Value = "Student Import Summary";
+        ws.Cells[1, summaryColLabel].Value = "Import Summary";
         ws.Cells[1, summaryColLabel].Style.Font.Bold = true;
         ws.Cells[1, summaryColLabel].Style.Font.Size = 14;
 

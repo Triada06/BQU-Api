@@ -2,7 +2,7 @@ namespace BGU.Core.Enums;
 
 public enum EducationLanguage
 {
-    Azerbaijani = 0,
+    Azerbaijani = 1,
     Russian,
     English
 }

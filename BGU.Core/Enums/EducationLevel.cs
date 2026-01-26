@@ -2,6 +2,6 @@ namespace BGU.Core.Enums;
 
 public enum EducationLevel
 {
-    Bachelor,
+    Bachelor = 1,
     Master
 }
