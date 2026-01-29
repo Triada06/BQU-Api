@@ -37,7 +37,7 @@ public class TeacherController(ITeacherService teacherService) : ControllerBase
         if (userId == null)
             return Unauthorized();
         var res = await teacherService.GetSchedule(new TeacherScheduleRequest(userId, schedule));
-        return Ok(res); 
+        return Ok(res);
     }
 
     [Authorize(Roles = "Teacher")]

@@ -72,10 +72,14 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             s =>
                 s.Include(x => x.TaughtSubjects)
                     .ThenInclude(x => x.Classes)
+                    .ThenInclude(x=>x.ClassTime)
                     .Include(st => st.TeacherAcademicInfo)
                     .ThenInclude(ai => ai.Department)
                     .ThenInclude(g => g.Faculty)
                     .ThenInclude(ts => ts.Specializations)
+                    .Include(x=>x.AppUser)
+                    .Include(x => x.TaughtSubjects)
+                    .ThenInclude(x=>x.Subject)
         )).FirstOrDefault();
 
         if (teacher == null) {

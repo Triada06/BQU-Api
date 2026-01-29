@@ -103,7 +103,7 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                     c.TaughtSubject.Code
                 );
             })
-            .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Period }) // .NET 6+
+            .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Period }) 
             .OrderBy(x => x.Period)
             .ToList();
         return new GroupScheduleResponse(

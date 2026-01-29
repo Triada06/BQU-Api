@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260118162543_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260124173353_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -102,9 +102,6 @@ namespace BGU.Infrastructure.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
-
-                    b.Property<char>("Gender")
-                        .HasColumnType("character(1)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -589,18 +586,7 @@ namespace BGU.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("DecreeNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("EducationLanguage")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("FacultyId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FormOfEducation")
                         .IsRequired()
                         .HasColumnType("text");
 

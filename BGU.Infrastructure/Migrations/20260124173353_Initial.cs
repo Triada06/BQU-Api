@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,7 +48,6 @@ namespace BGU.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
                     Surname = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
                     MiddleName = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
-                    Gender = table.Column<char>(type: "character(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
@@ -407,13 +406,10 @@ namespace BGU.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    DecreeNumber = table.Column<int>(type: "integer", nullable: false),
                     FacultyId = table.Column<string>(type: "text", nullable: false),
                     SpecializationId = table.Column<string>(type: "text", nullable: false),
                     GroupId = table.Column<string>(type: "text", nullable: false),
                     AdmissionYearId = table.Column<string>(type: "text", nullable: false),
-                    EducationLanguage = table.Column<string>(type: "text", nullable: false),
-                    FormOfEducation = table.Column<string>(type: "text", nullable: false),
                     StudentId = table.Column<string>(type: "text", nullable: false),
                     Gpa = table.Column<double>(type: "double precision", nullable: false),
                     AdmissionScore = table.Column<double>(type: "double precision", nullable: false),

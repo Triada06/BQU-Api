@@ -8,22 +8,27 @@ using BGU.Infrastructure.Repositories.Interfaces;
 
 namespace BGU.Application.Services;
 
-public class RoomService(IRoomRepository roomRepository): IRoomService {
-    public async Task<GetAllRoomsResponse> GetAllAsync(int page, int pageSize, bool tracking = false) {
+public class RoomService(IRoomRepository roomRepository) : IRoomService
+{
+    public async Task<GetAllRoomsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
+    {
         var rooms = (await roomRepository.GetAllAsync(page, pageSize, tracking)).Select(x =>
             new RoomDto(x.Id, x.Name, x.Capacity));
         return new GetAllRoomsResponse(rooms, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<CreateRoomResponse> CreateAsync(CreateRoomRequest request) {
+    public async Task<CreateRoomResponse> CreateAsync(CreateRoomRequest request)
+    {
         if (await roomRepository.AnyAsync(x => x.Name == request.RoomName))
             return new CreateRoomResponse(null, StatusCode.Conflict, false, ResponseMessages.AlreadyExists);
 
-        var room = new Room {
+        var room = new Room
+        {
             Name = request.RoomName,
             Capacity = request.Capacity,
         };
-        if (!await roomRepository.CreateAsync(room)) {
+        if (!await roomRepository.CreateAsync(room))
+        {
             return new CreateRoomResponse(null, StatusCode.InternalServerError, false, ResponseMessages.Failed);
         }
 
@@ -31,7 +36,8 @@ public class RoomService(IRoomRepository roomRepository): IRoomService {
             StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<GetRoomByIdResponse> GetByIdAsync(string id, bool tracking = false) {
+    public async Task<GetRoomByIdResponse> GetByIdAsync(string id, bool tracking = false)
+    {
         var room = await roomRepository.GetByIdAsync(id, tracking: tracking);
         return room is null
             ? new GetRoomByIdResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound)
@@ -39,7 +45,8 @@ public class RoomService(IRoomRepository roomRepository): IRoomService {
                 StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<UpdateRoomResponse> UpdateAsync(string id, UpdateRoomRequest request) {
+    public async Task<UpdateRoomResponse> UpdateAsync(string id, UpdateRoomRequest request)
+    {
         var room = await roomRepository.GetByIdAsync(id, tracking: true);
 
         if (room is null)
@@ -51,7 +58,8 @@ public class RoomService(IRoomRepository roomRepository): IRoomService {
             StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<DeleteRoomResponse> DeleteAsync(string id) {
+    public async Task<DeleteRoomResponse> DeleteAsync(string id)
+    {
         var room = await roomRepository.GetByIdAsync(id, tracking: false);
 
         if (room is null)

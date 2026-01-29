@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace BGU.Api.Helpers;
 
 public static class ApiEndPoints
@@ -70,7 +72,7 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/groups";
         public const string Create = $"{Base}";
         public const string GetAll = $"{Base}";
-        public const string Schedule = $"{Base}/schedule/{{id}}";
+        public const string Schedule = $"{Base}/{{id}}/schedule";
         public const string Delete = $"{Base}/{{id}}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetById = $"{Base}/{{id}}";

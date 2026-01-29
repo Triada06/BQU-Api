@@ -76,11 +76,16 @@ public class TaughtSubjectService(
             (await taughtSubjectRepository.GetAllAsync(page, pageSize: pageSize,
                 include: i => i
                     .Include(x => x.Group)
+                    .ThenInclude(x => x.AdmissionYear)
                     .Include(x => x.Subject)
+                    .ThenInclude(x => x.Department)
                     .Include(x => x.Teacher)
                     .ThenInclude(x => x.AppUser),
                 tracking: false)).Select(x =>
-                new GetTaughtSubjectDto(x.Id, x.Code, x.Subject.Name, x.Teacher.AppUser.Name, x.Group.Code,
+                new GetTaughtSubjectDto(x.Id, x.Code, x.Subject.Name,
+                    x.Subject.Department.Name,
+                    GetYear(x.Group.AdmissionYear.FirstYear),
+                    x.Teacher.AppUser.Name, x.Group.Code,
                     x.Subject.CreditsNumber));
 
         return new GetAllTaughtSubjectResponse(subjects, StatusCode.Ok, true, ResponseMessages.Success);
@@ -91,7 +96,9 @@ public class TaughtSubjectService(
         var subject =
             await taughtSubjectRepository.GetByIdAsync(id, include: i => i
                 .Include(x => x.Group)
+                .ThenInclude(x => x.AdmissionYear)
                 .Include(x => x.Subject)
+                .ThenInclude(x => x.Department)
                 .Include(x => x.Teacher)
                 .ThenInclude(x => x.AppUser), tracking: false);
 
@@ -100,8 +107,12 @@ public class TaughtSubjectService(
             return new GetByIdTaughtSubjectResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        return new GetByIdTaughtSubjectResponse(new GetTaughtSubjectDto(subject.Id, subject.Code, subject.Subject.Name,
-            subject.Teacher.AppUser.Name, subject.Group.Code,
+        return new GetByIdTaughtSubjectResponse(new GetTaughtSubjectDto(subject.Id, subject.Code,
+            subject.Subject.Name,
+            subject.Subject.Department.Name,
+            GetYear(subject.Group.AdmissionYear.FirstYear),
+            subject.Teacher.AppUser.Name,
+            subject.Group.Code,
             subject.Subject.CreditsNumber), StatusCode.Ok, true, ResponseMessages.Success);
     }
 
@@ -381,7 +392,7 @@ public class TaughtSubjectService(
     }
 
 
-    private (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
+    private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
         int hours,
         CreateClassDto[] classDtos,
         int year,
@@ -475,4 +486,9 @@ public class TaughtSubjectService(
 
     private static string FormatRange(TimeSpan from, TimeSpan to)
         => $@"{from:hh\:mm} - {to:hh\:mm}";
+
+    private static int GetYear(int firstYear) =>
+        DateTime.Now.Month >= 9
+            ? firstYear + 1
+            : DateTime.Now.Year - firstYear; //2023 => returns current Education Year
 }
