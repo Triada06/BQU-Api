@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Dean")]
 public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService, IColloquiumService colloquiumService)
     : ControllerBase
 {
+    [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.TaughtSubject.GetAll)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
     {
@@ -20,6 +20,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.TaughtSubject.GetById)]
     public async Task<IActionResult> GetById([FromRoute] string id)
     {
@@ -27,6 +28,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpPut(ApiEndPoints.TaughtSubject.Update)]
     public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTaughtSubjectRequest request)
     {
@@ -34,6 +36,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpDelete(ApiEndPoints.TaughtSubject.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
@@ -41,6 +44,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpPost(ApiEndPoints.TaughtSubject.Create)]
     public async Task<IActionResult> Create([FromBody] CreateTaughtSubjectRequest request)
     {
@@ -48,6 +52,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Teacher")]
     [HttpGet(ApiEndPoints.TaughtSubject.GetAllColloquiums)]
     public async Task<IActionResult> GetAllColloquiums([FromRoute] string taughtSubjectId)
     {
@@ -55,6 +60,7 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Teacher")]
     [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsAndAttendances)]
     public async Task<IActionResult> GetStudentsAndAttendances([FromRoute] string taughtSubjectId)
     {
@@ -62,7 +68,8 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         return new ObjectResult(res);
     }
 
-    [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsInSubject)]
+    [Authorize(Roles = "Teacher")]
+    [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsInSubject)] //dlya pokaza studntov 
     public async Task<IActionResult> GetStudentsInSubject([FromRoute] string taughtSubjectId)
     {
         var res = await taughtSubjectService.GetStudentsAsync(taughtSubjectId);
