@@ -376,13 +376,13 @@ public class TaughtSubjectService(
             .Select(gs =>
             {
                 var u = gs.Student.AppUser;
-                return new StudentDto(
+                return new StudentsInSubjectDto(
+                    gs.StudentId,
                     u.Name,
                     u.Surname,
                     u.MiddleName,
                     u.UserName!,
-                    subject.Group.Code,
-                    gs.AdmissionScore
+                    subject.Group.Code
                 );
             })
             .ToList();
