@@ -36,7 +36,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Grades)]
-    public async Task<IActionResult> Grades(string grade) 
+    public async Task<IActionResult> Grades(string grade)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
@@ -83,13 +83,9 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.MarkAbsence)]
-    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId,
-        [FromRoute] string taughtSubjectId)
+    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId)
     {
-        var teacherId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-        if (teacherId == null)
-            return Unauthorized();
-        var res = await studentService.MarkAbsenceAsync(studentId, teacherId, taughtSubjectId, classId);
+        var res = await studentService.MarkAbsenceAsync(studentId, classId);
         return new ObjectResult(res);
     }
 
@@ -122,7 +118,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
             new GradeSeminarRequest(studentId, seminarId, isPassed));
         return new ObjectResult(res);
     }
-    
+
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]
 }

@@ -384,7 +384,7 @@ public class StudentService(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName,
                     x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), 
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
                     x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore
@@ -408,20 +408,20 @@ public class StudentService(
             .Select(x =>
                 new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now), 
+                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
                     x.StudentAcademicInfo.Specialization.Name,
                     x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
                     x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore));
         return new GetStudentResponse(students, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string teacherId,
-        string taughtSubjectId, string classId)
+    public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string classId)
     {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
                 .Include(e => e.StudentAcademicInfo)
-                .ThenInclude(e => e.Group), tracking: true);
+                .ThenInclude(e => e.Group)
+                .Include(e => e.Attendances), tracking: true);
         if (student is null)
         {
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
