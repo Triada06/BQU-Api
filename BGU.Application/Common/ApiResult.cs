@@ -34,6 +34,13 @@ public class ApiResult<T>
             IsSucceeded = false,
             StatusCode = 400
         };
+    public static ApiResult<T> BadRequest( string message = "Bad Request")
+        => new()
+        {
+            Message = message,
+            IsSucceeded = false,
+            StatusCode = 400
+        };
 
     public static ApiResult<T> Unauthorized(string message = "Unauthorized")
         => new()

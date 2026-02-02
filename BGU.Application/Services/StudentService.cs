@@ -1,13 +1,14 @@
+using BGU.Application.Common;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.AcademicPerformance;
 using BGU.Application.Dtos.Class;
+using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Dtos.Student;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
-using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +19,10 @@ public class StudentService(
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
     ISeminarRepository seminarRepository,
-    IIndependentWorkRepository independentWorkRepository,
     IAttendanceService attendanceService,
-    IColloquiumRepository colloquiumRepository) : IStudentService
+    IColloquiumRepository colloquiumRepository,
+    ITaughtSubjectRepository taughtSubjectRepository,
+    IIndependentWorkRepository independentWorkRepository) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
         new() // to calculate GPA
@@ -494,6 +496,36 @@ public class StudentService(
             ? new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success)
             : new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
                 "An error occured while updating the grade");
+    }
+
+    public async Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId,
+        string taughtSubjectId)
+    {
+        var student =
+            await studentRepository.GetByIdAsync(studentId, include: x => x
+                .Include(e => e.StudentAcademicInfo)
+                .ThenInclude(e => e.Group)
+                .Include(e => e.Attendances), tracking: true);
+        if (student is null)
+        {
+            return ApiResult<GetIndependentWorksDto>.BadRequest($"Student with id {studentId} not found ");
+        }
+
+        if (!await taughtSubjectRepository.AnyAsync(ts => ts.Id == taughtSubjectId))
+        {
+            return ApiResult<GetIndependentWorksDto>.BadRequest($"Taught Subject with id {taughtSubjectId} not found ");
+        }
+
+        var independentWorks = await independentWorkRepository.FindAsync(independentWork =>
+                independentWork.StudentId == student.Id && taughtSubjectId == independentWork.TaughtSubjectId,
+            tracking: false);
+
+        return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto(
+                independentWorks.Count > 0
+                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Date, x.IsPassed)).ToList()
+                    : []
+            )
+        );
     }
 
     private static int ApplyAttendancePenalty(int hours, int attendances, int assignmentScore)

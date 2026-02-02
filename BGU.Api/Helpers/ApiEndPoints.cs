@@ -55,6 +55,9 @@ public static class ApiEndPoints
 
         public const string GradeIndependentWork =
             $"{Base}/{{studentId}}/independent-works/{{independentWorkId}}/grade";
+
+        public const string GetIndependentWorksByStudentId =
+            $"{Base}/{{studentId}}/taught-subjects/{{taughtSubjectId}}/independent-works";
     }
 
     public static class Department
@@ -95,7 +98,6 @@ public static class ApiEndPoints
         public const string GetAllColloquiums = $"{Base}/{{taughtSubjectId}}/colloquiums";
         public const string GetStudentsAndAttendances = $"{Base}/{{taughtSubjectId}}/classes";
         public const string GetStudentsInSubject = $"{Base}/{{taughtSubjectId}}/students";
-        
     }
 
     public static class Teacher
@@ -123,12 +125,14 @@ public static class ApiEndPoints
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
     }
+
     public static class IndependentWork
     {
         private const string Base = $"{ApiBase}/independent-works";
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
     }
+
     public static class Seminar
     {
         private const string Base = $"{ApiBase}/seminars";

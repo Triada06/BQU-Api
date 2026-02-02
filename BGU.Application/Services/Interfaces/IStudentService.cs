@@ -1,7 +1,9 @@
+using BGU.Application.Common;
 using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.Student;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
+using BGU.Application.Dtos.IndependentWorks;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
@@ -21,4 +23,5 @@ public interface IStudentService
     Task<GradeStudentColloquiumResponse> GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request);
     Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(GradeIndependentWorkRequest request);
     Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request);
+    Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId, string taughtSubjectId);
 }
