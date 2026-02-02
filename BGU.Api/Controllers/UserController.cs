@@ -20,9 +20,4 @@ public class UserController(IUserService userService) : ControllerBase
         }
         return Ok(res);
     }
-    //TODO: Manage grades teacher + 
-    //TODO: Add a column to seminar "Topic" + ( awaits migration ) 
-    //TODO: Get Current Taught Subject Students + 
-    //TODO: Remove IsSucceeded, ResponseMessage ( will be discussed again ) 
-    //TODO: Update the Formula for GPA + 
 }

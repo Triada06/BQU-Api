@@ -473,7 +473,7 @@ public class StudentService(
                 $"independent work with an Id of {request.IndependentWorkId} not found");
         }
 
-        independentWork.IsPassed = true;
+        independentWork.IsPassed = request.IsPassed;
         return await independentWorkRepository.UpdateAsync(independentWork)
             ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
             : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,

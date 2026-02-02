@@ -1,7 +1,4 @@
-using System.Linq.Expressions;
 using BGU.Application.Common;
-using BGU.Application.Contracts.Attendances.Requests;
-using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Responses;
 using BGU.Application.Dtos.Class;
@@ -13,10 +10,8 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
-using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 
 namespace BGU.Application.Services;
 
@@ -27,7 +22,8 @@ public class TaughtSubjectService(
     IClassRepository classRepository,
     IStudentRepository studentRepository,
     IAttendanceRepository attendanceRepository,
-    ISeminarRepository seminarRepository) : ITaughtSubjectService
+    ISeminarRepository seminarRepository,
+    IIndependentWorkRepository independentWorkRepository) : ITaughtSubjectService
 {
     public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id)
     {
@@ -194,6 +190,7 @@ public class TaughtSubjectService(
         {
             var attendances = new List<Attendance>();
             var seminars = new List<Seminar>();
+            var independentWorks = new List<IndependentWork>();
 
             foreach (var seminarType in seminarTypes)
             {
@@ -224,6 +221,27 @@ public class TaughtSubjectService(
             {
                 return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                     "Failed to create attendances");
+            }
+
+            //create independent works
+            foreach (var student in studentsInGroup)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    var independentWork = new IndependentWork
+                    {
+                        Date = classTimes[i].ClassDate.UtcDateTime,
+                        StudentId = student!.Id,
+                        TaughtSubjectId = taughtSubject.Id,
+                    };
+                    independentWorks.Add(independentWork);
+                }
+            }
+
+            if (!await independentWorkRepository.BulkCreateAsync(independentWorks))
+            {
+                return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+                    "Failed to create independent works (assignments)");
             }
         }
 
