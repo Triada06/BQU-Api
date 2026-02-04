@@ -126,6 +126,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var res  = await studentService.GetIndependentWorksByUserIdAsync(studentId,taughtSubjectId);
         return new ObjectResult(res);
     }
+    
 
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]

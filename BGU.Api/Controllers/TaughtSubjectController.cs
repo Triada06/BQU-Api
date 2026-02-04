@@ -75,4 +75,12 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
         var res = await taughtSubjectService.GetStudentsAsync(taughtSubjectId);
         return new ObjectResult(res);
     }
+
+    [Authorize(Roles = "Teacher")]
+    [HttpGet(ApiEndPoints.TaughtSubject.GetIndependentWorks)]
+    public async Task<IActionResult> GetIndependentWorksWithStudents([FromRoute] string taughtSubjectId)
+    {
+        var res = await taughtSubjectService.GetIndependentWorksByTaughtSubjectIdAsync(taughtSubjectId);
+        return new ObjectResult(res);
+    }
 }

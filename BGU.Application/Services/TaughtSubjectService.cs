@@ -409,6 +409,44 @@ public class TaughtSubjectService(
             new GetStudentsForSubject(studentsDto));
     }
 
+    public async Task<ApiResult<GetIndependentWorksByTaughtSubjectDto>> GetIndependentWorksByTaughtSubjectIdAsync(
+        string taughtSubjectId)
+    {
+        var subject = await taughtSubjectRepository.GetByIdAsync(
+            taughtSubjectId,
+            include: i => i
+                .Include(x => x.Group)
+                .ThenInclude(g => g.Students)
+                .ThenInclude(gs => gs.Student)
+                .ThenInclude(s => s.IndependentWorks)
+                .Include(x => x.Group)
+                .ThenInclude(g => g.Students)
+                .Include(x => x.Subject),
+            tracking: false);
+
+        if (subject is null)
+        {
+            return ApiResult<GetIndependentWorksByTaughtSubjectDto>.BadRequest(
+                new GetIndependentWorksByTaughtSubjectDto([]),
+                $"Taught Subject with an id of {taughtSubjectId} not found");
+        }
+
+        var stuAcademicInfos = subject.Group.Students.ToList();
+        List<GetIndependentWorkByTaughtSubjectDto> independentWorks = [];
+        foreach (var stuAcademicInfo in stuAcademicInfos)
+        {
+            var student = stuAcademicInfo.Student;
+            var studentIndependentWorks = student.IndependentWorks;
+            independentWorks.AddRange(studentIndependentWorks.Select(independentWork =>
+                new GetIndependentWorkByTaughtSubjectDto(independentWork.Id, student.Id, independentWork.Date,
+                    independentWork.IsPassed)));
+        }
+
+        return ApiResult<GetIndependentWorksByTaughtSubjectDto>.Success(
+            new GetIndependentWorksByTaughtSubjectDto(independentWorks),
+            $"Taught Subject with an id of {taughtSubjectId} not found");
+    }
+
 
     private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
         int hours,

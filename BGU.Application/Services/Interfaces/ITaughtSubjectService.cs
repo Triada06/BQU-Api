@@ -17,4 +17,5 @@ public interface ITaughtSubjectService
     Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request);
     Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendances(string taughtSubjectId);
     Task<ApiResult<GetStudentsForSubject>> GetStudentsAsync(string taughtSubjectId);
+    Task<ApiResult<GetIndependentWorksByTaughtSubjectDto>> GetIndependentWorksByTaughtSubjectIdAsync(string taughtSubjectId);
 }
