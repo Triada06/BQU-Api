@@ -112,10 +112,10 @@ public class StudentController(IStudentService studentService) : ControllerBase
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.GradeSeminar)]
     public async Task<IActionResult> GradeSeminar([FromRoute] string studentId,
-        [FromRoute] string seminarId, [FromRoute] Grade isPassed)
+        [FromRoute] string seminarId, [FromQuery] Grade grade)
     {
         var res = await studentService.GradeSeminarAsync(
-            new GradeSeminarRequest(studentId, seminarId, isPassed));
+            new GradeSeminarRequest(studentId, seminarId, grade));
         return new ObjectResult(res);
     }
 
@@ -129,4 +129,5 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]
+    //TODO: write a method which returns all the IWs of the couourse. Return => I.W. id, stu id, isPassed, date, 
 }
