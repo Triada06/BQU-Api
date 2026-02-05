@@ -6,7 +6,7 @@ namespace BGU.Application.Contracts.Student.Requests;
 public sealed record GradeIndependentWorkRequest(
     string StudentId,
     string IndependentWorkId,
-    bool IsPassed);
+    bool? IsPassed);
 
 public sealed class GradeIndependentWorkRequestValidator
     : AbstractValidator<GradeIndependentWorkRequest>

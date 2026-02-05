@@ -233,6 +233,7 @@ public class TaughtSubjectService(
                         Date = classTimes[i].ClassDate.UtcDateTime,
                         StudentId = student!.Id,
                         TaughtSubjectId = taughtSubject.Id,
+                        IsPassed = null
                     };
                     independentWorks.Add(independentWork);
                 }

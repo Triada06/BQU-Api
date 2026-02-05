@@ -31,7 +31,7 @@ public class IndependentWorkService(
         var independentWork = new IndependentWork {
             IsAccepted = false,
             IsConfirmed = false,
-            IsPassed = false,
+            IsPassed = null,
             Date = request.DueDate,
             StudentId = request.StudentId,
             TaughtSubjectId = request.TaughtSubjectId,

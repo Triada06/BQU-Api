@@ -249,7 +249,7 @@ public class StudentService(
                     c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
                         .ToList(),
                     (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
-                        .Count(s => s.IsPassed), c.Hours,
+                        .Count(s => s.IsPassed is true), c.Hours,
                     student.Attendances
                         .Count(attendance => c.Classes.Select(x => x.Id).Contains(attendance.ClassId))),
                 c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
@@ -257,7 +257,7 @@ public class StudentService(
                 c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
                     .ToList(),
                 c.IndependentWorks.Where(x => x.StudentId == student.Id)
-                    .Count(s => s.IsPassed),
+                    .Count(s => s.IsPassed is true),
                 student.Attendances
                     .Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent).Count(),
                 c.Classes.Count)

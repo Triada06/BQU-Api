@@ -50,3 +50,7 @@ _ReSharper*/
 # NPM / frontend leftovers
 node_modules/
 wwwroot/dist/
+
+
+# Ignore EF Core Migrations
+**/Migrations/

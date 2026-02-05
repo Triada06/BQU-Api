@@ -4,7 +4,7 @@ public class IndependentWork : BaseEntity
 {
     public bool IsAccepted { get; set; }
     public bool IsConfirmed { get; set; }
-    public bool IsPassed { get; set; }
+    public bool? IsPassed { get; set; } = null;
     public DateTime Date { get; set; }
 
     public string StudentId { get; set; }
