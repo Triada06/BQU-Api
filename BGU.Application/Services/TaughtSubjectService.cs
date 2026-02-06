@@ -230,7 +230,7 @@ public class TaughtSubjectService(
                 {
                     var independentWork = new IndependentWork
                     {
-                        Date = classTimes[i].ClassDate.UtcDateTime,
+                        Number = i + 1,
                         StudentId = student!.Id,
                         TaughtSubjectId = taughtSubject.Id,
                         IsPassed = null
@@ -419,10 +419,10 @@ public class TaughtSubjectService(
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
                 .ThenInclude(gs => gs.Student)
-                .ThenInclude(s => s.IndependentWorks)
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
-                .Include(x => x.Subject),
+                .Include(x => x.Subject)
+                .Include(x=>x.IndependentWorks),
             tracking: false);
 
         if (subject is null)
@@ -432,20 +432,24 @@ public class TaughtSubjectService(
                 $"Taught Subject with an id of {taughtSubjectId} not found");
         }
 
+        var independentWorksOfSubject = subject.IndependentWorks.ToList();
         var stuAcademicInfos = subject.Group.Students.ToList();
         List<GetIndependentWorkByTaughtSubjectDto> independentWorks = [];
+        
         foreach (var stuAcademicInfo in stuAcademicInfos)
         {
             var student = stuAcademicInfo.Student;
-            var studentIndependentWorks = student.IndependentWorks;
+            var studentIndependentWorks = independentWorksOfSubject
+                .Where(x => x.TaughtSubjectId == taughtSubjectId && student.Id == x.StudentId);
+
+
             independentWorks.AddRange(studentIndependentWorks.Select(independentWork =>
-                new GetIndependentWorkByTaughtSubjectDto(independentWork.Id, student.Id, independentWork.Date,
+                new GetIndependentWorkByTaughtSubjectDto(independentWork.Id, student.Id, independentWork.Number,
                     independentWork.IsPassed)));
-        }
+        } //TODO: SMTH IS WRONG WITH INDEPENDENT WORKS, NUKE THE WHOLE COURSES TABLE AND START OVER
 
         return ApiResult<GetIndependentWorksByTaughtSubjectDto>.Success(
-            new GetIndependentWorksByTaughtSubjectDto(independentWorks),
-            $"Taught Subject with an id of {taughtSubjectId} not found");
+            new GetIndependentWorksByTaughtSubjectDto(independentWorks));
     }
 
 

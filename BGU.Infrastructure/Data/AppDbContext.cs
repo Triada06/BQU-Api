@@ -60,6 +60,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
         builder.Entity<Seminar>().Property(x => x.Topic).HasMaxLength(50);
 
+        builder.Entity<IndependentWork>()
+            .ToTable(t =>
+                t.HasCheckConstraint(
+                    "CK_Number_Range",
+                    "\"Number\" >= 0 AND \"Number\" <= 10"
+                ));
+
         foreach (var entityType in builder.Model.GetEntityTypes())
         {
             foreach (var property in entityType.GetProperties())

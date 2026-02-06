@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.Student.Requests;
+using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -121,14 +123,14 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [HttpGet(ApiEndPoints.Student.GetIndependentWorksByStudentId)]
     [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> GetIndependentWorksByStudentId([FromRoute] string studentId, [FromRoute] string taughtSubjectId)
+    public async Task<IActionResult> GetIndependentWorksByStudentId([FromRoute] string studentId,
+        [FromRoute] string taughtSubjectId)
     {
-        var res  = await studentService.GetIndependentWorksByUserIdAsync(studentId,taughtSubjectId);
+        var res = await studentService.GetIndependentWorksByUserIdAsync(studentId, taughtSubjectId);
         return new ObjectResult(res);
     }
-    
+
 
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]
-    //TODO: write a method which returns all the IWs of the couourse. Return => I.W. id, stu id, isPassed, date, 
 }

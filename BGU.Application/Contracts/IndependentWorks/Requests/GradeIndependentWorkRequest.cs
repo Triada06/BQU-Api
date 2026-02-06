@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace BGU.Application.Contracts.IndependentWorks.Requests;
 
-public sealed record GradeIndependentWorkRequest(string StudentId, string TaughtSubjectId, DateTime DueDate);
+public sealed record GradeIndependentWorkRequest(string StudentId, string TaughtSubjectId, int Number);
 
-public sealed class CreateIndependentWorkRequestValidator 
+public sealed class CreateIndependentWorkRequestValidator
     : AbstractValidator<GradeIndependentWorkRequest>
 {
     public CreateIndependentWorkRequestValidator()
@@ -15,8 +15,8 @@ public sealed class CreateIndependentWorkRequestValidator
         RuleFor(x => x.TaughtSubjectId)
             .NotEmpty().WithMessage("TaughtSubjectId is required.");
 
-        RuleFor(x => x.DueDate)
-            .GreaterThan(DateTime.UtcNow)
-            .WithMessage("DueDate must be in the future.");
+        RuleFor(request => request.Number)
+            .GreaterThan(0).WithMessage("Number must be greater than 0")
+            .LessThan(11).WithMessage("Number must be less than 11");
     }
 }

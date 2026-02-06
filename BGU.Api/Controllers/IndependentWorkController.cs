@@ -1,5 +1,6 @@
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.IndependentWorks.Requests;
+using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -23,5 +24,14 @@ public class IndependentWorkController(IIndependentWorkService independentWorkSe
     {
         var res = await independentWorkService.DeleteAsync(id);
         return new OkObjectResult(res);
+    }
+
+    [HttpPut(ApiEndPoints.IndependentWork.BulkGradeIndependentWork)]
+    public async Task<IActionResult> BulkGradeIndependentWork(
+        [FromBody] List<BulkGradeIndependentWorkRequest> independentWorks)
+    {
+        var res = await independentWorkService.BulkGradeIndependentWorkAsync(
+            new BulkGradeIndependentWorksDto(independentWorks));
+        return new ObjectResult(res);
     }
 }

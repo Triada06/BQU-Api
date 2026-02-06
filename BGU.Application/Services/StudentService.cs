@@ -522,7 +522,7 @@ public class StudentService(
 
         return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto(
                 independentWorks.Count > 0
-                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Date, x.IsPassed)).ToList()
+                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.IsPassed)).ToList()
                     : []
             )
         );

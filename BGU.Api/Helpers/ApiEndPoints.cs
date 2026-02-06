@@ -56,6 +56,7 @@ public static class ApiEndPoints
         public const string GradeIndependentWork =
             $"{Base}/{{studentId}}/independent-works/{{independentWorkId}}/grade";
 
+
         public const string GetIndependentWorksByStudentId =
             $"{Base}/{{studentId}}/taught-subjects/{{taughtSubjectId}}/independent-works";
     }
@@ -132,6 +133,9 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/independent-works";
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
+
+        public const string BulkGradeIndependentWork =
+            $"{Base}/grade";
     }
 
     public static class Seminar
