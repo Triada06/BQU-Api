@@ -27,8 +27,11 @@ public class StudentService(
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
         new() // to calculate GPA
         {
+            { 15, (1, 2, 3) },
+            { 16, (1, 2, 3) },
             { 30, (2, 3, 4) },
             { 45, (3, 5, 6) },
+            { 50, (3, 5, 6) },
             { 60, (3, 6, 8) },
             { 75, (4, 8, 10) },
             { 90, (5, 9, 12) },
@@ -221,7 +224,7 @@ public class StudentService(
                 .Select(c => new ClassSessions(
                     c.Subject.Name,
                     c.Classes.Select(e => new ClassInfo(e.ClassTime.ClassDate,
-                        e.ClassType,
+                        e.ClassType.ToString(),
                         student.Attendances.Where(x => x.ClassId == e.Id).Select(m => m.IsAbsent).First(),
                         e.ClassType == ClassType.Семинар
                             ? (int?)student.SeminarGrades.FirstOrDefault(x =>

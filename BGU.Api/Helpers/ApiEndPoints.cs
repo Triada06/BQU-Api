@@ -46,7 +46,7 @@ public static class ApiEndPoints
         public const string Import = $"{Base}/import";
         public const string DashBoard = $"{Base}/dashboard";
         public const string Profile = $"{Base}/profile";
-        public const string Grades = $"{Base}/grades/{{grade}}";
+        public const string Grades = $"{Base}/me/grades";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
         public const string MarkAbsence = $"{Base}/{{studentId}}/classes/{{classId}}/mark-absence";
         public const string GradeSeminar = $"{Base}/{{studentId}}/seminars/{{seminarId}}/grade";
