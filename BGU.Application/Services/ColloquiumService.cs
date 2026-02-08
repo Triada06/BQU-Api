@@ -26,7 +26,7 @@ public class ColloquiumService(
         }
 
         var colloquium = new Colloquiums {
-            Grade = request.Grade ?? Grade.Zero,
+            Grade = request.Grade ?? Grade.None,
             Date = request.Date,
             IsConfirmed = false,
             StudentId = request.StudentId,

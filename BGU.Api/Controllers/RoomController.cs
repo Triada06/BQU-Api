@@ -14,9 +14,6 @@ public class RoomController(IRoomService roomService) : ControllerBase
     [HttpGet(ApiEndPoints.Room.GetAll)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
     {
-        // var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        // if (userId is null)
-        //     return Unauthorized();
         var res = await roomService.GetAllAsync(page, pageSize);
         return new ObjectResult(res);
     }

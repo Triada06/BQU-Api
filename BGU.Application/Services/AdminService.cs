@@ -16,8 +16,10 @@ public class AdminService(
     IGroupRepository groupRepository,
     IStudentRepository studentRepository,
     IDepartmentRepository departmentRepository,
-    ITeacherRepository teacherRepository) : IAdminService {
-    public async Task<ApiResult<UserCreatedDto>> CreateStudentAsync(StudentDto dto) {
+    ITeacherRepository teacherRepository) : IAdminService
+{
+    public async Task<ApiResult<UserCreatedDto>> CreateStudentAsync(StudentDto dto)
+    {
         var group = (
             await groupRepository.FindAsync(x => x.Code.Trim().ToLower() == dto.GroupName.Trim().ToLower(),
                 include: x => x
@@ -26,15 +28,18 @@ public class AdminService(
                     .Include(g => g.AdmissionYear))
         ).FirstOrDefault();
 
-        if (group == null) {
-            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+        if (group == null)
+        {
+            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 }, $"Group with the name {dto.GroupName} not found");
         }
 
         var existingUser = await userManager.FindByNameAsync(dto.UserName);
-        if (existingUser != null) {
+        if (existingUser != null)
+        {
             Console.WriteLine(existingUser.UserName);
             var existingStu = (await studentRepository.FindAsync(
                     x => x.AppUserId == existingUser.Id,
@@ -44,7 +49,8 @@ public class AdminService(
                 .SingleOrDefault();
 
             if (existingStu == null)
-                return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+                return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 }, "Student not found");
@@ -61,8 +67,10 @@ public class AdminService(
             existingStu.StudentAcademicInfo.Gpa = 0.0;
 
             var res = await studentRepository.UpdateAsync(existingStu);
-            if (res) {
-                return ApiResult<UserCreatedDto>.Success(new UserCreatedDto {
+            if (res)
+            {
+                return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 });
@@ -72,7 +80,8 @@ public class AdminService(
         }
 
         // Create user
-        var user = new AppUser {
+        var user = new AppUser
+        {
             Name = dto.Name,
             Surname = dto.Surname,
             MiddleName = dto.MiddleName,
@@ -83,7 +92,8 @@ public class AdminService(
         var result = await userManager.CreateAsync(user, tempPassword);
 
         if (!result.Succeeded)
-            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+            {
                 FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                 UserName = dto.UserName
             }, string.Join(", ", result.Errors.Select(e => e.Description)));
@@ -91,9 +101,11 @@ public class AdminService(
         await userManager.AddToRoleAsync(user, "Student");
 
         // Create student
-        var student = new Student {
+        var student = new Student
+        {
             AppUserId = user.Id,
-            StudentAcademicInfo = new StudentAcademicInfo {
+            StudentAcademicInfo = new StudentAcademicInfo
+            {
                 FacultyId = group.Specialization.Faculty.Id,
                 SpecializationId = group.Specialization.Id,
                 GroupId = group.Id,
@@ -106,21 +118,26 @@ public class AdminService(
         await dbContext.Students.AddAsync(student);
         await dbContext.SaveChangesAsync();
 
-        return ApiResult<UserCreatedDto>.Success(new UserCreatedDto {
+        return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
+        {
             TemporaryPassword = tempPassword,
             FullName = BuildFullName(user.Name, user.Surname, user.MiddleName),
             UserName = user.UserName
         });
     }
 
-    public async Task<List<BulkImportResult>> BulkImportStudentsAsync(List<StudentDto> students) {
+    public async Task<List<BulkImportResult>> BulkImportStudentsAsync(List<StudentDto> students)
+    {
         var results = new List<BulkImportResult>();
 
-        foreach (var studentDto in students) {
-            try {
+        foreach (var studentDto in students)
+        {
+            try
+            {
                 var result = await CreateStudentAsync(studentDto);
 
-                results.Add(new BulkImportResult {
+                results.Add(new BulkImportResult
+                {
                     Success = result.IsSucceeded,
                     Message = result.Message,
                     TemporaryPassword = result.IsSucceeded ? result.Data?.TemporaryPassword : null,
@@ -128,8 +145,10 @@ public class AdminService(
                     UserName = result.Data?.UserName
                 });
             }
-            catch (Exception ex) {
-                results.Add(new BulkImportResult {
+            catch (Exception ex)
+            {
+                results.Add(new BulkImportResult
+                {
                     Success = false,
                     Message = ex.Message,
                     FullName = BuildFullName(studentDto.Name, studentDto.Surname, studentDto.MiddleName),
@@ -141,21 +160,25 @@ public class AdminService(
         return results;
     }
 
-    public async Task<ApiResult<UserCreatedDto>> CreateTeacherAsync(TeacherDto dto) {
+    public async Task<ApiResult<UserCreatedDto>> CreateTeacherAsync(TeacherDto dto)
+    {
         var department =
             (await departmentRepository.FindAsync(x => x.Name.Trim().ToLower() == dto.DepartmentName.Trim().ToLower()
             ))
             .FirstOrDefault();
 
-        if (department == null) {
-            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+        if (department == null)
+        {
+            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 }, $"Department with the name {dto.DepartmentName} not found");
         }
 
         var existingUser = await userManager.FindByNameAsync(dto.UserName);
-        if (existingUser != null) {
+        if (existingUser != null)
+        {
             var existingTeacher = (await teacherRepository.FindAsync(
                     x => x.AppUserId == existingUser.Id,
                     t => t.Include(m => m.AppUser)
@@ -163,7 +186,8 @@ public class AdminService(
                 .SingleOrDefault();
 
             if (existingTeacher == null)
-                return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+                return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 }, "Teacher not found");
@@ -178,8 +202,10 @@ public class AdminService(
             existingTeacher.TeacherAcademicInfo.TeachingPosition = dto.Position;
 
             var res = await teacherRepository.UpdateAsync(existingTeacher);
-            if (res) {
-                return ApiResult<UserCreatedDto>.Success(new UserCreatedDto {
+            if (res)
+            {
+                return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
+                {
                     FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                     UserName = dto.UserName
                 });
@@ -189,7 +215,8 @@ public class AdminService(
         }
 
         // Create user
-        var user = new AppUser {
+        var user = new AppUser
+        {
             Name = dto.Name,
             Surname = dto.Surname,
             MiddleName = dto.MiddleName,
@@ -200,7 +227,8 @@ public class AdminService(
         var result = await userManager.CreateAsync(user, tempPassword);
 
         if (!result.Succeeded)
-            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto {
+            return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
+            {
                 FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
                 UserName = dto.UserName
             }, string.Join(", ", result.Errors.Select(e => e.Description)));
@@ -209,9 +237,11 @@ public class AdminService(
 
         // Create teacher
         // NOTE: adjust property names if your Teacher entity differs.
-        var teacher = new Teacher {
+        var teacher = new Teacher
+        {
             AppUserId = user.Id,
-            TeacherAcademicInfo = new TeacherAcademicInfo {
+            TeacherAcademicInfo = new TeacherAcademicInfo
+            {
                 DepartmentId = department.Id,
                 TeachingPosition = dto.Position,
             }
@@ -220,21 +250,26 @@ public class AdminService(
         await dbContext.Teachers.AddAsync(teacher);
         await dbContext.SaveChangesAsync();
 
-        return ApiResult<UserCreatedDto>.Success(new UserCreatedDto {
+        return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
+        {
             TemporaryPassword = tempPassword,
             FullName = BuildFullName(user.Name, user.Surname, user.MiddleName),
             UserName = user.UserName
         });
     }
 
-    public async Task<List<BulkImportResult>> BulkImportTeachersAsync(List<TeacherDto> teachers) {
+    public async Task<List<BulkImportResult>> BulkImportTeachersAsync(List<TeacherDto> teachers)
+    {
         var results = new List<BulkImportResult>();
 
-        foreach (var teacherDto in teachers) {
-            try {
+        foreach (var teacherDto in teachers)
+        {
+            try
+            {
                 var result = await CreateTeacherAsync(teacherDto);
 
-                results.Add(new BulkImportResult {
+                results.Add(new BulkImportResult
+                {
                     Success = result.IsSucceeded,
                     Message = result.Message,
                     TemporaryPassword = result.IsSucceeded ? result.Data?.TemporaryPassword : null,
@@ -242,8 +277,10 @@ public class AdminService(
                     UserName = result.Data?.UserName
                 });
             }
-            catch (Exception ex) {
-                results.Add(new BulkImportResult {
+            catch (Exception ex)
+            {
+                results.Add(new BulkImportResult
+                {
                     Success = false,
                     Message = ex.Message,
                     FullName = BuildFullName(teacherDto.Name, teacherDto.Surname, teacherDto.MiddleName),

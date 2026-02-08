@@ -46,7 +46,10 @@ public class AdminController(
     [HttpPost(ApiEndPoints.Student.Create)]
     public async Task<IActionResult> CreateStudent([FromBody] StudentDto request)
     {
-        var result = await adminService.CreateStudentAsync(request);
+        var result =
+            await adminService
+                .CreateStudentAsync(
+                    request); //TODO: add independent work, colls, seminars, attendances creating on creating a student and adding to a group
         return Ok(result);
     }
 

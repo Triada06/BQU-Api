@@ -199,7 +199,7 @@ public class TaughtSubjectService(
                     StudentId = student.Id,
                     TaughtSubjectId = seminarType.TaughtSubjectId,
                     GotAt = seminarType.ClassTime.ClassDate.UtcDateTime,
-                    Grade = Grade.Zero
+                    Grade = Grade.None
                 }));
             }
 
@@ -446,7 +446,7 @@ public class TaughtSubjectService(
             independentWorks.AddRange(studentIndependentWorks.Select(independentWork =>
                 new GetIndependentWorkByTaughtSubjectDto(independentWork.Id, student.Id, independentWork.Number,
                     independentWork.IsPassed)));
-        } //TODO: SMTH IS WRONG WITH INDEPENDENT WORKS, NUKE THE WHOLE COURSES TABLE AND START OVER
+        }
 
         return ApiResult<GetIndependentWorksByTaughtSubjectDto>.Success(
             new GetIndependentWorksByTaughtSubjectDto(independentWorks));

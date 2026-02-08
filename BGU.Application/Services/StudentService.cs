@@ -25,7 +25,7 @@ public class StudentService(
     IIndependentWorkRepository independentWorkRepository) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
-        new() // to calculate GPA
+        new() // to calculate Einstein GPA
         {
             { 15, (1, 2, 3) },
             { 16, (1, 2, 3) },
@@ -179,17 +179,15 @@ public class StudentService(
             "Found", true, 200);
     }
 
-
-    //TODO: REFACTOR THIS METHOD    
     public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
     {
-        var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            return new StudentGradesResponse(null, null,
-                ResponseMessages.Unauthorized, false,
-                (int)StatusCode.Unauthorized);
-        }
+        // var user = await userManager.FindByIdAsync(userId);
+        // if (user is null)
+        // {
+        //     return new StudentGradesResponse(null, null,
+        //         ResponseMessages.Unauthorized, false,
+        //         (int)StatusCode.Unauthorized);
+        // }
 
         var student = (await studentRepository.FindAsync(
             s => s.AppUserId == userId,
@@ -214,7 +212,7 @@ public class StudentService(
                 null,
                 ResponseMessages.NotFound,
                 false,
-                (int)StatusCode.NotFound
+                404
             );
         }
 
@@ -223,12 +221,15 @@ public class StudentService(
             var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
                 .Select(c => new ClassSessions(
                     c.Subject.Name,
-                    c.Classes.Select(e => new ClassInfo(e.ClassTime.ClassDate,
+                    c.Classes.Select(e => new ClassInfo(
+                        e.ClassTime.ClassDate,
                         e.ClassType.ToString(),
                         student.Attendances.Where(x => x.ClassId == e.Id).Select(m => m.IsAbsent).First(),
                         e.ClassType == ClassType.Семинар
                             ? (int?)student.SeminarGrades.FirstOrDefault(x =>
-                                x.TaughtSubjectId == c.Id && x.GotAt == e.ClassTime.ClassDate)?.Grade
+                                    x.TaughtSubjectId == c.Id && x.GotAt == e.ClassTime.ClassDate &&
+                                    x.Grade > Grade.None)
+                                ?.Grade
                             : null)
                     ))
                 )
@@ -247,25 +248,25 @@ public class StudentService(
                 c.Subject.CreditsNumber,
                 c.Hours,
                 CalculateOverallSubjectScore(
-                    c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                    c.Seminars.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
                         .ToList(),
-                    c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                    c.Colloquiums.Where(x => x.StudentId == student.Id && x.Grade > Grade.None)
+                        .Select(s => (int)s.Grade)
                         .ToList(),
                     (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
                         .Count(s => s.IsPassed is true), c.Hours,
                     student.Attendances
                         .Count(attendance => c.Classes.Select(x => x.Id).Contains(attendance.ClassId))),
-                c.Seminars.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                c.Seminars.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
                     .ToList(),
-                c.Colloquiums.Where(x => x.StudentId == student.Id).Select(s => (int)s.Grade)
+                c.Colloquiums.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
                     .ToList(),
                 c.IndependentWorks.Where(x => x.StudentId == student.Id)
                     .Count(s => s.IsPassed is true),
                 student.Attendances
                     .Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent).Count(),
                 c.Classes.Count)
-            )
-            .ToList();
+            );
         return new StudentGradesResponse(new StudentGradesDto(classes), null,
             "Ok", true, 200);
     }
