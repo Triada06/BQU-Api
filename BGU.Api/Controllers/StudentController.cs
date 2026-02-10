@@ -1,8 +1,6 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
-using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.Student.Requests;
-using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -94,7 +92,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.GradeColloquium)]
     public async Task<IActionResult> GradeColloquium([FromRoute] string studentId, [FromRoute] string colloquiumId,
-        [FromRoute] Grade grade)
+        [FromQuery] Grade grade)
     {
         var res = await studentService.GradeStudentColloquiumAsync(
             new GradeStudentColloquiumRequest(studentId, colloquiumId, grade));

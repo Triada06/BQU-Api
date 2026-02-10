@@ -20,6 +20,7 @@ public class TaughtSubjectService(
     ISubjectRepository subjectRepository,
     IClassTimeRepository classTimeRepository,
     IClassRepository classRepository,
+    IColloquiumRepository colloquiumRepository,
     IStudentRepository studentRepository,
     IAttendanceRepository attendanceRepository,
     ISeminarRepository seminarRepository,
@@ -191,6 +192,7 @@ public class TaughtSubjectService(
             var attendances = new List<Attendance>();
             var seminars = new List<Seminar>();
             var independentWorks = new List<IndependentWork>();
+            var colloquiums = new List<Colloquiums>();
 
             foreach (var seminarType in seminarTypes)
             {
@@ -240,6 +242,27 @@ public class TaughtSubjectService(
             }
 
             if (!await independentWorkRepository.BulkCreateAsync(independentWorks))
+            {
+                return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+                    "Failed to create independent works (assignments)");
+            }
+
+            //create colls
+            foreach (var student in studentsInGroup)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    var coll = new Colloquiums
+                    {
+                        Grade = Grade.None,
+                        StudentId = student!.Id,
+                        TaughtSubjectId = taughtSubject.Id,
+                    };
+                    colloquiums.Add(coll);
+                }
+            }
+
+            if (!await colloquiumRepository.BulkCreateAsync(colloquiums))
             {
                 return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                     "Failed to create independent works (assignments)");
@@ -422,7 +445,7 @@ public class TaughtSubjectService(
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
                 .Include(x => x.Subject)
-                .Include(x=>x.IndependentWorks),
+                .Include(x => x.IndependentWorks),
             tracking: false);
 
         if (subject is null)
@@ -435,7 +458,7 @@ public class TaughtSubjectService(
         var independentWorksOfSubject = subject.IndependentWorks.ToList();
         var stuAcademicInfos = subject.Group.Students.ToList();
         List<GetIndependentWorkByTaughtSubjectDto> independentWorks = [];
-        
+
         foreach (var stuAcademicInfo in stuAcademicInfos)
         {
             var student = stuAcademicInfo.Student;

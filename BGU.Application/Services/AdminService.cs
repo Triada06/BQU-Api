@@ -3,6 +3,7 @@ using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
+using BGU.Core.Enums;
 using BGU.Infrastructure.Data;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -14,8 +15,12 @@ public class AdminService(
     AppDbContext dbContext,
     UserManager<AppUser> userManager,
     IGroupRepository groupRepository,
+    IColloquiumRepository colloquiumRepository,
     IStudentRepository studentRepository,
+    ISeminarRepository seminarRepository,
+    IIndependentWorkRepository independentWorkRepository,
     IDepartmentRepository departmentRepository,
+    IAttendanceRepository attendanceRepository,
     ITeacherRepository teacherRepository) : IAdminService
 {
     public async Task<ApiResult<UserCreatedDto>> CreateStudentAsync(StudentDto dto)
@@ -25,7 +30,10 @@ public class AdminService(
                 include: x => x
                     .Include(g => g.Specialization)
                     .ThenInclude(g => g.Faculty)
-                    .Include(g => g.AdmissionYear))
+                    .Include(g => g.AdmissionYear)
+                    .Include(g => g.TaughtSubjects)
+                    .ThenInclude(ts => ts.Classes)
+                    .ThenInclude(c => c.ClassTime))
         ).FirstOrDefault();
 
         if (group == null)
@@ -38,45 +46,9 @@ public class AdminService(
         }
 
         var existingUser = await userManager.FindByNameAsync(dto.UserName);
-        if (existingUser != null)
+        if (existingUser is not null)
         {
-            Console.WriteLine(existingUser.UserName);
-            var existingStu = (await studentRepository.FindAsync(
-                    x => x.AppUserId == existingUser.Id,
-                    s => s.Include(m => m.AppUser)
-                        .Include(m => m.StudentAcademicInfo)
-                ))
-                .SingleOrDefault();
-
-            if (existingStu == null)
-                return ApiResult<UserCreatedDto>.BadRequest(new UserCreatedDto
-                {
-                    FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
-                    UserName = dto.UserName
-                }, "Student not found");
-
-            existingStu.AppUser.Name = dto.Name;
-            existingStu.AppUser.Surname = dto.Surname;
-            existingStu.AppUser.MiddleName = dto.MiddleName;
-            existingStu.AppUser.UserName = dto.UserName;
-            existingStu.StudentAcademicInfo.FacultyId = group.Specialization.Faculty.Id;
-            existingStu.StudentAcademicInfo.SpecializationId = group.Specialization.Id;
-            existingStu.StudentAcademicInfo.GroupId = group.Id;
-            existingStu.StudentAcademicInfo.AdmissionYearId = group.AdmissionYear.Id;
-            existingStu.StudentAcademicInfo.AdmissionScore = dto.AdmissionScore;
-            existingStu.StudentAcademicInfo.Gpa = 0.0;
-
-            var res = await studentRepository.UpdateAsync(existingStu);
-            if (res)
-            {
-                return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
-                {
-                    FullName = BuildFullName(dto.Name, dto.Surname, dto.MiddleName),
-                    UserName = dto.UserName
-                });
-            }
-
-            return ApiResult<UserCreatedDto>.SystemError("Something went wrong while updating");
+            return ApiResult<UserCreatedDto>.BadRequest(message: "User with this FIN code already exists");
         }
 
         // Create user
@@ -114,9 +86,20 @@ public class AdminService(
                 Gpa = 0.0
             }
         };
+        if (!await studentRepository.CreateAsync(student))
+        {
+            return ApiResult<UserCreatedDto>.SystemError(message: "An error occured while creating the user");
+        }
 
-        await dbContext.Students.AddAsync(student);
-        await dbContext.SaveChangesAsync();
+        //create required stuff
+        foreach (var taughtSubject in group.TaughtSubjects)
+        {
+            if (!await CreateAcademicRequirementsAsync(taughtSubject.Classes.ToList(), student, taughtSubject.Id))
+            {
+                return ApiResult<UserCreatedDto>.SystemError("Failed to create academic info for student");
+            }
+        }
+
 
         return ApiResult<UserCreatedDto>.Success(new UserCreatedDto
         {
@@ -297,4 +280,82 @@ public class AdminService(
 
     private static string GenerateTemporaryPassword(string prefix) =>
         $"{prefix}{Guid.NewGuid().ToString("N").Substring(0, 8)}!";
+
+    private async Task<bool> CreateAcademicRequirementsAsync(List<Class> classes, Student student,
+        string taughtSubjectId)
+    {
+        var seminarTypes = classes.FindAll(x => x.ClassType == ClassType.Семинар);
+
+        var attendances = new List<Attendance>();
+        var seminars = new List<Seminar>();
+        var independentWorks = new List<IndependentWork>();
+        var colloquiums = new List<Colloquiums>();
+
+        foreach (var seminarType in seminarTypes)
+        {
+            var seminar = new Seminar
+            {
+                StudentId = student.Id,
+                TaughtSubjectId = seminarType.TaughtSubjectId,
+                GotAt = seminarType.ClassTime.ClassDate.UtcDateTime,
+                Grade = Grade.None
+            };
+            seminars.Add(seminar);
+        }
+
+        if (!await seminarRepository.BulkCreate(seminars))
+        {
+            return false;
+        }
+
+        // For EACH class, create attendance 
+        foreach (var classItem in classes)
+        {
+            var att = new Attendance
+                { StudentId = student!.Id, ClassId = classItem.Id, IsAbsent = false };
+            attendances.Add(att);
+        }
+
+        if (!await attendanceRepository.BulkCreateAsync(attendances))
+        {
+            return false;
+        }
+
+        //create independent works
+
+        for (int i = 0; i < 10; i++)
+        {
+            var independentWork = new IndependentWork
+            {
+                Number = i + 1,
+                StudentId = student!.Id,
+                TaughtSubjectId = taughtSubjectId,
+                IsPassed = null
+            };
+            independentWorks.Add(independentWork);
+        }
+
+        if (!await independentWorkRepository.BulkCreateAsync(independentWorks))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            var coll = new Colloquiums
+            {
+                Grade = Grade.None,
+                StudentId = student!.Id,
+                TaughtSubjectId = taughtSubjectId,
+            };
+            colloquiums.Add(coll);
+        }
+
+        if (!await colloquiumRepository.BulkCreateAsync(colloquiums))
+        {
+            return false;
+        }
+
+        return true;
+    }
 }
