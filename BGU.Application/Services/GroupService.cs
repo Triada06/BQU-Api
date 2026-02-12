@@ -11,8 +11,10 @@ using Microsoft.EntityFrameworkCore;
 namespace BGU.Application.Services;
 
 public class GroupService(IGroupRepository groupRepository, IAdmissionYearRepository admissionYearRepository)
-    : IGroupService {
-    public async Task<GetAllGroupsResponse> GetAllAsync(int page, int pageSize, bool tracking = false) {
+    : IGroupService
+{
+    public async Task<GetAllGroupsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
+    {
         var groups =
             (await groupRepository.GetAllAsync(page, pageSize, tracking,
                 include: x =>
@@ -21,18 +23,19 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                         .Include(e => e.AdmissionYear)
             ))
             .Select(x => new GroupDto(
-                x.Id, 
+                x.Id,
                 x.Code,
                 x.Specialization.Name,
                 x.EducationLanguage.ToString(),
                 x.EducationLevel.ToString(),
-                DateTime.Now.Year - x.AdmissionYear.FirstYear, 
+                DateTime.Now.Year - x.AdmissionYear.FirstYear,
                 x.Students.Count)
             );
         return new GetAllGroupsResponse(groups, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<GetByIdGroupsResponse> GetByIdAsync(string id, bool tracking = false) {
+    public async Task<GetByIdGroupsResponse> GetByIdAsync(string id, bool tracking = false)
+    {
         var group =
             await groupRepository.GetByIdAsync(id,
                 include: x =>
@@ -41,25 +44,27 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                         .Include(e => e.AdmissionYear), tracking
             );
 
-        if (group is null) {
+        if (group is null)
+        {
             return new GetByIdGroupsResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
         return new GetByIdGroupsResponse(
             new GroupDto(
-                group.Id, 
-                group.Code, 
+                group.Id,
+                group.Code,
                 group.Specialization.Name,
                 group.EducationLanguage.ToString(),
                 group.EducationLevel.ToString(),
-                DateTime.Now.Year - group.AdmissionYear.FirstYear, 
-                group.Students.Count), 
+                DateTime.Now.Year - group.AdmissionYear.FirstYear,
+                group.Students.Count),
             StatusCode.Ok, true,
             ResponseMessages.Success);
     }
 
 
-    public async Task<GroupScheduleResponse> GetSchedule(string id) {
+    public async Task<GroupScheduleResponse> GetSchedule(string id)
+    {
         var group =
             await groupRepository.GetByIdAsync(id,
                 include: x =>
@@ -74,7 +79,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
             );
 
 
-        if (group == null) {
+        if (group == null)
+        {
             return new GroupScheduleResponse(
                 null,
                 ResponseMessages.NotFound,
@@ -89,29 +95,31 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
         var classesThisWeek = group.TaughtSubjects
             .SelectMany(ts => ts.Classes)
             .Where(c => (int)c.ClassTime.DaysOfTheWeek is >= 1 and <= 5)
-            .Select(c => {
+            .Select(c =>
+            {
                 var classDate = weekStart.AddDays((int)c.ClassTime.DaysOfTheWeek - 1);
                 var classDateTime = classDate.Add(c.ClassTime.Start);
-                
+
                 return new TodaysClassesDto(
                     c.Id,
                     c.TaughtSubject.Subject.Name,
                     c.ClassType.ToString(),
                     c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
-                    new DateTimeOffset(classDateTime),
-                    c.Room,
+                    c.ClassTime.Start,
+                    c.ClassTime.End, new DateTimeOffset(classDateTime), c.Room,
                     c.TaughtSubject.Code
                 );
             })
-            .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Period }) 
-            .OrderBy(x => x.Period)
+            .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Start })
+            .OrderBy(x => x.Start)
             .ToList();
         return new GroupScheduleResponse(
             new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
             "Found", true, 200);
     }
 
-    public async Task<DeleteGroupsResponse> DeleteAsync(string id) {
+    public async Task<DeleteGroupsResponse> DeleteAsync(string id)
+    {
         var group =
             await groupRepository.GetByIdAsync(id,
                 include: x =>
@@ -119,7 +127,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                         .Include(e => e.Students)
             );
 
-        if (group is null) {
+        if (group is null)
+        {
             return new DeleteGroupsResponse(StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
@@ -128,7 +137,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
             : new DeleteGroupsResponse(StatusCode.InternalServerError, false, ResponseMessages.Failed);
     }
 
-    public async Task<UpdateGroupsResponse> UpdateAsync(string id, UpdateGroupRequest request) {
+    public async Task<UpdateGroupsResponse> UpdateAsync(string id, UpdateGroupRequest request)
+    {
         var group =
             await groupRepository.GetByIdAsync(id,
                 include: x =>
@@ -137,7 +147,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                         .Include(e => e.AdmissionYear)
             );
 
-        if (group is null) {
+        if (group is null)
+        {
             return new UpdateGroupsResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
@@ -151,7 +162,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
             : new UpdateGroupsResponse(null, StatusCode.InternalServerError, false, ResponseMessages.Failed);
     }
 
-    public async Task<CreateGroupsResponse> CreateAsync(CreateGroupRequest request) {
+    public async Task<CreateGroupsResponse> CreateAsync(CreateGroupRequest request)
+    {
         var code = request.GroupCode.Trim();
         if (string.IsNullOrWhiteSpace(code))
             return new CreateGroupsResponse(null, StatusCode.BadRequest, false, "GroupCode is required");
@@ -163,12 +175,14 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
         if (exists)
             return new CreateGroupsResponse(null, StatusCode.Conflict, false, ResponseMessages.Failed);
         var admissionYear = GetAdmissionYear(request.Year);
-        if (!await admissionYearRepository.CreateAsync(admissionYear)) {
+        if (!await admissionYearRepository.CreateAsync(admissionYear))
+        {
             return new CreateGroupsResponse(null, StatusCode.Conflict, false, "Failed to initialize  admission year");
         }
 
         // IMPORTANT: store normalized/trimmed form consistently
-        var group = new Group {
+        var group = new Group
+        {
             Code = code,
             AdmissionYearId = admissionYear.Id,
             EducationLanguage = request.EducationLanguage,
@@ -177,7 +191,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
         };
 
 
-        if (!await groupRepository.CreateAsync(group)) {
+        if (!await groupRepository.CreateAsync(group))
+        {
             return new CreateGroupsResponse(null, StatusCode.InternalServerError, false, "Failed to create the group");
         }
 
@@ -188,7 +203,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
     {
         var firstYear = DateTime.Now.Month >= 9 ? DateTime.Now.Year - year + 1 : DateTime.Now.Year - year; //2023
         var secondYear = DateTime.Now.Month <= 9 ? DateTime.Now.Year - year + 1 : DateTime.Now.Year - year + 2; //2024
-        return new AdmissionYear {
+        return new AdmissionYear
+        {
             FirstYear = firstYear,
             SecondYear = secondYear
         };

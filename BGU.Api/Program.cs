@@ -1,12 +1,9 @@
-using System.Security.Claims;
 using System.Text;
 using BGU.Api;
 using BGU.Api.Filters;
 using BGU.Api.Helpers;
-using BGU.Application.Dtos.AppUser;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
-using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

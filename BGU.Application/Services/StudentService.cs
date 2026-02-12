@@ -81,6 +81,8 @@ public class StudentService(
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
+                c.ClassTime.Start,
+                c.ClassTime.End,
                 new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
                 c.Room, c.TaughtSubject.Code
             ))
@@ -150,6 +152,8 @@ public class StudentService(
                         c.TaughtSubject.Subject.Name,
                         c.ClassType.ToString(),
                         c.TaughtSubject.Teacher.AppUser.Name,
+                        c.ClassTime.Start,
+                        c.ClassTime.End,
                         new DateTimeOffset(classDateTime),
                         c.Room, c.TaughtSubject.Code
                     );
@@ -170,6 +174,8 @@ public class StudentService(
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
+                c.ClassTime.Start,
+                c.ClassTime.End,
                 new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
                 c.Room, c.TaughtSubject.Code
             ))
