@@ -20,4 +20,5 @@ public interface IBaseRepository<T> where T : class, IBaseEntity
         IIncludableQueryable<T, object>>? include = null, bool tracking = true);
 
     Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+    IQueryable<T> Table { get; }
 }

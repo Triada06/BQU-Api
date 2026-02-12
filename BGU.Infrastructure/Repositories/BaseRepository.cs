@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using BGU.Core;
+using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -78,4 +79,6 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
 
     public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
         => await _context.Set<T>().AnyAsync(predicate);
+
+    public IQueryable<T> Table => _entities.AsNoTracking();
 }

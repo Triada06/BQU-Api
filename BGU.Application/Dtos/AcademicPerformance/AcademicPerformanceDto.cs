@@ -1,8 +1,22 @@
+using BGU.Application.Dtos.IndependentWorks;
 using BGU.Core.Entities;
 using BGU.Core.Enums;
 
 namespace BGU.Application.Dtos.AcademicPerformance;
 
+// public sealed record AcademicPerformanceDto(
+//     string ClassName,
+//     string GroupName,
+//     string ProfessorName,
+//     int Credits,
+//     int Hours,
+//     double OverallScore,
+//     IEnumerable<int> SeminarGrades,
+//     IEnumerable<int> Colloquium,
+//     int IndependentWorks,
+//     int Absences,
+//     int ClassCount);
+//     
 public sealed record AcademicPerformanceDto(
     string ClassName,
     string GroupName,
@@ -12,6 +26,6 @@ public sealed record AcademicPerformanceDto(
     double OverallScore,
     IEnumerable<int> SeminarGrades,
     IEnumerable<int> Colloquium,
-    int IndependentWorks,
+    IEnumerable<GetIndependentWorkDto> IndependentWorks,
     int Absences,
     int ClassCount);
