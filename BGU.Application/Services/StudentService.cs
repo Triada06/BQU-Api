@@ -206,11 +206,11 @@ public class StudentService(
                         c.ClassType,
                         c.ClassTime.ClassDate
                     }).ToList(),
-                    Seminars = ts.Seminars.Where(sem => sem.StudentId == s.Id && sem.Grade > Grade.None).ToList(),
+                    Seminars = ts.Seminars.Where(sem => sem.StudentId == s.Id && sem.Grade != Grade.None).ToList(),
                     IndependentWorks = ts.IndependentWorks.Where(iw => iw.StudentId == s.Id).ToList()
                 }).ToList(),
                 Attendances = s.Attendances.Select(a => new { a.ClassId, a.IsAbsent, a.Date }).ToList(),
-                Colloquiums = s.Colloquiums.Where(col => col.Grade > Grade.None).ToList(),
+                Colloquiums = s.Colloquiums.Where(col => col.Grade != Grade.None).ToList(),
             })
             .FirstOrDefaultAsync();
 
@@ -272,99 +272,7 @@ public class StudentService(
 
         return new StudentGradesResponse(new StudentGradesDto(performance), null, "Ok", true, 200);
     }
-
-    // public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
-    // {
-    //     // var user = await userManager.FindByIdAsync(userId);
-    //     // if (user is null)
-    //     // {
-    //     //     return new StudentGradesResponse(null, null,
-    //     //         ResponseMessages.Unauthorized, false,
-    //     //         (int)StatusCode.Unauthorized);
-    //     // }
-    //
-    //     var student = (await studentRepository.FindAsync(
-    //         s => s.AppUserId == userId,
-    //         s => s.Include(st => st.StudentAcademicInfo)
-    //             .ThenInclude(ai => ai.Group)
-    //             .ThenInclude(g => g.TaughtSubjects)
-    //             .ThenInclude(ts => ts.Subject)
-    //             .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
-    //             .ThenInclude(ts => ts.Teacher)
-    //             .ThenInclude(t => t.AppUser)
-    //             .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
-    //             .ThenInclude(ts => ts.Classes)
-    //             .ThenInclude(c => c.ClassTime)
-    //             .Include(x => x.SeminarGrades)
-    //             .Include(x => x.Attendances)
-    //     )).FirstOrDefault();
-    //
-    //     if (student == null)
-    //     {
-    //         return new StudentGradesResponse(
-    //             null,
-    //             null,
-    //             ResponseMessages.NotFound,
-    //             false,
-    //             404
-    //         );
-    //     }
-    //
-    //     if (request.Grade == "sessions")
-    //     {
-    //         var sessions = student.StudentAcademicInfo.Group.TaughtSubjects
-    //             .Select(c => new ClassSessions(
-    //                 c.Subject.Name,
-    //                 c.Classes.Select(e => new ClassInfo(
-    //                     e.ClassTime.ClassDate,
-    //                     e.ClassType.ToString(),
-    //                     student.Attendances.Where(x => x.ClassId == e.Id).Select(m => m.IsAbsent).First(),
-    //                     e.ClassType == ClassType.Семинар
-    //                         ? (int?)student.SeminarGrades.FirstOrDefault(x =>
-    //                                 x.TaughtSubjectId == c.Id && x.GotAt == e.ClassTime.ClassDate &&
-    //                                 x.Grade > Grade.None)
-    //                             ?.Grade
-    //                         : null)
-    //                 ))
-    //             )
-    //             .ToList();
-    //         return new StudentGradesResponse(null, sessions,
-    //             "Ok", true, 200);
-    //     }
-    //
-    //     var taughtSubjects = student.StudentAcademicInfo.Group.TaughtSubjects;
-    //
-    //     var classes = taughtSubjects
-    //         .Select(c => new AcademicPerformanceDto(
-    //             c.Subject.Name,
-    //             c.Group.Code,
-    //             c.Teacher.AppUser.Name,
-    //             c.Subject.CreditsNumber,
-    //             c.Hours,
-    //             CalculateOverallSubjectScore(
-    //                 c.Seminars.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
-    //                     .ToList(),
-    //                 c.Colloquiums.Where(x => x.StudentId == student.Id && x.Grade > Grade.None)
-    //                     .Select(s => (int)s.Grade)
-    //                     .ToList(),
-    //                 (Grade)c.IndependentWorks.Where(x => x.StudentId == student.Id)
-    //                     .Count(s => s.IsPassed is true), c.Hours,
-    //                 student.Attendances
-    //                     .Count(attendance => c.Classes.Select(x => x.Id).Contains(attendance.ClassId))),
-    //             c.Seminars.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
-    //                 .ToList(),
-    //             c.Colloquiums.Where(x => x.StudentId == student.Id && x.Grade > Grade.None).Select(s => (int)s.Grade)
-    //                 .ToList(),
-    //             c.IndependentWorks.Where(x => x.StudentId == student.Id)
-    //                 .Count(s => s.IsPassed is true),
-    //             student.Attendances
-    //                 .Where(x => x.StudentId == student.Id).Select(x => x.IsAbsent).Count(),
-    //             c.Classes.Count)
-    //         );
-    //     return new StudentGradesResponse(new StudentGradesDto(classes), null,
-    //         "Ok", true, 200);
-    // }
-
+    
     public async Task<StudentProfileResponse> GetProfile(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);
