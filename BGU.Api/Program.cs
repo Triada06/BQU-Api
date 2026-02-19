@@ -10,11 +10,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
+using DotNetEnv;
 
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+Env.Load();
 
 // Configure OpenAPI with JWT authentication
 builder.Services.AddOpenApi(options =>
@@ -135,113 +137,19 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var sp = scope.ServiceProvider;
 
-    Console.WriteLine("=== SEED START ===");
+    var db = sp.GetRequiredService<AppDbContext>();
+    var userManager = sp.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = sp.GetRequiredService<RoleManager<IdentityRole>>();
+
     await db.Database.MigrateAsync();
 
-    foreach (var role in new[] { "Dean", "Student", "Teacher" })
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-
-    const string roomName = "Otaq 317";
-
-    var room = await db.Rooms.SingleOrDefaultAsync(f => f.Name == roomName);
-    if (room == null)
-    {
-        room = new Room
-        {
-            Name = roomName,
-            Capacity = 20,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Rooms.Add(room);
-        await db.SaveChangesAsync();
-    }
-
-    const string facultyName = "Tetbiqi Riyaziyyat";
-
-    var faculty = await db.Faculties.SingleOrDefaultAsync(f => f.Name == facultyName);
-    if (faculty == null)
-    {
-        faculty = new Faculty
-        {
-            Name = facultyName,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Faculties.Add(faculty);
-        await db.SaveChangesAsync();
-    }
-
-
-    const string specializationName = "Komputer Elmleri";
-
-    var specialization = await db.Specializations.SingleOrDefaultAsync(f => f.Name == specializationName);
-    if (specialization == null)
-    {
-        specialization = new Specialization
-        {
-            Name = specializationName,
-            FacultyId = faculty.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Specializations.Add(specialization);
-        await db.SaveChangesAsync();
-    }
-
-
-    foreach (var dep in new[] { "Riyaziyyat və təbiət fənnləri", "Tarix", "Xarici dillər", "Psixologiya" })
-    {
-        var department = await db.Departments.SingleOrDefaultAsync(f => f.Name == dep);
-        if (department == null)
-        {
-            department = new Department
-            {
-                Name = dep,
-                FacultyId = faculty.Id,
-                CreatedAt = DateTime.UtcNow
-            };
-            db.Departments.Add(department);
-        }
-    }
-
-    await db.SaveChangesAsync();
-
-    const string username = "7KW323K";
-    const string password = "Atilla123";
-
-    var user = await userManager.FindByNameAsync(username);
-    if (user == null)
-    {
-        user = new AppUser
-        {
-            UserName = username,
-            Name = "Resad",
-            Surname = "Mehdiev",
-            MiddleName = "Ali",
-        };
-
-        var res = await userManager.CreateAsync(user, password);
-        if (!res.Succeeded) throw new Exception(string.Join("; ", res.Errors.Select(e => e.Description)));
-
-        await userManager.AddToRoleAsync(user, "Dean");
-
-        db.Deans.Add(new Dean
-        {
-            AppUserId = user.Id,
-            FacultyId = faculty.Id,
-            RoleName = "Dekan",
-            CreatedAt = DateTime.UtcNow
-        });
-
-        await db.SaveChangesAsync();
-    }
-
-    Console.WriteLine("=== SEED END ===");
+    await DbSeeder.SeedAsync(db);
+    await IdentitySeeder.SeedDeansFromEnvAsync(db, userManager, roleManager);
 }
 
 app.UseStaticFiles();
