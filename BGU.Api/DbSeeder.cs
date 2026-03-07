@@ -15,8 +15,8 @@ public static class DbSeeder
         // ----------------------------
         // 1) Faculties
         // ----------------------------
-        const string facultyPhilHistory = "Filologiya-tarix fakültəsi";    
-        const string facultySocPed      = "Sosial-pedoqoji fakültəsi";
+        const string facultyPhilHistory = "Filologiya-tarix fakültəsi";
+        const string facultySocPed = "Sosial-pedoqoji fakültəsi";
 
         var facultyNames = new[] { facultyPhilHistory, facultySocPed };
 
@@ -53,12 +53,12 @@ public static class DbSeeder
         {
             // Filologiya-tarix
             ["Azərbaycan dili və ədəbiyyat kafedrası"] = facultyPhilHistory,
-            ["Xarici dillər kafedrası"]                = facultyPhilHistory,
-            ["Tarix kafedrası"]                        = facultyPhilHistory,
+            ["Xarici dillər kafedrası"] = facultyPhilHistory,
+            ["Tarix kafedrası"] = facultyPhilHistory,
 
             // Sosial - pedoqoji
-            ["Pedaqogika kafedrası"]                          = facultySocPed,
-            ["Psixologiya kafedrası"]                         = facultySocPed,
+            ["Pedaqogika kafedrası"] = facultySocPed,
+            ["Psixologiya kafedrası"] = facultySocPed,
             ["Riyaziyyat, informatika və təbiət fənləri kafedrası"] = facultySocPed
         };
 
@@ -70,10 +70,12 @@ public static class DbSeeder
         {
             var facultyName = deptToFaculty[deptName];
             var faculty = facultyByName[facultyName];
-            
+
             var alreadyExists = existingDepts.Any(d =>
                 d.Name == deptName &&
-                (!string.IsNullOrWhiteSpace(faculty.Id) ? d.FacultyId == faculty.Id : facultyByName[facultyName].Name == facultyName));
+                (!string.IsNullOrWhiteSpace(faculty.Id)
+                    ? d.FacultyId == faculty.Id
+                    : facultyByName[facultyName].Name == facultyName));
 
             if (!alreadyExists)
             {
@@ -104,11 +106,11 @@ public static class DbSeeder
             "Təhsildə sosial-psixoloji xidmət",
             "Psixologiya",
             "Riyaziyyat və informatika müəllimliyi",
-            "Pedaqogika" 
+            "Pedaqogika"
         };
 
         await UpsertSpecializationsAsync(db, facultyByName[facultyPhilHistory], philHistorySpecs, now, ct);
-        await UpsertSpecializationsAsync(db, facultyByName[facultySocPed],      socPedSpecs,      now, ct);
+        await UpsertSpecializationsAsync(db, facultyByName[facultySocPed], socPedSpecs, now, ct);
 
         // ----------------------------
         // 4) Rooms: 4 floors * 21 rooms
@@ -186,6 +188,7 @@ public static class DbSeeder
                 names.Add($"Otaq {roomNumber}");
             }
         }
+
         return names;
     }
 }
