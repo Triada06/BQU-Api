@@ -27,10 +27,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Migrations\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Compile Remove="Migrations\20260120135228_DeleteLanguageAcademicInfo.cs" />
       <Compile Remove="Migrations\20260120135228_DeleteLanguageAcademicInfo.Designer.cs" />
       <Compile Remove="Migrations\AppDbContextModelSnapshot.cs" />

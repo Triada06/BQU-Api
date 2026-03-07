@@ -20,11 +20,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<IndependentWork> IndependentWorks { get; set; }
     public DbSet<Specialization> Specializations { get; set; }
     public DbSet<Student> Students { get; set; }
-    public DbSet<StudentAcademicInfo> StudentAcademicInfos { get; set; }
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<TaughtSubject> TaughtSubjects { get; set; }
     public DbSet<Teacher> Teachers { get; set; }
-    public DbSet<TeacherAcademicInfo> TeacherAcademicInfos { get; set; }
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<Seminar> Seminars { get; set; }
     public DbSet<Dean> Deans { get; set; }

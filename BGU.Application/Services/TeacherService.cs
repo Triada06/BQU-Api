@@ -29,8 +29,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
         var teacher = (await teacherRepository.FindAsync(
             s => s.AppUserId == userId,
-            s => s.Include(st => st.TeacherAcademicInfo)
-                .ThenInclude(ai => ai.Department)
+            s => s
+                .Include(ai => ai.Department)
                 .ThenInclude(g => g.Faculty)
                 .ThenInclude(ts => ts.Specializations)
         )).FirstOrDefault();
@@ -45,8 +45,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             );
         }
 
-        var teacherSpecialization = teacher.TeacherAcademicInfo.Department.Faculty.Specializations
-            .Where(t => t.FacultyId == teacher.TeacherAcademicInfo.Department.FacultyId).Select(x => x.Name)
+        var teacherSpecialization = teacher.Department.Faculty.Specializations
+            .Where(t => t.FacultyId == teacher.Department.FacultyId).Select(x => x.Name)
             .FirstOrDefault();
         if (teacherSpecialization == null)
         {
@@ -58,7 +58,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         }
 
         var teacherAcademicInfoDto = new TeacherAcademicInfoDto(user.Name, user.Surname, user.UserName, teacher.Id,
-            teacher.TeacherAcademicInfo.Department.Faculty.Name, teacher.TeacherAcademicInfo.Department.Faculty.Name,
+            teacher.Department.Faculty.Name, teacher.Department.Faculty.Name,
             teacherSpecialization);
         return new TeacherProfileResponse(teacherAcademicInfoDto, ResponseMessages.Success,
             true, (int)StatusCode.Ok);
@@ -80,8 +80,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 s.Include(x => x.TaughtSubjects)
                     .ThenInclude(x => x.Classes)
                     .ThenInclude(x => x.ClassTime)
-                    .Include(st => st.TeacherAcademicInfo)
-                    .ThenInclude(ai => ai.Department)
+                    .Include(ai => ai.Department)
                     .ThenInclude(g => g.Faculty)
                     .ThenInclude(ts => ts.Specializations)
                     .Include(x => x.AppUser)
@@ -169,8 +168,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                     .ThenInclude(x => x.Students)
                     .Include(x => x.TaughtSubjects)
                     .ThenInclude(x => x.Classes)
-                    .Include(st => st.TeacherAcademicInfo)
-                    .ThenInclude(ai => ai.Department)
+                    .Include(ai => ai.Department)
                     .ThenInclude(g => g.Faculty)
                     .ThenInclude(ts => ts.Specializations)
                     .Include(x => x.TaughtSubjects)
@@ -197,13 +195,13 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
     public async Task<UpdateTeacherResponse> UpdateAsync(string teacherId, UpdateTeacherRequest request)
     {
         var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
-            i => i.Include(x => x.TeacherAcademicInfo).Include(x => x.AppUser), tracking: true)).FirstOrDefault();
+            i => i.Include(x => x.AppUser), tracking: true)).FirstOrDefault();
         if (teacher is null)
             return new UpdateTeacherResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
 
         teacher.AppUser.Name = request.Name;
         teacher.AppUser.Surname = request.Surname;
-        teacher.TeacherAcademicInfo.DepartmentId = request.DepartmentId;
+        teacher.DepartmentId = request.DepartmentId;
 
         await teacherRepository.UpdateAsync(teacher);
         return new UpdateTeacherResponse(
@@ -239,14 +237,14 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
     public async Task<GetByIdTeacherResponse> GetByIdAsync(string teacherId)
     {
         var teacher = await teacherRepository.GetByIdAsync(teacherId,
-            i => i.Include(x => x.TeacherAcademicInfo)
+            i => i
                 .Include(x => x.AppUser), tracking: false);
         if (teacher is null)
             return new GetByIdTeacherResponse(null, ResponseMessages.NotFound, false, StatusCode.NotFound);
         return new GetByIdTeacherResponse(
             new GetTeacherDto(teacher.Id, teacher.AppUser.Name, teacher.AppUser.Surname,
                 teacher.AppUser.MiddleName, teacher.AppUser.UserName,
-                teacher.TeacherAcademicInfo.DepartmentId, teacher.TeacherAcademicInfo.TeachingPosition),
+                teacher.DepartmentId, teacher.TeachingPosition),
             ResponseMessages.Success,
             true, StatusCode.Ok);
     }
@@ -254,14 +252,13 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
     public async Task<GetAllTeachersResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
         var teachers = await teacherRepository.GetAllAsync(page, pageSize,
-            include: i => i.Include(x => x.TeacherAcademicInfo)
-                .Include(x => x.AppUser),
+            include: i => i.Include(x => x.AppUser),
             tracking: false);
         return new GetAllTeachersResponse(
             teachers.Select(x => new GetTeacherDto(x.Id, x.AppUser.Name,
                 x.AppUser.Surname, x.AppUser.MiddleName,
                 x.AppUser.UserName!,
-                x.TeacherAcademicInfo.DepartmentId, x.TeacherAcademicInfo.TeachingPosition)),
+                x.DepartmentId, x.TeachingPosition)),
             ResponseMessages.Success,
             true, StatusCode.Ok);
     }

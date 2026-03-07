@@ -1,10 +1,7 @@
 using BGU.Application.Common;
-using BGU.Application.Contracts.IndependentWorks.Requests;
-using BGU.Application.Contracts.Student;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.IndependentWorks;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
 namespace BGU.Application.Services.Interfaces;

@@ -184,7 +184,7 @@ public class TaughtSubjectService(
 
         //creating an attendance system
         var studentsInGroup =
-            await studentRepository.FindAsync(st => st.StudentAcademicInfo.GroupId == request.GroupId);
+            await studentRepository.FindAsync(st => st.GroupId == request.GroupId);
         var seminarTypes = classes.FindAll(x => x.ClassType == ClassType.Семинар);
 
         if (studentsInGroup.Count != 0 && studentsInGroup.All(x => x is not null))
@@ -280,7 +280,6 @@ public class TaughtSubjectService(
             include: i => i
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
-                .ThenInclude(gs => gs.Student)
                 .ThenInclude(s => s.AppUser)
                 .Include(x => x.Subject)
                 .Include(x => x.Seminars)
@@ -304,7 +303,7 @@ public class TaughtSubjectService(
                 new GetActivitiesAndAttendances([]));
         }
 
-        var studentIds = students.Select(s => s.StudentId).ToList();
+        var studentIds = students.Select(s => s.Id).ToList();
 
         var allAttendances = await attendanceRepository.FindAsync(
             a => studentIds.Contains(a.StudentId),
@@ -324,13 +323,13 @@ public class TaughtSubjectService(
         foreach (var groupStudent in students)
         {
             attendancesByStudent.TryGetValue(
-                groupStudent.StudentId,
+                groupStudent.Id,
                 out var studentAttendances);
 
             studentAttendances ??= [];
 
             var studentSeminars = subject.Seminars
-                .Where(s => s.StudentId == groupStudent.StudentId)
+                .Where(s => s.StudentId == groupStudent.Id)
                 .OrderBy(s => s.CreatedAt)
                 .ToList();
 
@@ -351,13 +350,16 @@ public class TaughtSubjectService(
                         seminarIndex++;
                     }
 
+                    var attendance = studentAttendances
+                        .FirstOrDefault(a => a?.ClassId == classItem.Id);
+
                     managedClasses.Add(new MangeClassesDto(
                         classItem.Id,
                         classItem.ClassTime.ClassDate.UtcDateTime,
                         FormatRange(classItem.ClassTime.Start, classItem.ClassTime.End),
                         'S',
-                        null,
-                        null,
+                        seminar?.Grade is Grade.None ? attendance?.Id : null,
+                        seminar?.Grade is Grade.None ? attendance?.IsAbsent : null,
                         seminar?.Id,
                         seminar?.Grade
                     ));
@@ -365,7 +367,7 @@ public class TaughtSubjectService(
                 else
                 {
                     var attendance = studentAttendances
-                        .FirstOrDefault(a => a.ClassId == classItem.Id);
+                        .FirstOrDefault(a => a?.ClassId == classItem.Id);
 
                     managedClasses.Add(new MangeClassesDto(
                         classItem.Id,
@@ -382,7 +384,7 @@ public class TaughtSubjectService(
 
             result.Add(new GetActivityAndAttendance(
                 groupStudent.Id,
-                $"{groupStudent.Student.AppUser.Name} {groupStudent.Student.AppUser.Surname}",
+                $"{groupStudent.AppUser.Name} {groupStudent.AppUser.Surname}",
                 managedClasses));
         }
 
@@ -398,7 +400,6 @@ public class TaughtSubjectService(
             include: i => i
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
-                .ThenInclude(gs => gs.Student)
                 .ThenInclude(s => s.AppUser)
                 .Include(x => x.Subject)
                 .Include(x => x.Teacher)
@@ -412,14 +413,14 @@ public class TaughtSubjectService(
                 $"Taught Subject with an id of {taughtSubjectId} not found");
         }
 
-        var students = subject.Group?.Students ?? [];
+        var students = subject.Group.Students ?? [];
 
         var studentsDto = students
             .Select(gs =>
             {
-                var u = gs.Student.AppUser;
+                var u = gs.AppUser;
                 return new StudentsInSubjectDto(
-                    gs.StudentId,
+                    gs.Id,
                     u.Name,
                     u.Surname,
                     u.MiddleName,
@@ -441,7 +442,6 @@ public class TaughtSubjectService(
             include: i => i
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
-                .ThenInclude(gs => gs.Student)
                 .Include(x => x.Group)
                 .ThenInclude(g => g.Students)
                 .Include(x => x.Subject)
@@ -459,9 +459,8 @@ public class TaughtSubjectService(
         var stuAcademicInfos = subject.Group.Students.ToList();
         List<GetIndependentWorkByTaughtSubjectDto> independentWorks = [];
 
-        foreach (var stuAcademicInfo in stuAcademicInfos)
+        foreach (var student in stuAcademicInfos)
         {
-            var student = stuAcademicInfo.Student;
             var studentIndependentWorks = independentWorksOfSubject
                 .Where(x => x.TaughtSubjectId == taughtSubjectId && student.Id == x.StudentId);
 

@@ -76,15 +76,12 @@ public class AdminService(
         var student = new Student
         {
             AppUserId = user.Id,
-            StudentAcademicInfo = new StudentAcademicInfo
-            {
-                FacultyId = group.Specialization.Faculty.Id,
-                SpecializationId = group.Specialization.Id,
-                GroupId = group.Id,
-                AdmissionYearId = group.AdmissionYear.Id,
-                AdmissionScore = dto.AdmissionScore,
-                Gpa = 0.0
-            }
+            SpecializationId = group.Specialization.Id,
+            FacultyId = group.Specialization.Faculty.Id,
+            AdmissionYearId = group.AdmissionYear.Id,
+            GroupId = group.Id,
+            AdmissionScore = dto.AdmissionScore,
+            Gpa = 0.0
         };
         if (!await studentRepository.CreateAsync(student))
         {
@@ -181,8 +178,8 @@ public class AdminService(
             existingTeacher.AppUser.UserName = dto.UserName;
 
             // NOTE: adjust property names if your Teacher entity differs.
-            existingTeacher.TeacherAcademicInfo.DepartmentId = department.Id;
-            existingTeacher.TeacherAcademicInfo.TeachingPosition = dto.Position;
+            existingTeacher.DepartmentId = department.Id;
+            existingTeacher.TeachingPosition = dto.Position;
 
             var res = await teacherRepository.UpdateAsync(existingTeacher);
             if (res)
@@ -223,11 +220,8 @@ public class AdminService(
         var teacher = new Teacher
         {
             AppUserId = user.Id,
-            TeacherAcademicInfo = new TeacherAcademicInfo
-            {
-                DepartmentId = department.Id,
-                TeachingPosition = dto.Position,
-            }
+            TeachingPosition = dto.Position,
+            DepartmentId = department.Id,
         };
 
         await dbContext.Teachers.AddAsync(teacher);
@@ -279,7 +273,7 @@ public class AdminService(
         string.Join(" ", new[] { name, surname, middleName }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
     private static string GenerateTemporaryPassword(string prefix) =>
-        $"{prefix}{Guid.NewGuid().ToString("N").Substring(0, 8)}!";
+        $"{prefix}{Guid.NewGuid().ToString("N")[..8]}!";
 
     private async Task<bool> CreateAcademicRequirementsAsync(List<Class> classes, Student student,
         string taughtSubjectId)
@@ -312,7 +306,7 @@ public class AdminService(
         foreach (var classItem in classes)
         {
             var att = new Attendance
-                { StudentId = student!.Id, ClassId = classItem.Id, IsAbsent = false };
+                { StudentId = student.Id, ClassId = classItem.Id, IsAbsent = false };
             attendances.Add(att);
         }
 
@@ -328,7 +322,7 @@ public class AdminService(
             var independentWork = new IndependentWork
             {
                 Number = i + 1,
-                StudentId = student!.Id,
+                StudentId = student.Id,
                 TaughtSubjectId = taughtSubjectId,
                 IsPassed = null
             };
@@ -340,22 +334,18 @@ public class AdminService(
             return false;
         }
 
+        //create colls
         for (int i = 0; i < 3; i++)
         {
             var coll = new Colloquiums
             {
                 Grade = Grade.None,
-                StudentId = student!.Id,
+                StudentId = student.Id,
                 TaughtSubjectId = taughtSubjectId,
             };
             colloquiums.Add(coll);
         }
 
-        if (!await colloquiumRepository.BulkCreateAsync(colloquiums))
-        {
-            return false;
-        }
-
-        return true;
+        return await colloquiumRepository.BulkCreateAsync(colloquiums);
     }
 }

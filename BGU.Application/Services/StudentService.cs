@@ -51,14 +51,14 @@ public class StudentService(
 
         var student = (await studentRepository.FindAsync(
             s => s.AppUserId == userId,
-            s => s.Include(st => st.StudentAcademicInfo)
-                .ThenInclude(ai => ai.Group)
+            s => s
+                .Include(ai => ai.Group)
                 .ThenInclude(g => g.TaughtSubjects)
                 .ThenInclude(ts => ts.Subject)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Teacher)
                 .ThenInclude(t => t.AppUser)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
@@ -73,7 +73,7 @@ public class StudentService(
         }
 
         int today = GetToday();
-        var classesToday = student.StudentAcademicInfo.Group.TaughtSubjects
+        var classesToday = student.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
             .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
             .Select(c => new TodaysClassesDto(
@@ -103,14 +103,14 @@ public class StudentService(
 
         var student = (await studentRepository.FindAsync(
             s => s.AppUserId == userId,
-            s => s.Include(st => st.StudentAcademicInfo)
-                .ThenInclude(ai => ai.Group)
+            s => s
+                .Include(ai => ai.Group)
                 .ThenInclude(g => g.TaughtSubjects)
                 .ThenInclude(ts => ts.Subject)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Teacher)
                 .ThenInclude(t => t.AppUser)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
@@ -133,7 +133,7 @@ public class StudentService(
             var weekStart = todayDate.AddDays(-diff);
             var weekEnd = weekStart.AddDays(4);
 
-            var classesThisWeek = student.StudentAcademicInfo.Group.TaughtSubjects
+            var classesThisWeek = student.Group.TaughtSubjects
                 .SelectMany(gs => gs.Classes)
                 .Where(c =>
                 {
@@ -166,7 +166,7 @@ public class StudentService(
         }
 
         int today = GetToday();
-        var classesToday = student.StudentAcademicInfo.Group.TaughtSubjects
+        var classesToday = student.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
             .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
             .Select(c => new TodaysClassesDto(
@@ -192,8 +192,8 @@ public class StudentService(
             .Select(s => new
             {
                 s.Id,
-                GroupCode = s.StudentAcademicInfo.Group.Code,
-                TaughtSubjects = s.StudentAcademicInfo.Group.TaughtSubjects.Select(ts => new
+                GroupCode = s.Group.Code,
+                TaughtSubjects = s.Group.TaughtSubjects.Select(ts => new
                 {
                     ts.Id,
                     ts.Hours,
@@ -285,17 +285,17 @@ public class StudentService(
 
         var student = (await studentRepository.FindAsync(
             s => s.AppUserId == userId,
-            s => s.Include(st => st.StudentAcademicInfo)
-                .ThenInclude(ai => ai.Group)
+            s => s
+                .Include(ai => ai.Group)
                 .ThenInclude(g => g.TaughtSubjects)
                 .ThenInclude(ts => ts.Subject)
-                .Include(st => st.StudentAcademicInfo.AdmissionYear)
-                .Include(st => st.StudentAcademicInfo.Faculty)
-                .Include(st => st.StudentAcademicInfo.Specialization)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.AdmissionYear)
+                .Include(st => st.Faculty)
+                .Include(st => st.Specialization)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Teacher)
                 .ThenInclude(t => t.AppUser)
-                .Include(st => st.StudentAcademicInfo.Group.TaughtSubjects)
+                .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
         )).FirstOrDefault();
@@ -311,9 +311,9 @@ public class StudentService(
         }
 
         var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, user.UserName, student.Id,
-            student.StudentAcademicInfo.Gpa, nameof(student.StudentAcademicInfo.Group.EducationLevel),
-            student.StudentAcademicInfo.AdmissionYear.FirstYear, student.StudentAcademicInfo.Faculty.Name,
-            student.StudentAcademicInfo.Specialization.Name);
+            student.Gpa, nameof(student.Group.EducationLevel),
+            student.AdmissionYear.FirstYear, student.Faculty.Name,
+            student.Specialization.Name);
 
         return new StudentProfileResponse(studentAcademicInfo, ResponseMessages.Success, true,
             (int)StatusCode.Ok);
@@ -322,24 +322,23 @@ public class StudentService(
     public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
     {
         var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
-            .Include(st => st.StudentAcademicInfo)
-            .ThenInclude(st => st.Group)
-            .Include(st => st.StudentAcademicInfo.AdmissionYear)
-            .Include(st => st.StudentAcademicInfo.Specialization)
+            .Include(st => st.Group)
+            .Include(st => st.AdmissionYear)
+            .Include(st => st.Specialization)
             .Include(st => st.AppUser))).ToList();
         if (students.Count == 0)
         {
-            return new GetStudentResponse([], StatusCode.NotFound, true, ResponseMessages.NotFound);
+            return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }
 
         if (groupId is not null)
         {
-            students = students.Where(x => x.StudentAcademicInfo.GroupId == groupId).ToList();
+            students = students.Where(x => x.GroupId == groupId).ToList();
         }
 
         if (year is not null && students.Count is not 0)
         {
-            students = students.Where(x => GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now) == year)
+            students = students.Where(x => GetYear(x.Group.CreatedAt, DateTime.Now) == year)
                 .ToList();
         }
 
@@ -347,11 +346,11 @@ public class StudentService(
                 ? []
                 : students.Select(x => new GetStudentDto(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName, x.AppUser.UserName,
-                    x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
-                    x.StudentAcademicInfo.Specialization.Name,
-                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
-                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore)),
+                    x.Group.Code,
+                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    x.Specialization.Name,
+                    x.AdmissionYear.FirstYear + "/" +
+                    x.AdmissionYear.SecondYear, x.AdmissionScore)),
             StatusCode.Ok, true,
             ResponseMessages.Success);
     }
@@ -379,10 +378,9 @@ public class StudentService(
         var students = await studentRepository.FindAsync(
             x => userIds.Contains(x.AppUserId),
             x => x
-                .Include(st => st.StudentAcademicInfo)
-                .ThenInclude(st => st.Group)
-                .Include(st => st.StudentAcademicInfo.AdmissionYear)
-                .Include(st => st.StudentAcademicInfo.Specialization)
+                .Include(st => st.Group)
+                .Include(st => st.AdmissionYear)
+                .Include(st => st.Specialization)
                 .Include(st => st.AppUser),
             false);
 
@@ -391,11 +389,11 @@ public class StudentService(
                 : students.Select(x => new GetStudentDto(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName,
-                    x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
-                    x.StudentAcademicInfo.Specialization.Name,
-                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
-                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore
+                    x.Group.Code,
+                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    x.Specialization.Name,
+                    x.AdmissionYear.FirstYear + "/" +
+                    x.AdmissionYear.SecondYear, x.AdmissionScore
                 )),
             StatusCode.Ok,
             true,
@@ -408,18 +406,17 @@ public class StudentService(
         var students =
             (await studentRepository.GetAllAsync(page, pageSize, false,
                 x => x
-                    .Include(st => st.StudentAcademicInfo)
-                    .ThenInclude(st => st.Group)
-                    .Include(st => st.StudentAcademicInfo.AdmissionYear)
-                    .Include(st => st.StudentAcademicInfo.Specialization)
+                    .Include(st => st.Group)
+                    .Include(st => st.AdmissionYear)
+                    .Include(st => st.Specialization)
                     .Include(st => st.AppUser)))
             .Select(x =>
                 new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
-                    x.AppUser.UserName, x.StudentAcademicInfo.Group.Code,
-                    GetYear(x.StudentAcademicInfo.Group.CreatedAt, DateTime.Now),
-                    x.StudentAcademicInfo.Specialization.Name,
-                    x.StudentAcademicInfo.AdmissionYear.FirstYear + "/" +
-                    x.StudentAcademicInfo.AdmissionYear.SecondYear, x.StudentAcademicInfo.AdmissionScore));
+                    x.AppUser.UserName, x.Group.Code,
+                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    x.Specialization.Name,
+                    x.AdmissionYear.FirstYear + "/" +
+                    x.AdmissionYear.SecondYear, x.AdmissionScore));
         return new GetStudentResponse(students, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
@@ -427,8 +424,7 @@ public class StudentService(
     {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
-                .Include(e => e.StudentAcademicInfo)
-                .ThenInclude(e => e.Group)
+                .Include(e => e.Group)
                 .Include(e => e.Attendances), tracking: true);
         if (student is null)
         {
@@ -509,7 +505,7 @@ public class StudentService(
     {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
-                .Include(e => e.StudentAcademicInfo)
+                .Include(e => e)
                 .ThenInclude(e => e.Group)
                 .Include(e => e.Attendances), tracking: true);
         if (student is null)

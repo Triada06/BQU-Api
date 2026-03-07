@@ -53,5 +53,4 @@ wwwroot/dist/
 
 
 # Ignore EF Core Migrations
-**/Migrations/
 BGU.Api/wwwroot/Syllabuses/*
