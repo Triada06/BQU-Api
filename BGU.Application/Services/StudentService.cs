@@ -84,7 +84,8 @@ public class StudentService(
                 c.ClassTime.Start,
                 c.ClassTime.End,
                 new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
-                c.Room, c.TaughtSubject.Code
+                c.Room, c.TaughtSubject.Code,
+                c.ClassTime.IsUpperWeek
             ))
             .OrderBy(c => c.Period)
             .ToList();
@@ -140,7 +141,8 @@ public class StudentService(
                     // Map DaysOfTheWeek (1–5) to actual date
                     var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
 
-                    return classDate >= weekStart && classDate <= weekEnd;
+                    return classDate >= weekStart && classDate <= weekEnd &&
+                           c.ClassTime.IsUpperWeek == CheckIfUpperWeek();
                 })
                 .Select(c =>
                 {
@@ -155,20 +157,22 @@ public class StudentService(
                         c.ClassTime.Start,
                         c.ClassTime.End,
                         new DateTimeOffset(classDateTime),
-                        c.Room, c.TaughtSubject.Code
+                        c.Room, c.TaughtSubject.Code,
+                        c.ClassTime.IsUpperWeek
                     );
                 })
                 .OrderBy(c => c.Period)
                 .ToList();
             return new StudentScheduleResponse(
-                new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
+                new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
                 "Found", true, 200);
         }
 
         int today = GetToday();
         var classesToday = student.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
-            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
+            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today &&
+                        c.ClassTime.IsUpperWeek == CheckIfUpperWeek())
             .Select(c => new TodaysClassesDto(
                 c.Id,
                 c.TaughtSubject.Subject.Name,
@@ -177,11 +181,13 @@ public class StudentService(
                 c.ClassTime.Start,
                 c.ClassTime.End,
                 new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
-                c.Room, c.TaughtSubject.Code
+                c.Room, c.TaughtSubject.Code,
+                c.ClassTime.IsUpperWeek
             ))
             .OrderBy(c => c.Period)
             .ToList();
-        return new StudentScheduleResponse(new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesToday),
+        return new StudentScheduleResponse(
+            new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesToday),
             "Found", true, 200);
     }
 
@@ -272,7 +278,7 @@ public class StudentService(
 
         return new StudentGradesResponse(new StudentGradesDto(performance), null, "Ok", true, 200);
     }
-    
+
     public async Task<StudentProfileResponse> GetProfile(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);
@@ -578,5 +584,30 @@ public class StudentService(
     {
         var years = (end - start).TotalDays / 365.2425;
         return years < 1 ? 1 : (int)years;
+    }
+
+    private static bool CheckIfUpperWeek()
+    {
+        var today = DateTime.Today;
+
+        var semesterStart = today.Month >= 9
+            ? new DateTime(today.Year, 9, 14)
+            : new DateTime(today.Year, 2, 14);
+
+        // Find the first Monday of the semester
+        var startDayOfWeek = (int)semesterStart.DayOfWeek;
+        if (startDayOfWeek == 0) startDayOfWeek = 7;
+        var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
+        var firstMonday = semesterStart.AddDays(daysUntilMonday);
+
+        // Find this week's Monday
+        var todayDayOfWeek = (int)today.DayOfWeek;
+        if (todayDayOfWeek == 0) todayDayOfWeek = 7;
+        var currentMonday = today.AddDays(-(todayDayOfWeek - 1));
+
+        var weeksPassed = (int)((currentMonday - firstMonday).TotalDays / 7);
+
+        // Week 0, 2, 4... = upper; Week 1, 3, 5... = lower
+        return weeksPassed % 2 == 0;
     }
 }

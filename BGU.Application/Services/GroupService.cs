@@ -94,7 +94,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
         var weekStart = todayDate.AddDays(-diff);
         var classesThisWeek = group.TaughtSubjects
             .SelectMany(ts => ts.Classes)
-            .Where(c => (int)c.ClassTime.DaysOfTheWeek is >= 1 and <= 5)
+            .Where(c => (int)c.ClassTime.DaysOfTheWeek is >= 1 and <= 5 &&
+                        c.ClassTime.IsUpperWeek == CheckIfUpperWeek())
             .Select(c =>
             {
                 var classDate = weekStart.AddDays((int)c.ClassTime.DaysOfTheWeek - 1);
@@ -107,14 +108,15 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                     c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
                     c.ClassTime.Start,
                     c.ClassTime.End, new DateTimeOffset(classDateTime), c.Room,
-                    c.TaughtSubject.Code
+                    c.TaughtSubject.Code,
+                    c.ClassTime.IsUpperWeek
                 );
             })
             .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Start })
             .OrderBy(x => x.Start)
             .ToList();
         return new GroupScheduleResponse(
-            new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
+            new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
             "Found", true, 200);
     }
 
@@ -208,5 +210,30 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
             FirstYear = firstYear,
             SecondYear = secondYear
         };
+    }
+
+    private static bool CheckIfUpperWeek()
+    {
+        var today = DateTime.Today;
+
+        var semesterStart = today.Month >= 9
+            ? new DateTime(today.Year, 9, 14)
+            : new DateTime(today.Year, 2, 14);
+
+        // Find the first Monday of the semester
+        var startDayOfWeek = (int)semesterStart.DayOfWeek;
+        if (startDayOfWeek == 0) startDayOfWeek = 7;
+        var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
+        var firstMonday = semesterStart.AddDays(daysUntilMonday);
+
+        // Find this week's Monday
+        var todayDayOfWeek = (int)today.DayOfWeek;
+        if (todayDayOfWeek == 0) todayDayOfWeek = 7;
+        var currentMonday = today.AddDays(-(todayDayOfWeek - 1));
+
+        var weeksPassed = (int)((currentMonday - firstMonday).TotalDays / 7);
+
+        // Week 0, 2, 4... = upper; Week 1, 3, 5... = lower
+        return weeksPassed % 2 == 0;
     }
 }

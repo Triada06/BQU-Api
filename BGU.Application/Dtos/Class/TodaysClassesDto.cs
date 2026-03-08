@@ -9,4 +9,5 @@ public record TodaysClassesDto(
     TimeSpan End,
     DateTimeOffset Period,
     string Room,
-    string Code);
+    string Code,
+    bool IsUpperWeek);

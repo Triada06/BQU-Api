@@ -491,8 +491,8 @@ public class TaughtSubjectService(
 
         // Determine semester start date
         var semesterStartDate = semester % 2 == 1
-            ? new DateTimeOffset(year, 9, 14, 0, 0, 0, TimeSpan.Zero) // Autumn: Sept 14
-            : new DateTimeOffset(year, 2, 1, 0, 0, 0, TimeSpan.Zero); // Spring: Feb 1
+            ? new DateTimeOffset(GetAttendanceYear(year), 9, 14, 0, 0, 0, TimeSpan.Zero) // Autumn: Sept 14
+            : new DateTimeOffset(GetAttendanceYear(year), 2, 14, 0, 0, 0, TimeSpan.Zero); // Spring: Feb 14
 
         // Find the Monday of the first week (or use start date if it's already Monday)
         var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
@@ -532,7 +532,6 @@ public class TaughtSubjectService(
                 // Create ClassTime
                 var classTime = new ClassTime
                 {
-                    Id = Guid.NewGuid().ToString(),
                     IsUpperWeek = isUpperWeek,
                     Start = classDto.Start,
                     End = classDto.End,
@@ -545,7 +544,6 @@ public class TaughtSubjectService(
                 // Create Class
                 var classItem = new Class
                 {
-                    Id = Guid.NewGuid().ToString(),
                     Room = classDto.Room,
                     ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
                     TaughtSubjectId = taughtSubjectId,
@@ -574,4 +572,7 @@ public class TaughtSubjectService(
         DateTime.Now.Month >= 9
             ? firstYear + 1
             : DateTime.Now.Year - firstYear; //2023 => returns current Education Year
+
+    private static int GetAttendanceYear(int year)
+        => DateTime.Today.Year - year;
 }

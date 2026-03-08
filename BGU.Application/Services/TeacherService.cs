@@ -111,7 +111,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                     // Map DaysOfTheWeek (1–5) to actual date
                     var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
 
-                    return classDate >= weekStart && classDate <= weekEnd;
+                    return classDate >= weekStart && classDate <= weekEnd &&
+                           c.ClassTime.IsUpperWeek == CheckIfUpperWeek();
                 }).Select(c =>
                 {
                     var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
@@ -124,14 +125,15 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                         c.TaughtSubject.Teacher.AppUser.Name,
                         c.ClassTime.Start,
                         c.ClassTime.End, new DateTimeOffset(classDateTime), c.Room,
-                        c.TaughtSubject.Code
+                        c.TaughtSubject.Code,
+                        c.ClassTime.IsUpperWeek
                     );
                 })
                 .OrderBy(c => c.Start)
                 .ToList();
 
             return new TeacherScheduleResponse(
-                new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesThisWeek),
+                new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
                 "Found", true, 200);
         }
 
@@ -143,10 +145,12 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
                 c.ClassTime.Start,
-                c.ClassTime.End, new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)), c.Room, c.TaughtSubject.Code
+                c.ClassTime.End, new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)), c.Room,
+                c.TaughtSubject.Code, c.ClassTime.IsUpperWeek
             )).OrderBy(c => c.Start)
             .ToList();
-        return new TeacherScheduleResponse(new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), classesToday),
+        return new TeacherScheduleResponse(
+            new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesToday),
             "Found", true, 200);
     }
 
@@ -266,4 +270,29 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
+
+    private static bool CheckIfUpperWeek()
+    {
+        var today = DateTime.Today;
+
+        var semesterStart = today.Month >= 9
+            ? new DateTime(today.Year, 9, 14)
+            : new DateTime(today.Year, 2, 14);
+
+        // Find the first Monday of the semester
+        var startDayOfWeek = (int)semesterStart.DayOfWeek;
+        if (startDayOfWeek == 0) startDayOfWeek = 7;
+        var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
+        var firstMonday = semesterStart.AddDays(daysUntilMonday);
+
+        // Find this week's Monday
+        var todayDayOfWeek = (int)today.DayOfWeek;
+        if (todayDayOfWeek == 0) todayDayOfWeek = 7;
+        var currentMonday = today.AddDays(-(todayDayOfWeek - 1));
+
+        var weeksPassed = (int)((currentMonday - firstMonday).TotalDays / 7);
+
+        // Week 0, 2, 4... = upper; Week 1, 3, 5... = lower
+        return weeksPassed % 2 == 0;
+    }
 }
