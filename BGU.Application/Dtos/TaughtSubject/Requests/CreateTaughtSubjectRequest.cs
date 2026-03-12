@@ -14,4 +14,4 @@ public record CreateTaughtSubjectRequest(
     int Hours,
     CreateClassDto[] ClassTimes,
     int Year,
-    int Semster);
+    int Semester);

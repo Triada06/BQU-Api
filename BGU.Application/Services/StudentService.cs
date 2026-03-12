@@ -344,7 +344,7 @@ public class StudentService(
 
         if (year is not null && students.Count is not 0)
         {
-            students = students.Where(x => GetYear(x.Group.CreatedAt, DateTime.Now) == year)
+            students = students.Where(x => GetYear(x.AdmissionYear.FirstYear) == year)
                 .ToList();
         }
 
@@ -353,7 +353,7 @@ public class StudentService(
                 : students.Select(x => new GetStudentDto(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName, x.AppUser.UserName,
                     x.Group.Code,
-                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    GetYear(x.AdmissionYear.FirstYear),
                     x.Specialization.Name,
                     x.AdmissionYear.FirstYear + "/" +
                     x.AdmissionYear.SecondYear, x.AdmissionScore)),
@@ -396,7 +396,7 @@ public class StudentService(
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName,
                     x.Group.Code,
-                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    GetYear(x.AdmissionYear.FirstYear),
                     x.Specialization.Name,
                     x.AdmissionYear.FirstYear + "/" +
                     x.AdmissionYear.SecondYear, x.AdmissionScore
@@ -419,7 +419,7 @@ public class StudentService(
             .Select(x =>
                 new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.Group.Code,
-                    GetYear(x.Group.CreatedAt, DateTime.Now),
+                    GetYear(x.AdmissionYear.FirstYear),
                     x.Specialization.Name,
                     x.AdmissionYear.FirstYear + "/" +
                     x.AdmissionYear.SecondYear, x.AdmissionScore));
@@ -580,10 +580,12 @@ public class StudentService(
     private static int GetToday()
         => (int)DateTime.Today.DayOfWeek;
 
-    private static int GetYear(DateTime start, DateTime end)
+    private static int GetYear(int firstYear)
     {
-        var years = (end - start).TotalDays / 365.2425;
-        return years < 1 ? 1 : (int)years;
+        var currentYear = DateTime.Today.Year;
+        var currentMonth = DateTime.Today.Month;
+        var data =  currentMonth >= 9 ? currentYear - firstYear - 1 : currentYear - firstYear;
+        return data;
     }
 
     private static bool CheckIfUpperWeek()

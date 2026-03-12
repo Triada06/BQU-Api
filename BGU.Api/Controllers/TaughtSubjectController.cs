@@ -4,6 +4,7 @@ using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Dtos.TaughtSubject.Requests;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;
@@ -49,7 +50,17 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
     public async Task<IActionResult> Create([FromBody] CreateTaughtSubjectRequest request)
     {
         var res = await taughtSubjectService.CreateAsync(request);
-        return new ObjectResult(res);
+        if (res.IsSucceeded)
+        {
+            return Ok(res);
+        }
+
+        return (int)res.StatusCode switch
+        {
+            400 => BadRequest(res),
+            404 => NotFound(res),
+            _ => new ObjectResult(res)
+        };
     }
 
     [Authorize(Roles = "Teacher")]

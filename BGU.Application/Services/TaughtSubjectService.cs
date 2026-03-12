@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.JavaScript;
 using BGU.Application.Common;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Responses;
@@ -16,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BGU.Application.Services;
 
 public class TaughtSubjectService(
+    IGroupRepository groupRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
     ISubjectRepository subjectRepository,
     IClassTimeRepository classTimeRepository,
@@ -140,6 +142,28 @@ public class TaughtSubjectService(
             }
         }
 
+        var group = await groupRepository.GetByIdAsync(request.GroupId, include: x => x.Include(g => g.AdmissionYear));
+        if (group is null)
+        {
+            return new CreateTaughtSubjectResponse(null, false, StatusCode.BadRequest, ResponseMessages.BadRequest);
+        }
+
+        var attendanceYear = DateTime.Now.Month >= 9 //this calculates the current study year of the group
+            ? GetAttendanceYear(group.AdmissionYear.FirstYear - 1)
+            : GetAttendanceYear(group.AdmissionYear.FirstYear);
+
+        if (request.Year < attendanceYear ||
+            (request.Year == attendanceYear && request.Semester != GetSemester()))
+        {
+            return new CreateTaughtSubjectResponse(
+                null,
+                false,
+                StatusCode.BadRequest,
+                "Year can't be older than the group's current year"
+            );
+        }
+
+
         var taughtSubject = new TaughtSubject
         {
             Code = request.Code,
@@ -157,11 +181,13 @@ public class TaughtSubjectService(
 
         if (taughtSubject.Hours % 2 != 0) taughtSubject.Hours += 1;
 
+
         var (classes, classTimes) = GenerateClassesAndClassTimes(
+            group.AdmissionYear,
             request.Hours,
             request.ClassTimes,
             request.Year,
-            request.Semster,
+            request.Semester,
             taughtSubject.Id
         );
 
@@ -474,12 +500,15 @@ public class TaughtSubjectService(
             new GetIndependentWorksByTaughtSubjectDto(independentWorks));
     }
 
-
+    //TODO: SO, THE VALIDATION IS WRITETEN, BUT THE PROBLEM IS NOW IN CLASS CREATING. 
+    // WHILE TESTING, I FOUND OUT THAT IF OUR GROUP IS THE SECOND COURSE, AND IF THE REQUEST ASKS TO CREATE A SUBJECT AT THE 4 COURSE,
+    // THE YEAR FOR THE SUBJECT WILL BE SET TO BACK ( EXAMPLE COURSE  YEAR 2024/2025 = > THE CREATED YEAR 2022 ( SHOULD BE 2027/2028 ) 
     private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
+        AdmissionYear groupAdmissionYear,
         int hours,
         CreateClassDto[] classDtos,
-        int year,
-        int semester,
+        int year, //this is the course year we need to create the classes in
+        int semester, //this is the semester we need to create the classes in
         string taughtSubjectId)
     {
         // Adjust hours if odd
@@ -489,10 +518,21 @@ public class TaughtSubjectService(
         var classes = new List<Class>();
         var classTimes = new List<ClassTime>();
 
+        //calculating the year
+        //example: current year: 2026 sem 2
+        // group year: 3, 2023/2024
+        // example subject creating year: 4 ciourse, 2027
+        var groupCurrentCourse = DateTime.Now.Month >= 9
+            ? DateTime.Now.Year - groupAdmissionYear.FirstYear + 1
+            : DateTime.Now.Year - groupAdmissionYear.FirstYear; // for example 3, 3rd course
+
+        var yearDiff = year - groupCurrentCourse;
+        var yearToUse = DateTime.Now.AddYears(yearDiff).Year;
+
         // Determine semester start date
         var semesterStartDate = semester % 2 == 1
-            ? new DateTimeOffset(GetAttendanceYear(year), 9, 14, 0, 0, 0, TimeSpan.Zero) // Autumn: Sept 14
-            : new DateTimeOffset(GetAttendanceYear(year), 2, 14, 0, 0, 0, TimeSpan.Zero); // Spring: Feb 14
+            ? new DateTimeOffset(yearToUse, 9, 14, 0, 0, 0, TimeSpan.Zero) // Autumn: Sept 14
+            : new DateTimeOffset(yearToUse, 2, 14, 0, 0, 0, TimeSpan.Zero); // Spring: Feb 14
 
         // Find the Monday of the first week (or use start date if it's already Monday)
         var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
@@ -575,4 +615,20 @@ public class TaughtSubjectService(
 
     private static int GetAttendanceYear(int year)
         => DateTime.Today.Year - year;
+
+    private static int GetSemester()
+        => DateTime.Now.Month >= 9 ? 1 : 2;
+
+    private static int GetAttendanceYearFromAdmission(
+        int admissionYear, // the group's acceptance year
+        int courseYear) //The student’s current study level within the program
+    {
+        // courseYear: 1..4
+        if (courseYear < 1) courseYear = 1;
+
+        // Academic year start calendar year
+        // Example: admission 2023, courseYear 1 -> 2023
+        //          admission 2023, courseYear 4 -> 2026
+        return admissionYear + (courseYear - 1);
+    }
 }
