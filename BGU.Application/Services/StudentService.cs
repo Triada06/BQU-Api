@@ -126,29 +126,21 @@ public class StudentService(
             );
         }
 
+        var todayDate = DateTime.Today;
+        int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+        var weekStart = todayDate.AddDays(-diff);
+        var weekEnd = weekStart.AddDays(6);
+
         if (request.Schedule == "week")
         {
-            var todayDate = DateTime.Today;
-
-            int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
-            var weekStart = todayDate.AddDays(-diff);
-            var weekEnd = weekStart.AddDays(4);
-
             var classesThisWeek = student.Group.TaughtSubjects
                 .SelectMany(gs => gs.Classes)
                 .Where(c =>
-                {
-                    // Map DaysOfTheWeek (1–5) to actual date
-                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
-
-                    return classDate >= weekStart && classDate <= weekEnd &&
-                           c.ClassTime.IsUpperWeek == CheckIfUpperWeek();
-                })
+                    c.ClassTime.ClassDate.Date >= weekStart &&
+                    c.ClassTime.ClassDate.Date <= weekEnd)
                 .Select(c =>
                 {
-                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
-                    var classDateTime = classDate.Add(c.ClassTime.Start);
-
+                    var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
                     return new TodaysClassesDto(
                         c.Id,
                         c.TaughtSubject.Subject.Name,
@@ -157,35 +149,41 @@ public class StudentService(
                         c.ClassTime.Start,
                         c.ClassTime.End,
                         new DateTimeOffset(classDateTime),
-                        c.Room, c.TaughtSubject.Code,
-                        c.ClassTime.IsUpperWeek
+                        c.Room,
+                        c.TaughtSubject.Code,
+                        c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
                     );
                 })
                 .OrderBy(c => c.Period)
                 .ToList();
+
             return new StudentScheduleResponse(
                 new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
                 "Found", true, 200);
         }
 
-        int today = GetToday();
         var classesToday = student.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
-            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today &&
-                        c.ClassTime.IsUpperWeek == CheckIfUpperWeek())
-            .Select(c => new TodaysClassesDto(
-                c.Id,
-                c.TaughtSubject.Subject.Name,
-                c.ClassType.ToString(),
-                c.TaughtSubject.Teacher.AppUser.Name,
-                c.ClassTime.Start,
-                c.ClassTime.End,
-                new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
-                c.Room, c.TaughtSubject.Code,
-                c.ClassTime.IsUpperWeek
-            ))
+            .Where(c => c.ClassTime.ClassDate.Date == todayDate)
+            .Select(c =>
+            {
+                var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+                return new TodaysClassesDto(
+                    c.Id,
+                    c.TaughtSubject.Subject.Name,
+                    c.ClassType.ToString(),
+                    c.TaughtSubject.Teacher.AppUser.Name,
+                    c.ClassTime.Start,
+                    c.ClassTime.End,
+                    new DateTimeOffset(classDateTime),
+                    c.Room,
+                    c.TaughtSubject.Code,
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                );
+            })
             .OrderBy(c => c.Period)
             .ToList();
+
         return new StudentScheduleResponse(
             new StudentScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesToday),
             "Found", true, 200);
@@ -584,7 +582,7 @@ public class StudentService(
     {
         var currentYear = DateTime.Today.Year;
         var currentMonth = DateTime.Today.Month;
-        var data =  currentMonth >= 9 ? currentYear - firstYear - 1 : currentYear - firstYear;
+        var data = currentMonth >= 9 ? currentYear - firstYear - 1 : currentYear - firstYear;
         return data;
     }
 

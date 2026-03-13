@@ -64,61 +64,63 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
 
 
     public async Task<GroupScheduleResponse> GetSchedule(string id)
+{
+    var group =
+        await groupRepository.GetByIdAsync(id,
+            include: x =>
+                x.Include(g => g.TaughtSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                    .Include(st => st.TaughtSubjects)
+                    .ThenInclude(ts => ts.Teacher)
+                    .ThenInclude(t => t.AppUser)
+                    .Include(st => st.TaughtSubjects)
+                    .ThenInclude(ts => ts.Classes)
+                    .ThenInclude(c => c.ClassTime)
+        );
+
+    if (group == null)
     {
-        var group =
-            await groupRepository.GetByIdAsync(id,
-                include: x =>
-                    x.Include(g => g.TaughtSubjects)
-                        .ThenInclude(ts => ts.Subject)
-                        .Include(st => st.TaughtSubjects)
-                        .ThenInclude(ts => ts.Teacher)
-                        .ThenInclude(t => t.AppUser)
-                        .Include(st => st.TaughtSubjects)
-                        .ThenInclude(ts => ts.Classes)
-                        .ThenInclude(c => c.ClassTime)
-            );
-
-
-        if (group == null)
-        {
-            return new GroupScheduleResponse(
-                null,
-                ResponseMessages.NotFound,
-                false,
-                (int)StatusCode.NotFound
-            );
-        }
-
-        var todayDate = DateTime.Today;
-        int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
-        var weekStart = todayDate.AddDays(-diff);
-        var classesThisWeek = group.TaughtSubjects
-            .SelectMany(ts => ts.Classes)
-            .Where(c => (int)c.ClassTime.DaysOfTheWeek is >= 1 and <= 5 &&
-                        c.ClassTime.IsUpperWeek == CheckIfUpperWeek())
-            .Select(c =>
-            {
-                var classDate = weekStart.AddDays((int)c.ClassTime.DaysOfTheWeek - 1);
-                var classDateTime = classDate.Add(c.ClassTime.Start);
-
-                return new TodaysClassesDto(
-                    c.Id,
-                    c.TaughtSubject.Subject.Name,
-                    c.ClassType.ToString(),
-                    c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
-                    c.ClassTime.Start,
-                    c.ClassTime.End, new DateTimeOffset(classDateTime), c.Room,
-                    c.TaughtSubject.Code,
-                    c.ClassTime.IsUpperWeek
-                );
-            })
-            .DistinctBy(x => new { x.Name, x.ClassType, x.Professor, x.Start })
-            .OrderBy(x => x.Start)
-            .ToList();
         return new GroupScheduleResponse(
-            new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
-            "Found", true, 200);
+            null,
+            ResponseMessages.NotFound,
+            false,
+            (int)StatusCode.NotFound
+        );
     }
+
+    var todayDate = DateTime.Today;
+    int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+    var weekStart = todayDate.AddDays(-diff);
+    var weekEnd = weekStart.AddDays(6);
+
+    var classesThisWeek = group.TaughtSubjects
+        .SelectMany(ts => ts.Classes)
+        .Where(c =>
+            c.ClassTime.ClassDate.Date >= weekStart &&
+            c.ClassTime.ClassDate.Date <= weekEnd)
+        .Select(c =>
+        {
+            var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+            return new TodaysClassesDto(
+                c.Id,
+                c.TaughtSubject.Subject.Name,
+                c.ClassType.ToString(),
+                c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
+                c.ClassTime.Start,
+                c.ClassTime.End,
+                new DateTimeOffset(classDateTime),
+                c.Room,
+                c.TaughtSubject.Code,
+                c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+            );
+        })
+        .OrderBy(x => x.Period)
+        .ToList();
+
+    return new GroupScheduleResponse(
+        new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
+        "Found", true, 200);
+}
 
     public async Task<DeleteGroupsResponse> DeleteAsync(string id)
     {

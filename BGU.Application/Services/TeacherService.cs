@@ -64,96 +64,102 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             true, (int)StatusCode.Ok);
     }
 
-    public async Task<TeacherScheduleResponse> GetSchedule(TeacherScheduleRequest request)
+   public async Task<TeacherScheduleResponse> GetSchedule(TeacherScheduleRequest request)
+{
+    var user = await userManager.FindByIdAsync(request.UserId);
+    if (user is null)
     {
-        var user = await userManager.FindByIdAsync(request.UserId);
-        if (user is null)
+        return new TeacherScheduleResponse(null,
+            ResponseMessages.Unauthorized, false,
+            (int)StatusCode.Unauthorized);
+    }
+
+    var teacher = (await teacherRepository.FindAsync(
+        s => s.AppUserId == request.UserId,
+        s =>
+            s.Include(x => x.TaughtSubjects)
+                .ThenInclude(x => x.Classes)
+                .ThenInclude(x => x.ClassTime)
+                .Include(ai => ai.Department)
+                .ThenInclude(g => g.Faculty)
+                .ThenInclude(ts => ts.Specializations)
+                .Include(x => x.AppUser)
+                .Include(x => x.TaughtSubjects)
+                .ThenInclude(x => x.Subject)
+    )).FirstOrDefault();
+
+    if (teacher == null)
+    {
+        return new TeacherScheduleResponse(
+            null,
+            ResponseMessages.NotFound,
+            false,
+            (int)StatusCode.NotFound
+        );
+    }
+
+    var todayDate = DateTime.Today;
+    int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+    var weekStart = todayDate.AddDays(-diff);
+    var weekEnd = weekStart.AddDays(6);
+
+    if (request.Schedule == "week")
+    {
+        var classesThisWeek = teacher.TaughtSubjects
+            .SelectMany(x => x.Classes)
+            .Where(c =>
+                c.ClassTime.ClassDate.Date >= weekStart &&
+                c.ClassTime.ClassDate.Date <= weekEnd)
+            .Select(c =>
+            {
+                var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+                return new TodaysClassesDto(
+                    c.Id,
+                    c.TaughtSubject.Subject.Name,
+                    c.ClassType.ToString(),
+                    c.TaughtSubject.Teacher.AppUser.Name,
+                    c.ClassTime.Start,
+                    c.ClassTime.End,
+                    new DateTimeOffset(classDateTime),
+                    c.Room,
+                    c.TaughtSubject.Code,
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                );
+            })
+            .OrderBy(c => c.Period)
+            .ToList();
+
+        return new TeacherScheduleResponse(
+            new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
+            "Found", true, 200);
+    }
+
+    var classesToday = teacher.TaughtSubjects
+        .SelectMany(x => x.Classes)
+        .Where(c => c.ClassTime.ClassDate.Date == todayDate)
+        .Select(c =>
         {
-            return new TeacherScheduleResponse(null,
-                ResponseMessages.Unauthorized, false,
-                (int)StatusCode.Unauthorized);
-        }
-
-        var teacher = (await teacherRepository.FindAsync(
-            s => s.AppUserId == request.UserId,
-            s =>
-                s.Include(x => x.TaughtSubjects)
-                    .ThenInclude(x => x.Classes)
-                    .ThenInclude(x => x.ClassTime)
-                    .Include(ai => ai.Department)
-                    .ThenInclude(g => g.Faculty)
-                    .ThenInclude(ts => ts.Specializations)
-                    .Include(x => x.AppUser)
-                    .Include(x => x.TaughtSubjects)
-                    .ThenInclude(x => x.Subject)
-        )).FirstOrDefault();
-
-        if (teacher == null)
-        {
-            return new TeacherScheduleResponse(
-                null,
-                ResponseMessages.NotFound,
-                false,
-                (int)StatusCode.NotFound
-            );
-        }
-
-        if (request.Schedule == "week")
-        {
-            var todayDate = DateTime.Today;
-
-            int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
-            var weekStart = todayDate.AddDays(-diff);
-            var weekEnd = weekStart.AddDays(4);
-            var classesThisWeek = teacher.TaughtSubjects.SelectMany(x => x.Classes)
-                .Where(c =>
-                {
-                    // Map DaysOfTheWeek (1–5) to actual date
-                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
-
-                    return classDate >= weekStart && classDate <= weekEnd &&
-                           c.ClassTime.IsUpperWeek == CheckIfUpperWeek();
-                }).Select(c =>
-                {
-                    var classDate = weekStart.AddDays(((int)c.ClassTime.DaysOfTheWeek) - 1);
-                    var classDateTime = classDate.Add(c.ClassTime.Start);
-
-                    return new TodaysClassesDto(
-                        c.Id,
-                        c.TaughtSubject.Subject.Name,
-                        c.ClassType.ToString(),
-                        c.TaughtSubject.Teacher.AppUser.Name,
-                        c.ClassTime.Start,
-                        c.ClassTime.End, new DateTimeOffset(classDateTime), c.Room,
-                        c.TaughtSubject.Code,
-                        c.ClassTime.IsUpperWeek
-                    );
-                })
-                .OrderBy(c => c.Start)
-                .ToList();
-
-            return new TeacherScheduleResponse(
-                new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
-                "Found", true, 200);
-        }
-
-        int today = GetToday();
-        var classesToday = teacher.TaughtSubjects.SelectMany(x => x.Classes)
-            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today).Select(c => new TodaysClassesDto(
+            var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+            return new TodaysClassesDto(
                 c.Id,
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
                 c.ClassTime.Start,
-                c.ClassTime.End, new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)), c.Room,
-                c.TaughtSubject.Code, c.ClassTime.IsUpperWeek
-            )).OrderBy(c => c.Start)
-            .ToList();
-        return new TeacherScheduleResponse(
-            new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesToday),
-            "Found", true, 200);
-    }
+                c.ClassTime.End,
+                new DateTimeOffset(classDateTime),
+                c.Room,
+                c.TaughtSubject.Code,
+                c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+            );
+        })
+        .OrderBy(c => c.Period)
+        .ToList();
 
+    return new TeacherScheduleResponse(
+        new TeacherScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesToday),
+        "Found", true, 200);
+}
     public async Task<TeacherCoursesResponse> GetCourses(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);

@@ -14,4 +14,19 @@ public class ClassRepository(AppDbContext context) : BaseRepository<Class>(conte
         await _context1.SaveChangesAsync();
         return true;
     }
+    public async Task<bool> BulkCreateWithTimesAsync(List<Class> classes, List<ClassTime> classTimes)
+    {
+        Console.WriteLine($"ClassTimes to insert: {classTimes.Count}");
+        Console.WriteLine($"Classes to insert: {classes.Count}");
+        foreach (var c in classes)
+            Console.WriteLine($"  Class: {c.ClassType} TimeId={c.ClassTimeId} NavNull={c.ClassTime is null}");
+    
+        foreach (var c in classes)
+            c.ClassTime = null;
+    
+        await _context1.ClassTimes.AddRangeAsync(classTimes);
+        await _context1.Classes.AddRangeAsync(classes);
+        await _context1.SaveChangesAsync();
+        return true;
+    }
 }

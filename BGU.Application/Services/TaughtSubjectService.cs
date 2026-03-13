@@ -181,6 +181,11 @@ public class TaughtSubjectService(
 
         if (taughtSubject.Hours % 2 != 0) taughtSubject.Hours += 1;
 
+        Console.WriteLine($"ClassTimes count: {request.ClassTimes.Length}");
+        Console.WriteLine($"Hours: {request.Hours}, TotalClasses: {request.Hours / 2}");
+        foreach (var ct in request.ClassTimes)
+            Console.WriteLine($"  Day={ct.Day} Freq={ct.Frequency} Start={ct.Start}");
+        // await Task.Delay(7000);
 
         var (classes, classTimes) = GenerateClassesAndClassTimes(
             group.AdmissionYear,
@@ -190,22 +195,30 @@ public class TaughtSubjectService(
             request.Semester,
             taughtSubject.Id
         );
+        
+        // await Task.Delay(14000);
 
         // First create all ClassTimes
-        if (!await classTimeRepository.BulkCreateAsync(classTimes))
-        {
-            return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
-                "Failed to create class times");
-        }
-
-        // Then create all Classes
-
-        if (!await classRepository.BulkCreateAsync(classes))
+        // if (!await classTimeRepository.BulkCreateAsync(classTimes))
+        // {
+        //     return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+        //         "Failed to create class times");
+        // }
+        //
+        //
+        //
+        // // Then create all Classes
+        //
+        // if (!await classRepository.BulkCreateAsync(classes))
+        // {
+        //     return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+        //         "Something went wrong while creating classes");
+        // }
+        if (!await classRepository.BulkCreateWithTimesAsync(classes, classTimes))
         {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating classes");
         }
-
         taughtSubject.Classes = classes;
 
         //creating an attendance system
@@ -500,111 +513,88 @@ public class TaughtSubjectService(
             new GetIndependentWorksByTaughtSubjectDto(independentWorks));
     }
 
-    //TODO: SO, THE VALIDATION IS WRITETEN, BUT THE PROBLEM IS NOW IN CLASS CREATING. 
-    // WHILE TESTING, I FOUND OUT THAT IF OUR GROUP IS THE SECOND COURSE, AND IF THE REQUEST ASKS TO CREATE A SUBJECT AT THE 4 COURSE,
-    // THE YEAR FOR THE SUBJECT WILL BE SET TO BACK ( EXAMPLE COURSE  YEAR 2024/2025 = > THE CREATED YEAR 2022 ( SHOULD BE 2027/2028 ) 
-    private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
-        AdmissionYear groupAdmissionYear,
-        int hours,
-        CreateClassDto[] classDtos,
-        int year, //this is the course year we need to create the classes in
-        int semester, //this is the semester we need to create the classes in
-        string taughtSubjectId)
+    //TODO: SO, the problem is at the creating classes, it creates 2 types fo the same class for a one day but one is seminar another one is lecture
+private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
+    AdmissionYear groupAdmissionYear,
+    int hours,
+    CreateClassDto[] classDtos,
+    int year,
+    int semester,
+    string taughtSubjectId)
+{
+    if (hours % 2 != 0) hours += 1;
+
+    var totalClasses = hours / 2;
+    var classes = new List<Class>();
+    var classTimes = new List<ClassTime>();
+
+    var groupCurrentCourse = DateTime.Now.Month >= 9
+        ? DateTime.Now.Year - groupAdmissionYear.FirstYear + 1
+        : DateTime.Now.Year - groupAdmissionYear.FirstYear;
+
+    var yearDiff = year - groupCurrentCourse;
+    var yearToUse = DateTime.Now.AddYears(yearDiff).Year;
+
+    var semesterStartDate = semester % 2 == 1
+        ? new DateTimeOffset(yearToUse, 9, 14, 0, 0, 0, TimeSpan.Zero)
+        : new DateTimeOffset(yearToUse, 2, 14, 0, 0, 0, TimeSpan.Zero);
+
+    var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
+    if (startDayOfWeek == 0) startDayOfWeek = 7;
+    var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
+    var firstMonday = semesterStartDate.AddDays(daysUntilMonday);
+
+    var isLecturer = true;
+    var classesCreated = 0;
+    var weekNumber = 1;
+
+    while (classesCreated < totalClasses)
     {
-        // Adjust hours if odd
-        if (hours % 2 != 0) hours += 1;
+        var isUpperWeek = weekNumber % 2 == 1;
+        var currentWeekMonday = firstMonday.AddDays((weekNumber - 1) * 7);
 
-        var totalClasses = hours / 2;
-        var classes = new List<Class>();
-        var classTimes = new List<ClassTime>();
-
-        //calculating the year
-        //example: current year: 2026 sem 2
-        // group year: 3, 2023/2024
-        // example subject creating year: 4 ciourse, 2027
-        var groupCurrentCourse = DateTime.Now.Month >= 9
-            ? DateTime.Now.Year - groupAdmissionYear.FirstYear + 1
-            : DateTime.Now.Year - groupAdmissionYear.FirstYear; // for example 3, 3rd course
-
-        var yearDiff = year - groupCurrentCourse;
-        var yearToUse = DateTime.Now.AddYears(yearDiff).Year;
-
-        // Determine semester start date
-        var semesterStartDate = semester % 2 == 1
-            ? new DateTimeOffset(yearToUse, 9, 14, 0, 0, 0, TimeSpan.Zero) // Autumn: Sept 14
-            : new DateTimeOffset(yearToUse, 2, 14, 0, 0, 0, TimeSpan.Zero); // Spring: Feb 14
-
-        // Find the Monday of the first week (or use start date if it's already Monday)
-        var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
-        if (startDayOfWeek == 0) startDayOfWeek = 7; // Sunday becomes 7
-
-        var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
-        var firstMonday = semesterStartDate.AddDays(daysUntilMonday);
-
-        var isLecturer = true;
-        var classesCreated = 0;
-        var weekNumber = 1; // Week counter starting from 1
-
-        while (classesCreated < totalClasses)
+        foreach (var dto in classDtos)
         {
-            var isUpperWeek = weekNumber % 2 == 1; // Week 1, 3, 5... = upper; Week 2, 4, 6... = lower
+            if (classesCreated >= totalClasses) break;
 
-            // Calculate the Monday of the current week
-            var currentWeekMonday = firstMonday.AddDays((weekNumber - 1) * 7);
+            var fires = dto.Frequency == Frequency.Both ||
+                        (dto.Frequency == Frequency.Upper && isUpperWeek) ||
+                        (dto.Frequency == Frequency.Lower && !isUpperWeek);
 
-            // Go through each class schedule for this week
-            foreach (var classDto in classDtos)
+            if (!fires) continue;
+
+            var classDate = currentWeekMonday.AddDays((int)dto.Day - 1);
+
+            var classTime = new ClassTime
             {
-                if (classesCreated >= totalClasses) break;
+                IsUpperWeek = dto.Frequency == Frequency.Both ? null : isUpperWeek,
+                Start = dto.Start,
+                End = dto.End,
+                DaysOfTheWeek = dto.Day,
+                ClassDate = classDate
+            };
+            classTimes.Add(classTime);
 
-                // Check if this class should occur this week based on frequency
-                var shouldCreateClass = classDto.Frequency == Frequency.Both ||
-                                        (classDto.Frequency == Frequency.Upper && isUpperWeek) ||
-                                        (classDto.Frequency == Frequency.Lower && !isUpperWeek);
+            var classItem = new Class
+            {
+                Room = dto.Room,
+                ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
+                TaughtSubjectId = taughtSubjectId,
+                ClassTimeId = classTime.Id,
+                ClassTime = classTime
+            };
+            classes.Add(classItem);
 
-                if (!shouldCreateClass) continue;
-
-                // Calculate the exact date for this class
-                // classDto.Day is 1-5 (Monday-Friday)
-                var daysToAdd = (int)classDto.Day - 1; // Monday=1 becomes 0 days to add
-                var classDate = currentWeekMonday.AddDays(daysToAdd);
-
-                // Create ClassTime
-                var classTime = new ClassTime
-                {
-                    IsUpperWeek = isUpperWeek,
-                    Start = classDto.Start,
-                    End = classDto.End,
-                    DaysOfTheWeek = classDto.Day,
-                    ClassDate = classDate
-                };
-
-                classTimes.Add(classTime);
-
-                // Create Class
-                var classItem = new Class
-                {
-                    Room = classDto.Room,
-                    ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
-                    TaughtSubjectId = taughtSubjectId,
-                    ClassTimeId = classTime.Id,
-                    ClassTime = classTime
-                };
-
-                classes.Add(classItem);
-
-                // Alternate between lecturer and seminar
-                isLecturer = !isLecturer;
-                classesCreated++;
-            }
-
-            // Move to next week
-            weekNumber++;
+            isLecturer = !isLecturer;
+            classesCreated++;
         }
 
-        return (classes, classTimes);
+        weekNumber++;
+        if (weekNumber > 200) break;
     }
 
+    return (classes, classTimes);
+}
     private static string FormatRange(TimeSpan from, TimeSpan to)
         => $@"{from:hh\:mm} - {to:hh\:mm}";
 
