@@ -5,6 +5,7 @@ namespace BGU.Core.Entities;
 public class TaughtSubject : BaseEntity
 {
     public string Code { get; set; }
+    public bool HasSyllabus { get; set; }
     public string SubjectId { get; set; }
     public Subject Subject { get; set; }
     public string TeacherId { get; set; }

@@ -10,7 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService, IColloquiumService colloquiumService)
+public class TaughtSubjectController(
+    ITaughtSubjectService taughtSubjectService,
+    IColloquiumService colloquiumService,
+    ISyllabusService syllabusService)
     : ControllerBase
 {
     [Authorize(Roles = "Dean")]
@@ -92,6 +95,28 @@ public class TaughtSubjectController(ITaughtSubjectService taughtSubjectService,
     public async Task<IActionResult> GetIndependentWorksWithStudents([FromRoute] string taughtSubjectId)
     {
         var res = await taughtSubjectService.GetIndependentWorksByTaughtSubjectIdAsync(taughtSubjectId);
+        return new ObjectResult(res);
+    }
+
+    [HttpGet(ApiEndPoints.TaughtSubject.GetSyllabus)]
+    public async Task<IActionResult> GetByTaughtSubjectId([FromRoute] string id)
+    {
+        var res = await syllabusService.GetByTaughtSubjectId(id);
+
+        if (!res.IsSucceeded || res.Dto is null)
+            return new ObjectResult(res);
+
+        return File(
+            res.Dto.Bytes,
+            "application/pdf",
+            res.Dto.FileName
+        );
+    }
+
+    [HttpDelete(ApiEndPoints.TaughtSubject.RemoveSyllabus)]
+    public async Task<IActionResult> DeleteSyllabus([FromRoute] string id)
+    {
+        var res = await taughtSubjectService.DeleteSyllabusAsync(id);
         return new ObjectResult(res);
     }
 }

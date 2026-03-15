@@ -6,17 +6,27 @@ using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
 public class SyllabusService(
     ISyllabusRepository syllabusRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
-    IWebHostEnvironment env): ISyllabusService
+    IWebHostEnvironment env) : ISyllabusService
 {
     public async Task<CreateSyllabusResponse> CreateAsync(CreateSyllabusRequest request)
     {
-        if (await taughtSubjectRepository.AnyAsync(ts => ts.Syllabus != null))
+        var course =
+            await taughtSubjectRepository.GetByIdAsync(request.TaughtSubjectId, tracking: true);
+
+        if (course is null)
+        {
+            return new CreateSyllabusResponse(null, StatusCode.BadRequest, false,
+                $"No subject with an Id of {request.TaughtSubjectId} found");
+        }
+
+        if (course.HasSyllabus)
         {
             return new CreateSyllabusResponse(null, StatusCode.Conflict, false,
                 "This subjet already has a syllabus");
@@ -42,6 +52,9 @@ public class SyllabusService(
             return new CreateSyllabusResponse(null, StatusCode.InternalServerError, false,
                 ResponseMessages.Failed);
         }
+
+        course.HasSyllabus = true;
+        await taughtSubjectRepository.UpdateAsync(course);
 
         return new CreateSyllabusResponse(syllabus.Id, StatusCode.Ok, true,
             ResponseMessages.CreatedSuccessfully);
@@ -97,6 +110,23 @@ public class SyllabusService(
             File.Delete(syllabus.FilePath);
         }
 
+        // this case unlikely to happen, but it exists to supress the warnings :)
+        if (syllabus.TaughtSubjectId is null)
+        {
+            return new DeleteSyllabusResponse(StatusCode.Ok, true,
+                "File was deleted, but the subject’s syllabus status was not updated. This may cause issues in the application later.");
+        }
+
+        var course = await taughtSubjectRepository.GetByIdAsync(syllabus.TaughtSubjectId, tracking: true);
+        if (course is null)
+        {
+            return new DeleteSyllabusResponse(StatusCode.Ok, true,
+                "File was deleted, but the subject’s syllabus status was not updated. This may cause issues in the application later. Please contact the administrators.");
+        }
+
+        course.HasSyllabus = false;
+        await taughtSubjectRepository.UpdateAsync(course);
+
         return new DeleteSyllabusResponse(StatusCode.Ok, true, ResponseMessages.Success);
     }
 
@@ -112,7 +142,21 @@ public class SyllabusService(
         return new GetByIdSyllabusResponse(new GetSyllabusDto(bytes, syllabus.Name), StatusCode.Ok, true,
             ResponseMessages.Success);
     }
-    
+
+    public async Task<GetByIdSyllabusResponse> GetByTaughtSubjectId(string id)
+    {
+        var syllabus = (await syllabusRepository.FindAsync(s => s.TaughtSubjectId == id, tracking: false))
+            .FirstOrDefault();
+        if (syllabus is null)
+        {
+            return new GetByIdSyllabusResponse(null, StatusCode.BadRequest, false, ResponseMessages.BadRequest);
+        }
+
+        var bytes = await File.ReadAllBytesAsync(syllabus.FilePath);
+        return new GetByIdSyllabusResponse(new GetSyllabusDto(bytes, syllabus.Name), StatusCode.Ok, true,
+            ResponseMessages.Success);
+    }
+
     private string GetSyllabusPath()
         => Path.Combine(env.WebRootPath, "Syllabuses");
 }

@@ -3,6 +3,7 @@ using System;
 using BGU.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315152244_HasSyllabusColumnInCourses")]
+    partial class HasSyllabusColumnInCourses
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -590,8 +593,7 @@ namespace BGU.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AdmissionYearId");
 
-                    b.HasIndex("AppUserId")
-                        .IsUnique();
+                    b.HasIndex("AppUserId");
 
                     b.HasIndex("FacultyId");
 
@@ -719,8 +721,7 @@ namespace BGU.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppUserId")
-                        .IsUnique();
+                    b.HasIndex("AppUserId");
 
                     b.HasIndex("DepartmentId");
 
@@ -1067,8 +1068,8 @@ namespace BGU.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.HasOne("BGU.Core.Entities.AppUser", "AppUser")
-                        .WithOne()
-                        .HasForeignKey("BGU.Core.Entities.Student", "AppUserId")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1116,8 +1117,7 @@ namespace BGU.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("BGU.Core.Entities.TaughtSubject", "TaughtSubject")
                         .WithOne("Syllabus")
-                        .HasForeignKey("BGU.Core.Entities.Syllabus", "TaughtSubjectId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("BGU.Core.Entities.Syllabus", "TaughtSubjectId");
 
                     b.Navigation("TaughtSubject");
                 });
@@ -1152,8 +1152,8 @@ namespace BGU.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("BGU.Core.Entities.Teacher", b =>
                 {
                     b.HasOne("BGU.Core.Entities.AppUser", "AppUser")
-                        .WithOne()
-                        .HasForeignKey("BGU.Core.Entities.Teacher", "AppUserId")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

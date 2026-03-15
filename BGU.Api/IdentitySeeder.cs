@@ -18,15 +18,15 @@ public static class IdentitySeeder
         await EnsureRoleAsync(roleManager, "Teacher");
 
         // Вытаскиваем деканов по префиксам SEED_DEAN1_ и SEED_DEAN2_
-        var prefixes = new[] { "SEED_DEAN1_", "SEED_DEAN2_" };
+        var prefixes = new[] { "SEED_DEAN1_", "SEED_DEAN2_", "SEED_DEAN_3" };
 
         foreach (var p in prefixes)
         {
-            var username   = GetEnv(p + "USERNAME");
-            var password   = GetEnv(p + "PASSWORD");
-            var facultyName= GetEnv(p + "FACULTY");
-            var name       = GetEnv(p + "NAME");
-            var surname    = GetEnv(p + "SURNAME");
+            var username = GetEnv(p + "USERNAME");
+            var password = GetEnv(p + "PASSWORD");
+            var facultyName = GetEnv(p + "FACULTY");
+            var name = GetEnv(p + "NAME");
+            var surname = GetEnv(p + "SURNAME");
             var middleName = GetEnv(p + "MIDDLENAME");
 
             var faculty = await db.Faculties.SingleOrDefaultAsync(f => f.Name == facultyName, ct);

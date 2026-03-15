@@ -197,7 +197,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
         var courses =
             teacher.TaughtSubjects?.Select(x =>
-                new TeacherCourseDto(x.Id, x.Subject.Name, x.Code, x.Group.Code, x.Subject.CreditsNumber,
+                new TeacherCourseDto(x.Id, x.Subject.Name, x.Code,x.HasSyllabus, x.Group.Code, x.Subject.CreditsNumber,
                     x.Group.Students.Count, x.Hours));
         return new TeacherCoursesResponse(courses, ResponseMessages.Success, true, (int)StatusCode.Ok);
     }

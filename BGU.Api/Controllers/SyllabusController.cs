@@ -14,6 +14,7 @@ public class SyllabusController(ISyllabusService syllabusService) : ControllerBa
     public async Task<IActionResult> Create(IFormFile file, [FromRoute] string taughtSubjectId)
     {
         var res = await syllabusService.CreateAsync(new CreateSyllabusRequest(file, taughtSubjectId));
+        // return new StatusCode((int)res.StatusCode);
         return new ObjectResult(res);
     }
 

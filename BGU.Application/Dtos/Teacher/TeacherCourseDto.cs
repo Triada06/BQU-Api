@@ -4,8 +4,8 @@ public sealed record TeacherCourseDto(
     string CourseId,
     string CourseName,
     string CourseCode,
-    // List<string> Groups,
-     string GroupName,
+    bool HasSyllabus,
+    string GroupName,
     int CreditCount,
     int StudentCount,
     int Hours);

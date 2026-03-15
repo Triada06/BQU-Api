@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BGU.Infrastructure.Data;
 
+//TODO: ON DELETING TAUGHTSUBJECTS CLASSTIMES ARE NOT GETTING DELETED fix ts
 public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<AppUser>(options)
 {
     public DbSet<AcademicPerformance> AcademicPerformances { get; set; }
@@ -64,6 +65,31 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
                     "CK_Number_Range",
                     "\"Number\" >= 0 AND \"Number\" <= 10"
                 ));
+
+        builder.Entity<Class>()
+            .HasOne(c => c.ClassTime)
+            .WithMany()
+            .HasForeignKey(c => c.ClassTimeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Teacher>()
+            .HasOne(t => t.AppUser)
+            .WithOne()
+            .HasForeignKey<Teacher>(t => t.AppUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Student>()
+            .HasOne(s => s.AppUser)
+            .WithOne()
+            .HasForeignKey<Student>(s => s.AppUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Syllabus>()
+            .HasOne(s => s.TaughtSubject)
+            .WithOne(t => t.Syllabus)
+            .HasForeignKey<Syllabus>(s => s.TaughtSubjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
 
         foreach (var entityType in builder.Model.GetEntityTypes())
         {

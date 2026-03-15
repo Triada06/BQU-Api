@@ -64,79 +64,72 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
 
 
     public async Task<GroupScheduleResponse> GetSchedule(string id)
-{
-    var group =
-        await groupRepository.GetByIdAsync(id,
-            include: x =>
-                x.Include(g => g.TaughtSubjects)
-                    .ThenInclude(ts => ts.Subject)
-                    .Include(st => st.TaughtSubjects)
-                    .ThenInclude(ts => ts.Teacher)
-                    .ThenInclude(t => t.AppUser)
-                    .Include(st => st.TaughtSubjects)
-                    .ThenInclude(ts => ts.Classes)
-                    .ThenInclude(c => c.ClassTime)
-        );
-
-    if (group == null)
-    {
-        return new GroupScheduleResponse(
-            null,
-            ResponseMessages.NotFound,
-            false,
-            (int)StatusCode.NotFound
-        );
-    }
-
-    var todayDate = DateTime.Today;
-    int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
-    var weekStart = todayDate.AddDays(-diff);
-    var weekEnd = weekStart.AddDays(6);
-
-    var classesThisWeek = group.TaughtSubjects
-        .SelectMany(ts => ts.Classes)
-        .Where(c =>
-            c.ClassTime.ClassDate.Date >= weekStart &&
-            c.ClassTime.ClassDate.Date <= weekEnd)
-        .Select(c =>
-        {
-            var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
-            return new TodaysClassesDto(
-                c.Id,
-                c.TaughtSubject.Subject.Name,
-                c.ClassType.ToString(),
-                c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
-                c.ClassTime.Start,
-                c.ClassTime.End,
-                new DateTimeOffset(classDateTime),
-                c.Room,
-                c.TaughtSubject.Code,
-                c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
-            );
-        })
-        .OrderBy(x => x.Period)
-        .ToList();
-
-    return new GroupScheduleResponse(
-        new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
-        "Found", true, 200);
-}
-
-    public async Task<DeleteGroupsResponse> DeleteAsync(string id)
     {
         var group =
             await groupRepository.GetByIdAsync(id,
                 include: x =>
-                    x.Include(e => e.Specialization)
-                        .Include(e => e.Students)
+                    x.Include(g => g.TaughtSubjects)
+                        .ThenInclude(ts => ts.Subject)
+                        .Include(st => st.TaughtSubjects)
+                        .ThenInclude(ts => ts.Teacher)
+                        .ThenInclude(t => t.AppUser)
+                        .Include(st => st.TaughtSubjects)
+                        .ThenInclude(ts => ts.Classes)
+                        .ThenInclude(c => c.ClassTime)
             );
 
-        if (group is null)
+        if (group == null)
+        {
+            return new GroupScheduleResponse(
+                null,
+                ResponseMessages.NotFound,
+                false,
+                (int)StatusCode.NotFound
+            );
+        }
+
+        var todayDate = DateTime.Today;
+        int diff = (7 + (todayDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+        var weekStart = todayDate.AddDays(-diff);
+        var weekEnd = weekStart.AddDays(6);
+
+        var classesThisWeek = group.TaughtSubjects
+            .SelectMany(ts => ts.Classes)
+            .Where(c =>
+                c.ClassTime.ClassDate.Date >= weekStart &&
+                c.ClassTime.ClassDate.Date <= weekEnd)
+            .Select(c =>
+            {
+                var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+                return new TodaysClassesDto(
+                    c.Id,
+                    c.TaughtSubject.Subject.Name,
+                    c.ClassType.ToString(),
+                    c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,
+                    c.ClassTime.Start,
+                    c.ClassTime.End,
+                    new DateTimeOffset(classDateTime),
+                    c.Room,
+                    c.TaughtSubject.Code,
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                );
+            })
+            .OrderBy(x => x.Period)
+            .ToList();
+
+        return new GroupScheduleResponse(
+            new GroupScheduleDto(DateTime.Now.ToString("dddd, MMM dd"), CheckIfUpperWeek(), classesThisWeek),
+            "Found", true, 200);
+    }
+
+    public async Task<DeleteGroupsResponse> DeleteAsync(string id)
+    {
+        if (!await groupRepository.AnyAsync(x => x.Id == id))
         {
             return new DeleteGroupsResponse(StatusCode.NotFound, false, ResponseMessages.NotFound);
         }
 
-        return await groupRepository.DeleteAsync(group)
+        return await groupRepository.DeleteWithRelationsAsync(id)
             ? new DeleteGroupsResponse(StatusCode.Ok, true, ResponseMessages.Success)
             : new DeleteGroupsResponse(StatusCode.InternalServerError, false, ResponseMessages.Failed);
     }

@@ -21,6 +21,8 @@ public class TaughtSubjectService(
     ITaughtSubjectRepository taughtSubjectRepository,
     ISubjectRepository subjectRepository,
     IClassTimeRepository classTimeRepository,
+    ISyllabusService syllabusService,
+    ISyllabusRepository syllabusRepository,
     IClassRepository classRepository,
     IColloquiumRepository colloquiumRepository,
     IStudentRepository studentRepository,
@@ -195,7 +197,7 @@ public class TaughtSubjectService(
             request.Semester,
             taughtSubject.Id
         );
-        
+
         // await Task.Delay(14000);
 
         // First create all ClassTimes
@@ -219,6 +221,7 @@ public class TaughtSubjectService(
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating classes");
         }
+
         taughtSubject.Classes = classes;
 
         //creating an attendance system
@@ -513,88 +516,136 @@ public class TaughtSubjectService(
             new GetIndependentWorksByTaughtSubjectDto(independentWorks));
     }
 
-    //TODO: SO, the problem is at the creating classes, it creates 2 types fo the same class for a one day but one is seminar another one is lecture
-private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
-    AdmissionYear groupAdmissionYear,
-    int hours,
-    CreateClassDto[] classDtos,
-    int year,
-    int semester,
-    string taughtSubjectId)
-{
-    if (hours % 2 != 0) hours += 1;
-
-    var totalClasses = hours / 2;
-    var classes = new List<Class>();
-    var classTimes = new List<ClassTime>();
-
-    var groupCurrentCourse = DateTime.Now.Month >= 9
-        ? DateTime.Now.Year - groupAdmissionYear.FirstYear + 1
-        : DateTime.Now.Year - groupAdmissionYear.FirstYear;
-
-    var yearDiff = year - groupCurrentCourse;
-    var yearToUse = DateTime.Now.AddYears(yearDiff).Year;
-
-    var semesterStartDate = semester % 2 == 1
-        ? new DateTimeOffset(yearToUse, 9, 14, 0, 0, 0, TimeSpan.Zero)
-        : new DateTimeOffset(yearToUse, 2, 14, 0, 0, 0, TimeSpan.Zero);
-
-    var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
-    if (startDayOfWeek == 0) startDayOfWeek = 7;
-    var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
-    var firstMonday = semesterStartDate.AddDays(daysUntilMonday);
-
-    var isLecturer = true;
-    var classesCreated = 0;
-    var weekNumber = 1;
-
-    while (classesCreated < totalClasses)
+    public async Task<ApiResult<bool>> DeleteSyllabusAsync(string id)
     {
-        var isUpperWeek = weekNumber % 2 == 1;
-        var currentWeekMonday = firstMonday.AddDays((weekNumber - 1) * 7);
-
-        foreach (var dto in classDtos)
+        var course = await taughtSubjectRepository.GetByIdAsync(id, tracking: true);
+        if (course is null)
         {
-            if (classesCreated >= totalClasses) break;
-
-            var fires = dto.Frequency == Frequency.Both ||
-                        (dto.Frequency == Frequency.Upper && isUpperWeek) ||
-                        (dto.Frequency == Frequency.Lower && !isUpperWeek);
-
-            if (!fires) continue;
-
-            var classDate = currentWeekMonday.AddDays((int)dto.Day - 1);
-
-            var classTime = new ClassTime
+            return new ApiResult<bool>
             {
-                IsUpperWeek = dto.Frequency == Frequency.Both ? null : isUpperWeek,
-                Start = dto.Start,
-                End = dto.End,
-                DaysOfTheWeek = dto.Day,
-                ClassDate = classDate
+                Data = false,
+                Message = $"Course with an Id of {id} not found",
+                IsSucceeded = false,
+                StatusCode = 400
             };
-            classTimes.Add(classTime);
-
-            var classItem = new Class
-            {
-                Room = dto.Room,
-                ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
-                TaughtSubjectId = taughtSubjectId,
-                ClassTimeId = classTime.Id,
-                ClassTime = classTime
-            };
-            classes.Add(classItem);
-
-            isLecturer = !isLecturer;
-            classesCreated++;
         }
 
-        weekNumber++;
-        if (weekNumber > 200) break;
+        var syllabus =
+            (await syllabusRepository.FindAsync(x => x.TaughtSubjectId == id, tracking: true)).FirstOrDefault();
+        if (syllabus is null)
+        {
+            return new ApiResult<bool>
+            {
+                Data = false,
+                Message = "No syllabus found for this course",
+                IsSucceeded = false,
+                StatusCode = 400
+            };
+        }
+
+        var deleteRes = await syllabusService.DeleteAsync(syllabus.Id);
+        if (!deleteRes.IsSucceeded)
+        {
+            return new ApiResult<bool>
+            {
+                Data = false,
+                Message = deleteRes.ResponseMessage,
+                IsSucceeded = false,
+                StatusCode = (int)deleteRes.StatusCode
+            };
+        }
+
+        return new ApiResult<bool>
+        {
+            Data = false,
+            Message = "Success",
+            IsSucceeded = true,
+            StatusCode = 200
+        };
     }
 
-    return (classes, classTimes);
-}
+    private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(
+        AdmissionYear groupAdmissionYear,
+        int hours,
+        CreateClassDto[] classDtos,
+        int year,
+        int semester,
+        string taughtSubjectId)
+    {
+        if (hours % 2 != 0) hours += 1;
+
+        var totalClasses = hours / 2;
+        var classes = new List<Class>();
+        var classTimes = new List<ClassTime>();
+
+        var groupCurrentCourse = DateTime.Now.Month >= 9
+            ? DateTime.Now.Year - groupAdmissionYear.FirstYear + 1
+            : DateTime.Now.Year - groupAdmissionYear.FirstYear;
+
+        var yearDiff = year - groupCurrentCourse;
+        var yearToUse = DateTime.Now.AddYears(yearDiff).Year;
+
+        var semesterStartDate = semester % 2 == 1
+            ? new DateTimeOffset(yearToUse, 9, 14, 0, 0, 0, TimeSpan.Zero)
+            : new DateTimeOffset(yearToUse, 2, 14, 0, 0, 0, TimeSpan.Zero);
+
+        var startDayOfWeek = (int)semesterStartDate.DayOfWeek;
+        if (startDayOfWeek == 0) startDayOfWeek = 7;
+        var daysUntilMonday = startDayOfWeek == 1 ? 0 : (8 - startDayOfWeek);
+        var firstMonday = semesterStartDate.AddDays(daysUntilMonday);
+
+        var isLecturer = true;
+        var classesCreated = 0;
+        var weekNumber = 1;
+
+        while (classesCreated < totalClasses)
+        {
+            var isUpperWeek = weekNumber % 2 == 1;
+            var currentWeekMonday = firstMonday.AddDays((weekNumber - 1) * 7);
+
+            foreach (var dto in classDtos)
+            {
+                if (classesCreated >= totalClasses) break;
+
+                var fires = dto.Frequency == Frequency.Both ||
+                            (dto.Frequency == Frequency.Upper && isUpperWeek) ||
+                            (dto.Frequency == Frequency.Lower && !isUpperWeek);
+
+                if (!fires) continue;
+
+                var classDate = currentWeekMonday.AddDays((int)dto.Day - 1);
+
+                var classTime = new ClassTime
+                {
+                    IsUpperWeek = dto.Frequency == Frequency.Both ? null : isUpperWeek,
+                    Start = dto.Start,
+                    End = dto.End,
+                    DaysOfTheWeek = dto.Day,
+                    ClassDate = classDate
+                };
+                classTimes.Add(classTime);
+
+                var classItem = new Class
+                {
+                    Room = dto.Room,
+                    ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
+                    TaughtSubjectId = taughtSubjectId,
+                    ClassTimeId = classTime.Id,
+                    ClassTime = classTime
+                };
+                classes.Add(classItem);
+
+                isLecturer = !isLecturer;
+                classesCreated++;
+            }
+
+            weekNumber++;
+            if (weekNumber > 200) break;
+        }
+
+        return (classes, classTimes);
+    }
+
     private static string FormatRange(TimeSpan from, TimeSpan to)
         => $@"{from:hh\:mm} - {to:hh\:mm}";
 

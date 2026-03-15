@@ -9,4 +9,5 @@ public interface ISyllabusService
     Task<UpdateSyllabusResponse> UpdateAsync(UpdateSyllabusRequest request);
     Task<DeleteSyllabusResponse> DeleteAsync(string id);
     Task<GetByIdSyllabusResponse> GetByIdAsync(string id);
+    Task<GetByIdSyllabusResponse> GetByTaughtSubjectId(string id);
 }
