@@ -18,7 +18,7 @@ public static class IdentitySeeder
         await EnsureRoleAsync(roleManager, "Teacher");
 
         // Вытаскиваем деканов по префиксам SEED_DEAN1_ и SEED_DEAN2_
-        var prefixes = new[] { "SEED_DEAN1_", "SEED_DEAN2_", "SEED_DEAN_3" };
+        var prefixes = new[] { "SEED_DEAN1_", "SEED_DEAN2_", "SEED_DEAN3_" };
 
         foreach (var p in prefixes)
         {
