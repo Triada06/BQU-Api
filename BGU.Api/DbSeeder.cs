@@ -17,8 +17,9 @@ public static class DbSeeder
         // ----------------------------
         const string facultyPhilHistory = "Filologiya-tarix fakültəsi";
         const string facultySocPed = "Sosial-pedoqoji fakültəsi";
+        const string facultyInfo = "Infromatika-pedaqoji fakültəsi";
 
-        var facultyNames = new[] { facultyPhilHistory, facultySocPed };
+        var facultyNames = new[] { facultyPhilHistory, facultySocPed, facultyInfo };
 
         var existingFaculties = await db.Faculties
             .Where(f => facultyNames.Contains(f.Name))
@@ -46,7 +47,9 @@ public static class DbSeeder
             "Xarici dillər kafedrası",
             "Riyaziyyat, informatika və təbiət fənləri kafedrası",
             "Psixologiya kafedrası",
-            "Tarix kafedrası"
+            "Tarix kafedrası",
+            "İnformatika və proqramlaşdırma kafedrası",
+            "Rəqəmsal texnologiyalar kafedrası",
         };
 
         var deptToFaculty = new Dictionary<string, string>
@@ -59,7 +62,11 @@ public static class DbSeeder
             // Sosial - pedoqoji
             ["Pedaqogika kafedrası"] = facultySocPed,
             ["Psixologiya kafedrası"] = facultySocPed,
-            ["Riyaziyyat, informatika və təbiət fənləri kafedrası"] = facultySocPed
+            ["Riyaziyyat, informatika və təbiət fənləri kafedrası"] = facultySocPed,
+
+            //info
+            ["İnformatika və proqramlaşdırma kafedrası"] = facultyInfo,
+            ["Rəqəmsal texnologiyalar kafedrası"] = facultyInfo,
         };
 
         var existingDepts = await db.Departments
@@ -108,7 +115,16 @@ public static class DbSeeder
             "Riyaziyyat və informatika müəllimliyi",
             "Pedaqogika"
         };
+        
+        var infoSpecs = new[]
+        {
+            "İnformatika müəllimliyi",
+            "Kompüter elmləri",
+            "Proqram mühəndisliyi",
+            "İnformasiya texnologiyaları",
+        };
 
+        await UpsertSpecializationsAsync(db, facultyByName[facultyInfo], infoSpecs, now, ct);
         await UpsertSpecializationsAsync(db, facultyByName[facultyPhilHistory], philHistorySpecs, now, ct);
         await UpsertSpecializationsAsync(db, facultyByName[facultySocPed], socPedSpecs, now, ct);
 
