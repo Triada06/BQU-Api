@@ -56,7 +56,7 @@ public static class IdentitySeeder
                     throw new Exception(string.Join("; ", res.Errors.Select(e => e.Description)));
             }
 
-            var deanExists = await db.Deans.AnyAsync(d => d.AppUserId == user.Id && d.FacultyId == faculty.Id, ct);
+            var deanExists = await db.Deans.AnyAsync(d => d.FacultyId == faculty.Id, ct);
             if (!deanExists)
             {
                 db.Deans.Add(new Dean
