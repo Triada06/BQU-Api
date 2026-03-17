@@ -158,5 +158,10 @@ public class SyllabusService(
     }
 
     private string GetSyllabusPath()
-        => Path.Combine(env.WebRootPath, "Syllabuses");
+    {
+        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        var path = Path.Combine(webRoot, "Syllabuses");
+        Directory.CreateDirectory(path);
+        return path;
+    }
 }

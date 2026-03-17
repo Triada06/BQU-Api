@@ -9,12 +9,9 @@ public static class DbSeeder
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-
         var now = DateTime.UtcNow;
 
-        // ----------------------------
         // 1) Faculties
-        // ----------------------------
         const string facultyPhilHistory = "Filologiya-tarix fakültəsi";
         const string facultySocPed = "Sosial-pedoqoji fakültəsi";
         const string facultyInfo = "Infromatika-pedaqoji fakültəsi";
@@ -37,9 +34,9 @@ public static class DbSeeder
             }
         }
 
-        // ----------------------------
+        await db.SaveChangesAsync(ct); // IDs are now set
+
         // 2) Departments
-        // ----------------------------
         var deptNames = new[]
         {
             "Azərbaycan dili və ədəbiyyat kafedrası",
@@ -54,50 +51,42 @@ public static class DbSeeder
 
         var deptToFaculty = new Dictionary<string, string>
         {
-            // Filologiya-tarix
             ["Azərbaycan dili və ədəbiyyat kafedrası"] = facultyPhilHistory,
             ["Xarici dillər kafedrası"] = facultyPhilHistory,
             ["Tarix kafedrası"] = facultyPhilHistory,
-
-            // Sosial - pedoqoji
             ["Pedaqogika kafedrası"] = facultySocPed,
             ["Psixologiya kafedrası"] = facultySocPed,
             ["Riyaziyyat, informatika və təbiət fənləri kafedrası"] = facultySocPed,
-
-            //info
             ["İnformatika və proqramlaşdırma kafedrası"] = facultyInfo,
             ["Rəqəmsal texnologiyalar kafedrası"] = facultyInfo,
         };
 
+        var facultyIds = facultyByName.Values.Select(f => f.Id).ToList();
         var existingDepts = await db.Departments
-            .Where(d => deptNames.Contains(d.Name))
+            .Where(d => deptNames.Contains(d.Name) && facultyIds.Contains(d.FacultyId))
             .ToListAsync(ct);
+
+        var existingDeptSet = existingDepts
+            .Select(d => (d.Name, d.FacultyId))
+            .ToHashSet();
 
         foreach (var deptName in deptNames)
         {
-            var facultyName = deptToFaculty[deptName];
-            var faculty = facultyByName[facultyName];
-
-            var alreadyExists = existingDepts.Any(d =>
-                d.Name == deptName &&
-                (!string.IsNullOrWhiteSpace(faculty.Id)
-                    ? d.FacultyId == faculty.Id
-                    : facultyByName[facultyName].Name == facultyName));
-
-            if (!alreadyExists)
+            var faculty = facultyByName[deptToFaculty[deptName]];
+            if (!existingDeptSet.Contains((deptName, faculty.Id)))
             {
                 db.Departments.Add(new Department
                 {
                     Name = deptName,
                     CreatedAt = now,
-                    Faculty = faculty
+                    FacultyId = faculty.Id
                 });
             }
         }
 
-        // ----------------------------
+        await db.SaveChangesAsync(ct); // save before specs
+
         // 3) Specializations
-        // ----------------------------
         var philHistorySpecs = new[]
         {
             "Azərbaycan dili və ədəbiyyatı müəllimliyi",
@@ -115,7 +104,7 @@ public static class DbSeeder
             "Riyaziyyat və informatika müəllimliyi",
             "Pedaqogika"
         };
-        
+
         var infoSpecs = new[]
         {
             "İnformatika müəllimliyi",
@@ -128,30 +117,19 @@ public static class DbSeeder
         await UpsertSpecializationsAsync(db, facultyByName[facultyPhilHistory], philHistorySpecs, now, ct);
         await UpsertSpecializationsAsync(db, facultyByName[facultySocPed], socPedSpecs, now, ct);
 
-        // ----------------------------
-        // 4) Rooms: 4 floors * 21 rooms
-        // ----------------------------
-        var roomNames = GenerateRoomNames(floors: 4, perFloor: 21); // 101-121, 201-221, ...
-        var existingRoomNames = await db.Rooms
-            .AsNoTracking()
-            .Where(r => roomNames.Contains(r.Name))
-            .Select(r => r.Name)
-            .ToListAsync(ct);
+        // 4) Rooms
+        var roomNames = GenerateRoomNames(floors: 4, perFloor: 21);
+        var existingRoomSet = (await db.Rooms
+                .AsNoTracking()
+                .Where(r => roomNames.Contains(r.Name))
+                .Select(r => r.Name)
+                .ToListAsync(ct))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var existingRoomSet = existingRoomNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var newRooms = new List<Room>();
-        foreach (var rn in roomNames)
-        {
-            if (existingRoomSet.Contains(rn)) continue;
-
-            newRooms.Add(new Room
-            {
-                Name = rn,
-                Capacity = 20,
-                CreatedAt = now
-            });
-        }
+        var newRooms = roomNames
+            .Where(rn => !existingRoomSet.Contains(rn))
+            .Select(rn => new Room { Name = rn, Capacity = 20, CreatedAt = now })
+            .ToList();
 
         if (newRooms.Count > 0)
             db.Rooms.AddRange(newRooms);
