@@ -2,6 +2,7 @@ namespace BGU.Application.Dtos.Class;
 
 public record TodaysClassesDto(
     string Id,
+    string TaughtSubjectId,
     string Name,
     string ClassType,
     string Professor,

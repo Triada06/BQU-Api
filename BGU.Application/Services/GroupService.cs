@@ -103,6 +103,7 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                 var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
                 return new TodaysClassesDto(
                     c.Id,
+                    c.TaughtSubjectId,
                     c.TaughtSubject.Subject.Name,
                     c.ClassType.ToString(),
                     c.TaughtSubject.Teacher.AppUser.Name + " " + c.TaughtSubject.Teacher.AppUser.Surname,

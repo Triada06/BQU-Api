@@ -72,12 +72,12 @@ public class StudentService(
             );
         }
 
-        int today = GetToday();
         var classesToday = student.Group.TaughtSubjects
             .SelectMany(gs => gs.Classes)
-            .Where(c => c.ClassTime.DaysOfTheWeek == (DaysOfTheWeek)today)
+            .Where(c => c.ClassTime.ClassDate.DateTime.Date == DateTime.Today)
             .Select(c => new TodaysClassesDto(
                 c.Id,
+                c.TaughtSubjectId,
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,
@@ -143,6 +143,7 @@ public class StudentService(
                     var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
                     return new TodaysClassesDto(
                         c.Id,
+                        c.TaughtSubjectId,
                         c.TaughtSubject.Subject.Name,
                         c.ClassType.ToString(),
                         c.TaughtSubject.Teacher.AppUser.Name,
@@ -170,6 +171,7 @@ public class StudentService(
                 var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
                 return new TodaysClassesDto(
                     c.Id,
+                    c.TaughtSubjectId,
                     c.TaughtSubject.Subject.Name,
                     c.ClassType.ToString(),
                     c.TaughtSubject.Teacher.AppUser.Name,
@@ -211,48 +213,50 @@ public class StudentService(
                         c.ClassTime.ClassDate
                     }).ToList(),
                     Seminars = ts.Seminars.Where(sem => sem.StudentId == s.Id && sem.Grade != Grade.None).ToList(),
-                    IndependentWorks = ts.IndependentWorks.Where(iw => iw.StudentId == s.Id).ToList()
+                    IndependentWorks = ts.IndependentWorks.Where(iw => iw.StudentId == s.Id).ToList(),
                 }).ToList(),
-                Attendances = s.Attendances.Select(a => new { a.ClassId, a.IsAbsent, a.Date }).ToList(),
-                Colloquiums = s.Colloquiums.Where(col => col.Grade != Grade.None).ToList(),
+                Attendances = s.Attendances.Select(a => new { a.ClassId, a.IsPresent, a.Date }).ToList(),
+                Colloquiums = s.Colloquiums.Where(col => col.Grade != Grade.None).OrderBy(x => x.OrderNumber).ToList(),
             })
             .FirstOrDefaultAsync();
-
+//TODO: FIX ORDERING IN ATTENDENCAS AT STUDENT GRADES
         if (studentData == null)
         {
             return new StudentGradesResponse(null, null, ResponseMessages.NotFound, false, 404);
         }
 
-        var attendanceMap = studentData.Attendances.ToLookup(a => a.ClassId);
-
-        if (request.Grade == "sessions")
-        {
-            var sessions = studentData.TaughtSubjects.Select(ts => new ClassSessions(
-                ts.SubjectName,
-                ts.Classes.Select(c => new ClassInfo(
-                    c.ClassDate,
-                    c.ClassType.ToString(),
-                    attendanceMap[c.Id].FirstOrDefault()?.IsAbsent ?? true,
-                    c.ClassType == ClassType.Семинар
-                        ? (int?)ts.Seminars.FirstOrDefault(sg => sg.GotAt == c.ClassDate)?.Grade
-                        : null)
-                ))
-            ).ToList();
-
-            return new StudentGradesResponse(null, sessions, "Ok", true, 200);
-        }
+        // var attendanceMap = studentData.Attendances.ToLookup(a => a.ClassId);
+        //
+        // if (request.Grade == "sessions")
+        // {
+        //     var sessions = studentData.TaughtSubjects.Select(ts => new ClassSessions(
+        //         ts.SubjectName,
+        //         ts.Classes.Select(c => new ClassInfo(
+        //             c.ClassDate,
+        //             c.ClassType.ToString(),
+        //             attendanceMap[c.Id].FirstOrDefault()?.IsPresent ?? true,
+        //             c.ClassType == ClassType.Семинар
+        //                 ? (int?)ts.Seminars.FirstOrDefault(sg => sg.GotAt == c.ClassDate)?.Grade
+        //                 : null)
+        //         ))
+        //     ).ToList();
+        //
+        //     return new StudentGradesResponse(null, sessions, "Ok", true, 200);
+        // }
 
         var performance = studentData.TaughtSubjects.Select(ts =>
         {
             var seminarGrades = ts.Seminars.Select(s => (int)s.Grade).ToList();
-            var colloquiumGrades = studentData.Colloquiums.Where(coll => coll.TaughtSubjectId == ts.Id)
-                .OrderBy(x => x.CreatedAt).Select(s => (int)s.Grade).ToList();
+            var colloquiumGrades = studentData.Colloquiums
+                .Where(coll => coll.TaughtSubjectId == ts.Id)
+                .Select(s => (int)s.Grade).ToList();
             var passedIwCount = ts.IndependentWorks.Count(iw => iw.IsPassed is true);
 
             var subjectClassIds = ts.Classes.Select(c => c.Id).ToList();
             var subjectAttendanceCount = studentData.Attendances.Count(a => subjectClassIds.Contains(a.ClassId));
             var subjectAbsenceCount =
-                studentData.Attendances.Count(a => !a.IsAbsent && subjectClassIds.Contains(a.ClassId));
+                studentData.Attendances.Where(a => subjectClassIds.Contains(a.ClassId)).OrderBy(x => x.Date)
+                    .Select(x => x.IsPresent);
 
             return new AcademicPerformanceDto(
                 ts.SubjectName,
@@ -324,7 +328,7 @@ public class StudentService(
     }
 
     public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
-    {
+    {//TODO: fix filter, shouldnt be hardcoded with 1000 pagesize
         var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
             .Include(st => st.Group)
             .Include(st => st.AdmissionYear)
@@ -574,9 +578,6 @@ public class StudentService(
                + finalAssignmentScore;
     }
 
-
-    private static int GetToday()
-        => (int)DateTime.Today.DayOfWeek;
 
     private static int GetYear(int firstYear)
     {

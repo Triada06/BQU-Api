@@ -115,6 +115,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
                 return new TodaysClassesDto(
                     c.Id,
+                    c.TaughtSubjectId,
                     c.TaughtSubject.Subject.Name,
                     c.ClassType.ToString(),
                     c.TaughtSubject.Teacher.AppUser.Name,
@@ -142,6 +143,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
             return new TodaysClassesDto(
                 c.Id,
+                c.TaughtSubjectId,
                 c.TaughtSubject.Subject.Name,
                 c.ClassType.ToString(),
                 c.TaughtSubject.Teacher.AppUser.Name,

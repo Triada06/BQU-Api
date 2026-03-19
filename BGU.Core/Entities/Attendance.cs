@@ -10,5 +10,5 @@ public class Attendance : BaseEntity
 
     public DateTime Date { get; set; }
 
-    public bool IsAbsent { get; set; }
+    public bool IsPresent { get; set; }
 }

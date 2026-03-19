@@ -27,5 +27,5 @@ public sealed record AcademicPerformanceDto(
     IEnumerable<int> SeminarGrades,
     IEnumerable<int> Colloquium,
     IEnumerable<GetIndependentWorkDto> IndependentWorks,
-    int Absences,
+    IEnumerable<bool> Attendances,
     int ClassCount);

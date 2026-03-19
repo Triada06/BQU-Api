@@ -20,7 +20,7 @@ public class AttendanceService(IAttendanceRepository attendanceRepository) : IAt
         return await attendanceRepository.BulkCreateAsync(attendances.Select(x => new Attendance {
             StudentId = x.StudentId,
             ClassId = x.StudentId,
-            IsAbsent = false
+            IsPresent = false
         }).ToList());
     }
 
@@ -29,7 +29,7 @@ public class AttendanceService(IAttendanceRepository attendanceRepository) : IAt
     }
 
     public async Task<UpdateAttendanceResponse> UpdateAttendanceAsync(Attendance attendance) {
-        attendance.IsAbsent = !attendance.IsAbsent;
+        attendance.IsPresent = !attendance.IsPresent;
         return await attendanceRepository.UpdateAsync(attendance)
             ? new UpdateAttendanceResponse(attendance.Id, StatusCode.Ok, true, ResponseMessages.Success)
             : new UpdateAttendanceResponse(attendance.Id, StatusCode.InternalServerError, false,

@@ -306,7 +306,7 @@ public class AdminService(
         foreach (var classItem in classes)
         {
             var att = new Attendance
-                { StudentId = student.Id, ClassId = classItem.Id, IsAbsent = false };
+                { StudentId = student.Id, ClassId = classItem.Id, IsPresent = false };
             attendances.Add(att);
         }
 
@@ -339,6 +339,7 @@ public class AdminService(
         {
             var coll = new Colloquiums
             {
+                OrderNumber = i + 1,
                 Grade = Grade.None,
                 StudentId = student.Id,
                 TaughtSubjectId = taughtSubjectId,

@@ -183,10 +183,10 @@ public class TaughtSubjectService(
 
         if (taughtSubject.Hours % 2 != 0) taughtSubject.Hours += 1;
 
-        Console.WriteLine($"ClassTimes count: {request.ClassTimes.Length}");
-        Console.WriteLine($"Hours: {request.Hours}, TotalClasses: {request.Hours / 2}");
-        foreach (var ct in request.ClassTimes)
-            Console.WriteLine($"  Day={ct.Day} Freq={ct.Frequency} Start={ct.Start}");
+        // Console.WriteLine($"ClassTimes count: {request.ClassTimes.Length}");
+        // Console.WriteLine($"Hours: {request.Hours}, TotalClasses: {request.Hours / 2}");
+        // foreach (var ct in request.ClassTimes)
+        //     Console.WriteLine($"  Day={ct.Day} Freq={ct.Frequency} Start={ct.Start}");
         // await Task.Delay(7000);
 
         var (classes, classTimes) = GenerateClassesAndClassTimes(
@@ -257,7 +257,7 @@ public class TaughtSubjectService(
             foreach (var classItem in classes)
             {
                 attendances.AddRange(studentsInGroup.Select(student => new Attendance
-                    { StudentId = student!.Id, ClassId = classItem.Id, IsAbsent = false }));
+                    { StudentId = student!.Id, ClassId = classItem.Id, IsPresent = false }));
             }
 
 
@@ -296,6 +296,7 @@ public class TaughtSubjectService(
                 {
                     var coll = new Colloquiums
                     {
+                        OrderNumber = i + 1,
                         Grade = Grade.None,
                         StudentId = student!.Id,
                         TaughtSubjectId = taughtSubject.Id,
@@ -401,7 +402,7 @@ public class TaughtSubjectService(
                         FormatRange(classItem.ClassTime.Start, classItem.ClassTime.End),
                         'S',
                         seminar?.Grade is Grade.None ? attendance?.Id : null,
-                        seminar?.Grade is Grade.None ? attendance?.IsAbsent : null,
+                        seminar?.Grade is Grade.None ? attendance?.IsPresent : null,
                         seminar?.Id,
                         seminar?.Grade
                     ));
@@ -417,7 +418,7 @@ public class TaughtSubjectService(
                         FormatRange(classItem.ClassTime.Start, classItem.ClassTime.End),
                         'L',
                         attendance?.Id,
-                        attendance?.IsAbsent,
+                        attendance?.IsPresent,
                         null,
                         null
                     ));

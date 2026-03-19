@@ -49,7 +49,7 @@ public class AdminController(
         var result =
             await adminService
                 .CreateStudentAsync(
-                    request); //TODO: add independent work, colls, seminars, attendances creating on creating a student and adding to a group
+                    request); //TODO: add independent work, colls, seminars, attendances creating on creating a student and adding to a 
         return Ok(result);
     }
 
