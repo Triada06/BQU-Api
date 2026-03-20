@@ -10,6 +10,8 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/user";
         public const string SignIn = $"{Base}/signin";
+        public const string ResetPassword = $"{Base}/me/reset-password";
+        public const string CheckPassword = $"{Base}/check-password";
     }
 
     public static class Syllabus

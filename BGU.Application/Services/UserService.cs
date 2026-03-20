@@ -1,20 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using BGU.Application.Contracts.User;
 using BGU.Application.Dtos.AppUser;
-using BGU.Application.Dtos.Dean;
-using BGU.Application.Helpers.Exceptions;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
-using BGU.Infrastructure.Repositories;
-using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -22,7 +14,7 @@ namespace BGU.Application.Services;
 
 public class UserService(
     UserManager<AppUser> userManager,
-    IConfiguration config): IUserService
+    IConfiguration config) : IUserService
 {
     public async Task<AuthResponse> SignInAsync(AppUserSignInDto deanUserDto)
     {
@@ -38,7 +30,39 @@ public class UserService(
             ? new AuthResponse(null, null, false, StatusCode.BadRequest, ["Invalid login credentials "])
             : new AuthResponse(await GenerateJwtToken(user), DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
     }
-    
+
+    public async Task<AuthResponse> ResetPasswordAsync(string userId, string newPassword, CancellationToken cp)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["User not found"]);
+        }
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var res = await userManager.ResetPasswordAsync(user, token, newPassword);
+
+        if (!res.Succeeded)
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest,
+                res.Errors.Select(e => e.Description).ToArray());
+        }
+
+        return new AuthResponse(await GenerateJwtToken(user), DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
+    }
+
+    public async Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken cp)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        var result = await userManager.CheckPasswordAsync(user, password);
+        return result;
+    }
+
 
     private async Task<string> GenerateJwtToken(AppUser user)
     {

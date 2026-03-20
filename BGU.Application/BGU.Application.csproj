@@ -30,8 +30,4 @@
       <ProjectReference Include="..\BGU.Infrastructure\BGU.Infrastructure.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Helpers\Mappings\" />
-    </ItemGroup>
-
 </Project>
