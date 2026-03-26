@@ -2,6 +2,7 @@ using BGU.Application.Common;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.IndependentWorks;
+using BGU.Application.Dtos.Student;
 using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
 namespace BGU.Application.Services.Interfaces;
@@ -21,4 +22,5 @@ public interface IStudentService
     Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(GradeIndependentWorkRequest request);
     Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request);
     Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId, string taughtSubjectId);
+    Task<ApiResult<GetStudentPageDto>>  GetByIdAsync(string id,CancellationToken cancellationToken);
 }

@@ -182,13 +182,7 @@ public class TaughtSubjectService(
         }
 
         if (taughtSubject.Hours % 2 != 0) taughtSubject.Hours += 1;
-
-        // Console.WriteLine($"ClassTimes count: {request.ClassTimes.Length}");
-        // Console.WriteLine($"Hours: {request.Hours}, TotalClasses: {request.Hours / 2}");
-        // foreach (var ct in request.ClassTimes)
-        //     Console.WriteLine($"  Day={ct.Day} Freq={ct.Frequency} Start={ct.Start}");
-        // await Task.Delay(7000);
-
+        
         var (classes, classTimes) = GenerateClassesAndClassTimes(
             group.AdmissionYear,
             request.Hours,
@@ -197,25 +191,7 @@ public class TaughtSubjectService(
             request.Semester,
             taughtSubject.Id
         );
-
-        // await Task.Delay(14000);
-
-        // First create all ClassTimes
-        // if (!await classTimeRepository.BulkCreateAsync(classTimes))
-        // {
-        //     return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
-        //         "Failed to create class times");
-        // }
-        //
-        //
-        //
-        // // Then create all Classes
-        //
-        // if (!await classRepository.BulkCreateAsync(classes))
-        // {
-        //     return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
-        //         "Something went wrong while creating classes");
-        // }
+        
         if (!await classRepository.BulkCreateWithTimesAsync(classes, classTimes))
         {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,

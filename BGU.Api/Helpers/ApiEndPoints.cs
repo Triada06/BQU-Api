@@ -42,6 +42,7 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/students";
         public const string Create = $"{Base}";
+        public const string GetById = $"{Base}/{{id}}";
         public const string Filter = $"{Base}/filter-by";
         public const string Search = $"{Base}/search";
         public const string GetAll = $"{Base}";

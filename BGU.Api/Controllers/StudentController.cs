@@ -81,6 +81,14 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Student.GetById)]
+    public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
+    {
+        var res = await studentService.GetByIdAsync(id, cancellationToken);
+        return res.IsSucceeded ? Ok(res) : StatusCode(res.StatusCode, res.Message);
+    }
+    
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.MarkAbsence)]
     public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId)
