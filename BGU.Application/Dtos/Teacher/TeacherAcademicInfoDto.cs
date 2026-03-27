@@ -7,4 +7,5 @@ public sealed record TeacherAcademicInfoDto(
     string EmployeeId,
     string StateName,
     string Faculty,
-    string Specialization);
+    string Specialization,
+    string? Email);

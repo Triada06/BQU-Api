@@ -59,7 +59,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
         var teacherAcademicInfoDto = new TeacherAcademicInfoDto(user.Name, user.Surname, user.UserName, teacher.Id,
             teacher.Department.Faculty.Name, teacher.Department.Faculty.Name,
-            teacherSpecialization);
+            teacherSpecialization,user.Email);
         return new TeacherProfileResponse(teacherAcademicInfoDto, ResponseMessages.Success,
             true, (int)StatusCode.Ok);
     }

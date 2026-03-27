@@ -10,8 +10,17 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/user";
         public const string SignIn = $"{Base}/signin";
-        public const string ResetPassword = $"{Base}/me/reset-password";
+        public const string ChangePassword = $"{Base}/me/change-password";
         public const string CheckPassword = $"{Base}/check-password";
+        public const string AddEmail = $"{Base}/me/add-email";
+        public const string ConfirmEmail = $"{Base}/me/confirm-email";
+    }
+
+    public static class Auth
+    {
+        private const string Base = $"{ApiBase}/auth";
+        public const string ForgotPassword = $"{Base}/forgot-password";
+        public const string ResetPassword = $"{Base}/me/reset-password";
     }
 
     public static class Syllabus

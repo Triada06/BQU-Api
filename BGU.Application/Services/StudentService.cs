@@ -321,7 +321,7 @@ public class StudentService(
         var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, user.UserName, student.Id,
             student.Gpa, nameof(student.Group.EducationLevel),
             student.AdmissionYear.FirstYear, student.Faculty.Name,
-            student.Specialization.Name);
+            student.Specialization.Name,user.Email);
 
         return new StudentProfileResponse(studentAcademicInfo, ResponseMessages.Success, true,
             (int)StatusCode.Ok);

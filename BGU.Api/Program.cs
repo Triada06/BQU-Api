@@ -73,12 +73,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add Data Protection services (required for Identity token providers)
 builder.Services.AddDataProtection();
-builder.Services.AddAppServices();
+builder.Services.AddAppServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ResponseStatusCodeFilter>();
-    options.Filters.Add<ValidationFilter>(); // Add this
+    options.Filters.Add<ValidationFilter>(); 
 });
 builder.Services.AddProblemDetails();
 

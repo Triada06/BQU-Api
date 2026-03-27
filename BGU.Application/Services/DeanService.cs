@@ -35,7 +35,7 @@ public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> us
             );
         }
 
-        var dto = new DeanProfileDto(dean.AppUser.Name, dean.AppUser.Surname, dean.AppUser.UserName, dean.Faculty.Name, dean.RoleName);
+        var dto = new DeanProfileDto(dean.AppUser.Name, dean.AppUser.Surname, dean.AppUser.UserName, dean.Faculty.Name, dean.RoleName,dean.AppUser.Email);
         return new DeanProfileResponse(
             dto,
             ResponseMessages.Success,

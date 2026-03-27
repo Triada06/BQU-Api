@@ -7,12 +7,14 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BGU.Application.Services;
 
 public class UserService(
+    IEmailSender<AppUser> emailSender,
     UserManager<AppUser> userManager,
     IConfiguration config) : IUserService
 {
@@ -61,6 +63,42 @@ public class UserService(
 
         var result = await userManager.CheckPasswordAsync(user, password);
         return result;
+    }
+
+    public async Task<bool> ConfirmEmailAsync(string userId, string token, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+            return false;
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+
+        var result = await userManager.ConfirmEmailAsync(user, decodedToken);
+        return result.Succeeded;
+    }
+
+    public async Task<bool> AddEmailAsync(string userId, AddEmailRequest request, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+            return false;
+
+        // sets email + marks EmailConfirmed = false internally
+        var result = await userManager.SetEmailAsync(user, request.Email);
+        if (!result.Succeeded)
+            return false;
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        // encode because token contains special chars
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var confirmationLink = $"http://localhost:3000/confirm-email?userId={userId}&token={encodedToken}";
+        
+        await emailSender.SendConfirmationLinkAsync(user, request.Email, 
+            confirmationLink);
+
+        return true;
     }
 
 

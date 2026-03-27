@@ -9,5 +9,6 @@ public record StudentAcademicInfoDto(
     string EducationLevel,
     int AdmissionYear,
     string Faculty,
-    string Specialization
+    string Specialization,
+    string? Email
 );
