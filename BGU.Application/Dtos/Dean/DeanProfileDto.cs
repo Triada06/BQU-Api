@@ -5,5 +5,6 @@ public sealed record DeanProfileDto(
     string Surname,
     string FinCode,
     string Faculty,
-    string RoleName
+    string RoleName,
+    string? Email
 );

@@ -1,12 +1,15 @@
+using BGU.Application.Common;
 using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
+using BGU.Core.Entities;
 using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
+using Microsoft.AspNetCore.Identity;
 
 namespace BGU.Api.Helpers;
 
 public static class AppServices {
-    public static IServiceCollection AddAppServices(this IServiceCollection services) {
+    public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration) {
         //services
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IStudentService, StudentService>();
@@ -47,6 +50,9 @@ public static class AppServices {
         services.AddScoped<IColloquiumRepository, ColloquiumRepository>();
         services.AddScoped<ISeminarRepository, SeminarRepository>();
         services.AddScoped<IIndependentWorkRepository, IndependentWorkRepository>();
+        
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        services.AddSingleton<IEmailSender<AppUser>, MailKitEmailSender>();
         return services;
     }
 }

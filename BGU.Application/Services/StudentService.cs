@@ -321,14 +321,15 @@ public class StudentService(
         var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, user.UserName, student.Id,
             student.Gpa, nameof(student.Group.EducationLevel),
             student.AdmissionYear.FirstYear, student.Faculty.Name,
-            student.Specialization.Name);
+            student.Specialization.Name,user.Email);
 
         return new StudentProfileResponse(studentAcademicInfo, ResponseMessages.Success, true,
             (int)StatusCode.Ok);
     }
 
     public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
-    {//TODO: fix filter, shouldnt be hardcoded with 1000 pagesize
+    {
+        //TODO: fix filter, shouldnt be hardcoded with 1000 pagesize
         var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
             .Include(st => st.Group)
             .Include(st => st.AdmissionYear)
@@ -352,7 +353,7 @@ public class StudentService(
 
         return new GetStudentResponse(students.Count == 0
                 ? []
-                : students.Select(x => new GetStudentDto(
+                : students.Select(x => new GetStudentDto(x.Id,
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName, x.AppUser.UserName,
                     x.Group.Code,
                     GetYear(x.AdmissionYear.FirstYear),
@@ -394,7 +395,7 @@ public class StudentService(
 
         return new GetStudentResponse(students.Count == 0
                 ? []
-                : students.Select(x => new GetStudentDto(
+                : students.Select(x => new GetStudentDto(x.Id,
                     x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName,
                     x.Group.Code,
@@ -419,7 +420,7 @@ public class StudentService(
                     .Include(st => st.Specialization)
                     .Include(st => st.AppUser)))
             .Select(x =>
-                new GetStudentDto(x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
+                new GetStudentDto(x.Id,x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.Group.Code,
                     GetYear(x.AdmissionYear.FirstYear),
                     x.Specialization.Name,
@@ -538,6 +539,74 @@ public class StudentService(
         );
     }
 
+    public async Task<ApiResult<GetStudentPageDto>> GetByIdAsync(string id, CancellationToken cancellationToken)
+    {
+        var student = (await studentRepository.FindAsync(
+            s => s.Id == id,
+            s => s
+                .Include(ai => ai.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Subject)
+                .Include(st => st.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Teacher)
+                .ThenInclude(t => t.AppUser)
+                .Include(st => st.Group.TaughtSubjects)
+                .ThenInclude(ts => ts.Classes)
+                .ThenInclude(c => c.ClassTime)
+                .Include(x=>x.AdmissionYear)
+                .Include(x=>x.Specialization)
+                .Include(x=>x.AppUser)
+        )).FirstOrDefault();
+        
+        if (student is null)
+        {
+            return new ApiResult<GetStudentPageDto>
+            {
+                Data = null,
+                Message = $"Student with an Id of {id} not found",
+                IsSucceeded = false,
+                StatusCode = 404
+            };
+        }
+
+        var formattedAdmissionYear = $"{student.AdmissionYear.FirstYear}/{student.AdmissionYear.SecondYear}";
+
+        var classesToday = student.Group.TaughtSubjects
+            .SelectMany(gs => gs.Classes)
+            .Where(c => c.ClassTime.ClassDate.Date == DateTime.Today)
+            .Select(c =>
+            {
+                var classDateTime = c.ClassTime.ClassDate.Date.Add(c.ClassTime.Start);
+                return new TodaysClassesDto(
+                    c.Id,
+                    c.TaughtSubjectId,
+                    c.TaughtSubject.Subject.Name,
+                    c.ClassType.ToString(),
+                    c.TaughtSubject.Teacher.AppUser.Name,
+                    c.ClassTime.Start,
+                    c.ClassTime.End,
+                    new DateTimeOffset(classDateTime),
+                    c.Room,
+                    c.TaughtSubject.Code,
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                );
+            })
+            .OrderBy(c => c.Period)
+            .ToList();
+
+        var data = new GetStudentPageDto(student.Group.Code, student.Specialization.Name, formattedAdmissionYear,
+            GetYear(student.AdmissionYear.FirstYear), student.AdmissionScore, student.AppUser.Email, classesToday);
+
+        return new ApiResult<GetStudentPageDto>
+        {
+            Data = data,
+            Message = ResponseMessages.Success,
+            IsSucceeded = true,
+            StatusCode = 200
+        };
+    }
+
+    //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED
     private static int ApplyAttendancePenalty(int hours, int attendances, int assignmentScore)
     {
         if (!AttendanceRules.TryGetValue(hours, out var rule))
@@ -578,8 +647,8 @@ public class StudentService(
                + finalAssignmentScore;
     }
 
-
-    private static int GetYear(int firstYear)
+    // This method returns current course of the group/student
+    private static int GetYear(int firstYear) //2023
     {
         var currentYear = DateTime.Today.Year;
         var currentMonth = DateTime.Today.Month;

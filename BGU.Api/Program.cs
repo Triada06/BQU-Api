@@ -2,6 +2,7 @@ using System.Text;
 using BGU.Api;
 using BGU.Api.Filters;
 using BGU.Api.Helpers;
+using BGU.Application.Common;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 Env.Load();
+
+builder.Services.Configure<UrlOptions>(configuration.GetRequiredSection("Urls"));
 
 // Configure OpenAPI with JWT authentication
 builder.Services.AddOpenApi(options =>
@@ -73,12 +76,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add Data Protection services (required for Identity token providers)
 builder.Services.AddDataProtection();
-builder.Services.AddAppServices();
+builder.Services.AddAppServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ResponseStatusCodeFilter>();
-    options.Filters.Add<ValidationFilter>(); // Add this
+    options.Filters.Add<ValidationFilter>(); 
 });
 builder.Services.AddProblemDetails();
 
