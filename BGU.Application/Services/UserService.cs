@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using BGU.Application.Common;
 using BGU.Application.Contracts.User;
 using BGU.Application.Dtos.AppUser;
 using BGU.Application.Services.Interfaces;
@@ -9,6 +10,7 @@ using BGU.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BGU.Application.Services;
@@ -16,8 +18,11 @@ namespace BGU.Application.Services;
 public class UserService(
     IEmailSender<AppUser> emailSender,
     UserManager<AppUser> userManager,
+    IOptions<UrlOptions> urlOptions,
     IConfiguration config) : IUserService
 {
+    private readonly UrlOptions _urlOptions = urlOptions.Value;
+    
     public async Task<AuthResponse> SignInAsync(AppUserSignInDto deanUserDto)
     {
         var user = await userManager.FindByNameAsync(deanUserDto.Username);
@@ -92,8 +97,14 @@ public class UserService(
 
         // encode because token contains special chars
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        
+        var query = new Dictionary<string, string?>
+        {
+            ["userId"] = userId,
+            ["token"] = encodedToken
+        };
 
-        var confirmationLink = $"http://localhost:3000/confirm-email?userId={userId}&token={encodedToken}";
+        var confirmationLink = QueryHelpers.AddQueryString(_urlOptions.ConfirmationUrl, query);        
         
         await emailSender.SendConfirmationLinkAsync(user, request.Email, 
             confirmationLink);

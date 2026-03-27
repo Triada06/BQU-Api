@@ -2,6 +2,7 @@ using System.Text;
 using BGU.Api;
 using BGU.Api.Filters;
 using BGU.Api.Helpers;
+using BGU.Application.Common;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 Env.Load();
+
+builder.Services.Configure<UrlOptions>(configuration.GetRequiredSection("Urls"));
 
 // Configure OpenAPI with JWT authentication
 builder.Services.AddOpenApi(options =>
