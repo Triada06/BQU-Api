@@ -20,7 +20,7 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/auth";
         public const string ForgotPassword = $"{Base}/forgot-password";
-        public const string ResetPassword = $"{Base}/me/reset-password";
+        public const string ResetPassword = $"{Base}/reset-password";
     }
 
     public static class Syllabus
@@ -71,6 +71,8 @@ public static class ApiEndPoints
 
         public const string GetIndependentWorksByStudentId =
             $"{Base}/{{studentId}}/taught-subjects/{{taughtSubjectId}}/independent-works";
+
+        public const string AcademicHistory = $"{Base}/me/academic-history";
     }
 
     public static class Department

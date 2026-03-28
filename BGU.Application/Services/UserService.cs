@@ -8,10 +8,12 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ResetPasswordRequest = BGU.Application.Contracts.User.ResetPasswordRequest;
 
 namespace BGU.Application.Services;
 
@@ -22,7 +24,7 @@ public class UserService(
     IConfiguration config) : IUserService
 {
     private readonly UrlOptions _urlOptions = urlOptions.Value;
-    
+
     public async Task<AuthResponse> SignInAsync(AppUserSignInDto deanUserDto)
     {
         var user = await userManager.FindByNameAsync(deanUserDto.Username);
@@ -97,21 +99,52 @@ public class UserService(
 
         // encode because token contains special chars
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        
+
         var query = new Dictionary<string, string?>
         {
             ["userId"] = userId,
             ["token"] = encodedToken
         };
 
-        var confirmationLink = QueryHelpers.AddQueryString(_urlOptions.ConfirmationUrl, query);        
-        
-        await emailSender.SendConfirmationLinkAsync(user, request.Email, 
+        var confirmationLink = QueryHelpers.AddQueryString(_urlOptions.ConfirmationUrl, query);
+
+        await emailSender.SendConfirmationLinkAsync(user, request.Email,
             confirmationLink);
 
         return true;
     }
 
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email);
+        if (user is null) return;
+
+       
+        
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var query = new Dictionary<string, string?>
+        {
+            ["userId"] = user.Id,
+            ["token"] = encodedToken
+        };
+        
+        var resetLink = QueryHelpers.AddQueryString(_urlOptions.ResetPasswordUrl, query);
+
+        await emailSender.SendPasswordResetLinkAsync(user, request.Email, resetLink);
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null) return false;
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+
+        var result = await userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
+        return result.Succeeded;
+    }
 
     private async Task<string> GenerateJwtToken(AppUser user)
     {

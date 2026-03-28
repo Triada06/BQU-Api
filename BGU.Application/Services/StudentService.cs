@@ -321,7 +321,7 @@ public class StudentService(
         var studentAcademicInfo = new StudentAcademicInfoDto(user.Name, user.Surname, user.UserName, student.Id,
             student.Gpa, nameof(student.Group.EducationLevel),
             student.AdmissionYear.FirstYear, student.Faculty.Name,
-            student.Specialization.Name,user.Email);
+            student.Specialization.Name, user.Email);
 
         return new StudentProfileResponse(studentAcademicInfo, ResponseMessages.Success, true,
             (int)StatusCode.Ok);
@@ -420,7 +420,7 @@ public class StudentService(
                     .Include(st => st.Specialization)
                     .Include(st => st.AppUser)))
             .Select(x =>
-                new GetStudentDto(x.Id,x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
+                new GetStudentDto(x.Id, x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.Group.Code,
                     GetYear(x.AdmissionYear.FirstYear),
                     x.Specialization.Name,
@@ -553,11 +553,11 @@ public class StudentService(
                 .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
-                .Include(x=>x.AdmissionYear)
-                .Include(x=>x.Specialization)
-                .Include(x=>x.AppUser)
+                .Include(x => x.AdmissionYear)
+                .Include(x => x.Specialization)
+                .Include(x => x.AppUser)
         )).FirstOrDefault();
-        
+
         if (student is null)
         {
             return new ApiResult<GetStudentPageDto>
@@ -604,6 +604,64 @@ public class StudentService(
             IsSucceeded = true,
             StatusCode = 200
         };
+    }
+
+    public async Task<ApiResult<GetAcademicHistoryPageDto>> GetAcademicHistoryAsync(
+        string id,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(id);
+
+        if (user is null)
+        {
+            return ApiResult<GetAcademicHistoryPageDto>.NotFound(
+                "User not found");
+        }
+        
+        var student = (await studentRepository.FindAsync(
+            s => s.AppUserId == user.Id,
+            s => s
+                .Include(x => x.AdmissionYear)
+                .Include(x => x.Specialization)
+                .Include(x => x.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Subject)
+                .Include(x => x.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Teacher)
+                .ThenInclude(t => t.AppUser)
+                .Include(x => x.Group)
+                .ThenInclude(g => g.TaughtSubjects)
+                .ThenInclude(ts => ts.Classes)
+                .ThenInclude(c => c.ClassTime)
+        )).FirstOrDefault();
+
+        if (student is null)
+            return ApiResult<GetAcademicHistoryPageDto>.NotFound(
+                $"Student with an Id of {id} not found");
+
+        var data = student.Group.TaughtSubjects
+            .Select(course =>
+            {
+                var orderedClasses = course.Classes.OrderBy(x => x.CreatedAt).ToList();
+
+                var startDate = orderedClasses
+                    .FirstOrDefault()?.ClassTime.ClassDate.DateTime
+                    .ToString("dd/MM/yyyy") ?? "Unable to load start date";
+
+                var endDate = orderedClasses
+                    .LastOrDefault()?.ClassTime.ClassDate.DateTime
+                    .ToString("dd/MM/yyyy") ?? "Unable to load end date";
+
+                var teacherName = course.Teacher?.AppUser?.Name ?? "Unknown";
+
+                return new GetAcademicHistoryDto(
+                    course.Id, course.Code, startDate, endDate, teacherName);
+            })
+            .ToList();
+
+        return ApiResult<GetAcademicHistoryPageDto>.Success(
+            new GetAcademicHistoryPageDto(data));
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED

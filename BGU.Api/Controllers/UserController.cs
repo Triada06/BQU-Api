@@ -6,6 +6,7 @@ using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using ResetPasswordRequest = BGU.Application.Contracts.User.ResetPasswordRequest;
 
 namespace BGU.Api.Controllers;
 
@@ -27,7 +28,7 @@ public class UserController(IUserService userService) : ControllerBase
 
     [Authorize(Roles = "Student, Teacher, Dean")]
     [HttpPut(ApiEndPoints.User.ChangePassword)]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto, CancellationToken cp)
+    public async Task<IActionResult> ResetPassword([FromBody] ChangePasswordDto changePasswordDto, CancellationToken cp)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
@@ -35,7 +36,7 @@ public class UserController(IUserService userService) : ControllerBase
             return Unauthorized();
         }
 
-        var response = await userService.ResetPasswordAsync(userId, resetPasswordDto.NewPassword, cp);
+        var response = await userService.ResetPasswordAsync(userId, changePasswordDto.NewPassword, cp);
         return Ok(response);
     }
 
@@ -54,28 +55,21 @@ public class UserController(IUserService userService) : ControllerBase
         return response ? Ok() : BadRequest("Invalid password");
     }
     
-    // [HttpPost(ApiEndPoints.Auth.ForgotPassword)]
-    // public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request,
-    //     CancellationToken cp)
-    // {
-    //     var response = await userService.ForgotPasswordAsync(request, cp);
-    //     return response ? Ok() : BadRequest("Invalid Email");
-    // }
-    
-    // [Authorize(Roles = "Student, Teacher, Dean")]
-    // [HttpPost(ApiEndPoints.Auth.ResetPassword)]
-    // public async Task<IActionResult> ConfirmEmail([FromBody] ResetPasswordRequest addEmailRequest,
-    //     CancellationToken cp)
-    // {
-    //     var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    //     if (userId == null)
-    //     {
-    //         return Unauthorized();
-    //     }
-    //
-    //     var response = await userService.ConfirmEmailAsync(userId, addEmailRequest.Email, cp);
-    //     return response ? Ok() : BadRequest("Invalid password");
-    // }
+    [HttpPost(ApiEndPoints.Auth.ForgotPassword)]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cp)
+    {
+        await userService.ForgotPasswordAsync(request, cp);
+        return Ok(); // always return Ok to not leak whether email exists
+    }
+
+    [HttpPost(ApiEndPoints.Auth.ResetPassword)]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cp)
+    {
+        var success = await userService.ResetPasswordAsync(request, cp);
+        return success ? Ok() : BadRequest("Invalid or expired token.");
+    }
     
        
     [Authorize(Roles = "Student, Teacher, Dean")]
