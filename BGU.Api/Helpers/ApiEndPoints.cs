@@ -20,7 +20,7 @@ public static class ApiEndPoints
     {
         private const string Base = $"{ApiBase}/auth";
         public const string ForgotPassword = $"{Base}/forgot-password";
-        public const string ResetPassword = $"{Base}/me/reset-password";
+        public const string ResetPassword = $"{Base}/reset-password";
     }
 
     public static class Syllabus
