@@ -12,9 +12,16 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 {
     public async Task<GetAllRoomsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
-        var rooms = (await roomRepository.GetAllAsync(page, pageSize, tracking)).Select(x =>
+        var rooms = (await roomRepository.GetAllAsync(page, pageSize, tracking)).ToList();
+
+        var sorted = rooms
+            .OrderBy(x => int.TryParse(x.Name.Split(' ')[1], out var n) ? n : int.MaxValue)
+            .ToList();
+
+        var dto = sorted.Select(x =>
             new RoomDto(x.Id, x.Name, x.Capacity));
-        return new GetAllRoomsResponse(rooms, StatusCode.Ok, true, ResponseMessages.Success);
+        
+        return new GetAllRoomsResponse(dto, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
     public async Task<CreateRoomResponse> CreateAsync(CreateRoomRequest request)
