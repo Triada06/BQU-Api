@@ -88,7 +88,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var res = await studentService.GetByIdAsync(id, cancellationToken);
         return res.IsSucceeded ? Ok(res) : StatusCode(res.StatusCode, res.Message);
     }
-    
+
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.MarkAbsence)]
     public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId)
@@ -136,6 +136,16 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return new ObjectResult(res);
     }
 
+    [HttpGet(ApiEndPoints.Student.AcademicHistory)]
+    public async Task<IActionResult> AcademicHistory(CancellationToken cp)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized();
+
+        var res = await studentService.GetAcademicHistoryAsync(userId, cp);
+        return res.IsSucceeded ? Ok(res) : StatusCode(res.StatusCode, res.Message);
+    }
 
     // [Authorize(Roles = "Teacher")]
     // [HttpPut(ApiEndPoints.Student.GradeFinal)]

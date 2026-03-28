@@ -71,6 +71,8 @@ public static class ApiEndPoints
 
         public const string GetIndependentWorksByStudentId =
             $"{Base}/{{studentId}}/taught-subjects/{{taughtSubjectId}}/independent-works";
+
+        public const string AcademicHistory = $"{Base}/me/academic-history";
     }
 
     public static class Department
