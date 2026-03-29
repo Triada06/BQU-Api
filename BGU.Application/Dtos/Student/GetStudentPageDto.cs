@@ -9,4 +9,5 @@ public sealed record GetStudentPageDto(
     int Course,
     double AdmissionScore,
     string? Email,
-    IEnumerable<TodaysClassesDto> TodayClasses);
+    IEnumerable<TodaysClassesDto> TodayClasses,
+    StudentGradesDto? Grades);

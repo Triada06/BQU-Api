@@ -180,8 +180,6 @@ public class TaughtSubjectService(
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating the course");
         }
-
-        if (taughtSubject.Hours % 2 != 0) taughtSubject.Hours += 1;
         
         var (classes, classTimes) = GenerateClassesAndClassTimes(
             group.AdmissionYear,
@@ -549,7 +547,6 @@ public class TaughtSubjectService(
         int semester,
         string taughtSubjectId)
     {
-        if (hours % 2 != 0) hours += 1;
 
         var totalClasses = hours / 2;
         var classes = new List<Class>();

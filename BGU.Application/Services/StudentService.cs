@@ -594,8 +594,11 @@ public class StudentService(
             .OrderBy(c => c.Period)
             .ToList();
 
+        var grades = await GetGrades(student.AppUserId, new StudentGradesRequest("courses"));
+
         var data = new GetStudentPageDto(student.Group.Code, student.Specialization.Name, formattedAdmissionYear,
-            GetYear(student.AdmissionYear.FirstYear), student.AdmissionScore, student.AppUser.Email, classesToday);
+            GetYear(student.AdmissionYear.FirstYear), student.AdmissionScore, student.AppUser.Email, classesToday,
+            grades.Items);
 
         return new ApiResult<GetStudentPageDto>
         {
@@ -617,7 +620,7 @@ public class StudentService(
             return ApiResult<GetAcademicHistoryPageDto>.NotFound(
                 "User not found");
         }
-        
+
         var student = (await studentRepository.FindAsync(
             s => s.AppUserId == user.Id,
             s => s
