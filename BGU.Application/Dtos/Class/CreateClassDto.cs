@@ -7,7 +7,8 @@ public record CreateClassDto(
     TimeSpan End,
     DaysOfTheWeek Day,
     string Room,
-    Frequency Frequency);
+    Frequency Frequency,
+    ClassType?  ClassType);
     
     
     

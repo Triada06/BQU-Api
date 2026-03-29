@@ -62,7 +62,7 @@ public class TaughtSubjectController(
         {
             400 => BadRequest(res),
             404 => NotFound(res),
-            _ => new ObjectResult(res)
+            _ => new StatusCodeResult((int)res.StatusCode)
         };
     }
 

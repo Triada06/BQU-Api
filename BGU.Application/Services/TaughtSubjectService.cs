@@ -180,7 +180,7 @@ public class TaughtSubjectService(
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                 "Something went wrong while creating the course");
         }
-        
+
         var (classes, classTimes) = GenerateClassesAndClassTimes(
             group.AdmissionYear,
             request.Hours,
@@ -189,7 +189,7 @@ public class TaughtSubjectService(
             request.Semester,
             taughtSubject.Id
         );
-        
+
         if (!await classRepository.BulkCreateWithTimesAsync(classes, classTimes))
         {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
@@ -210,21 +210,24 @@ public class TaughtSubjectService(
             var independentWorks = new List<IndependentWork>();
             var colloquiums = new List<Colloquiums>();
 
-            foreach (var seminarType in seminarTypes)
+            if (seminarTypes.Count != 0)
             {
-                seminars.AddRange(studentsInGroup.Where(s => s != null).Select(student => new Seminar
+                foreach (var seminarType in seminarTypes)
                 {
-                    StudentId = student.Id,
-                    TaughtSubjectId = seminarType.TaughtSubjectId,
-                    GotAt = seminarType.ClassTime.ClassDate.UtcDateTime,
-                    Grade = Grade.None
-                }));
-            }
+                    seminars.AddRange(studentsInGroup.Where(s => s != null).Select(student => new Seminar
+                    {
+                        StudentId = student.Id,
+                        TaughtSubjectId = seminarType.TaughtSubjectId,
+                        GotAt = seminarType.ClassTime.ClassDate.UtcDateTime,
+                        Grade = Grade.None
+                    }));
+                }
 
-            if (!await seminarRepository.BulkCreate(seminars))
-            {
-                return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
-                    "Failed to create seminars");
+                if (!await seminarRepository.BulkCreate(seminars))
+                {
+                    return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
+                        "Failed to create seminars");
+                }
             }
 
             // For EACH class, create attendance for EACH student
@@ -547,7 +550,6 @@ public class TaughtSubjectService(
         int semester,
         string taughtSubjectId)
     {
-
         var totalClasses = hours / 2;
         var classes = new List<Class>();
         var classTimes = new List<ClassTime>();
@@ -602,7 +604,7 @@ public class TaughtSubjectService(
                 var classItem = new Class
                 {
                     Room = dto.Room,
-                    ClassType = isLecturer ? ClassType.Лекция : ClassType.Семинар,
+                    ClassType = dto.ClassType ?? (isLecturer ? ClassType.Лекция : ClassType.Семинар),
                     TaughtSubjectId = taughtSubjectId,
                     ClassTimeId = classTime.Id,
                     ClassTime = classTime
