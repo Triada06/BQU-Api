@@ -247,7 +247,7 @@ public class StudentService(
         var attendances = await context.Attendances
             .Where(a => a.StudentId == student.Id
                         && allClassIds.Contains(a.ClassId))
-            .Select(a => new { a.ClassId, a.IsPresent, a.Date })
+            .Select(a => new { a.ClassId, a.IsPresent, ClassDate = a.Class.ClassTime.ClassDate })
             .ToListAsync();
 
         var seminarMap = seminars.ToLookup(s => s.TaughtSubjectId);
@@ -266,7 +266,7 @@ public class StudentService(
 
             var subjectAttendances = ts.ClassIds
                 .SelectMany(cid => attendanceMap[cid])
-                .OrderBy(a => a.Date)
+                .OrderBy(a => a.ClassDate)
                 .Select(a => a.IsPresent)
                 .ToList();
 
