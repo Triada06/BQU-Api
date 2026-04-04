@@ -317,7 +317,7 @@ public class AdminService(
 
         //create independent works
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 5; i++)
         {
             var independentWork = new IndependentWork
             {
