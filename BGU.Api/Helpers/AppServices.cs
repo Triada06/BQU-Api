@@ -29,6 +29,7 @@ public static class AppServices {
         services.AddScoped<IColloquiumService, ColloquiumService>();
         services.AddScoped<ISeminarService, SeminarService>();
         services.AddScoped<IIndependentWorkService, IndependentWorkService>();
+        services.AddScoped<IStudentSubjectEnrollmentService, StudentSubjectEnrollmentService>();
 
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
@@ -50,6 +51,8 @@ public static class AppServices {
         services.AddScoped<IColloquiumRepository, ColloquiumRepository>();
         services.AddScoped<ISeminarRepository, SeminarRepository>();
         services.AddScoped<IIndependentWorkRepository, IndependentWorkRepository>();
+        services.AddScoped<IStudentSubjectEnrollmentRepository, StudentSubjectEnrollmentRepository>();
+
         
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddSingleton<IEmailSender<AppUser>, MailKitEmailSender>();
