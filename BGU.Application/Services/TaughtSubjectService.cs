@@ -254,7 +254,8 @@ public class TaughtSubjectService(
                         Number = i + 1,
                         StudentId = student!.Id,
                         TaughtSubjectId = taughtSubject.Id,
-                        IsPassed = null
+                        IsPassed = null,
+                        Grade = Grade.None
                     };
                     independentWorks.Add(independentWork);
                 }

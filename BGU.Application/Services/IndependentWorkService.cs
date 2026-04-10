@@ -4,6 +4,7 @@ using BGU.Application.Contracts.IndependentWorks.Responses;
 using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
+using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 
@@ -44,6 +45,7 @@ public class IndependentWorkService(
             Number = request.Number,
             StudentId = request.StudentId,
             TaughtSubjectId = request.TaughtSubjectId,
+            Grade = Grade.None
         };
         if (!await independentWorkRepository.CreateAsync(independentWork))
         {
