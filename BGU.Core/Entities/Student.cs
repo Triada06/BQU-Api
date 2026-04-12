@@ -26,4 +26,5 @@ public class Student : BaseEntity
     public ICollection<Seminar> SeminarGrades { get; set; } = [];
     public ICollection<IndependentWork> IndependentWorks { get; set; } = [];
     public ICollection<Exam> Finals { get; set; } = [];
+    public ICollection<StudentSubjectEnrollment> Enrollments { get; set; } = [];
 }

@@ -29,6 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Dean> Deans { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Syllabus> Syllabus { get; set; }
+    public DbSet<StudentSubjectEnrollment> StudentSubjectEnrollments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -89,7 +90,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .WithOne(t => t.Syllabus)
             .HasForeignKey<Syllabus>(s => s.TaughtSubjectId)
             .OnDelete(DeleteBehavior.Cascade);
-
+        
+        builder.Entity<StudentSubjectEnrollment>()
+            .HasOne(x => x.TaughtSubject)
+            .WithMany()
+            .HasForeignKey(x => x.TaughtSubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         foreach (var entityType in builder.Model.GetEntityTypes())
         {

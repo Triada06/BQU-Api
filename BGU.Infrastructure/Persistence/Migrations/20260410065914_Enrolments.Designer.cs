@@ -3,6 +3,7 @@ using System;
 using BGU.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BGU.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410065914_Enrolments")]
+    partial class Enrolments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -616,6 +619,10 @@ namespace BGU.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("GroupId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -625,6 +632,8 @@ namespace BGU.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
 
                     b.HasIndex("StudentId");
 
@@ -1134,6 +1143,12 @@ namespace BGU.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("BGU.Core.Entities.StudentSubjectEnrollment", b =>
                 {
+                    b.HasOne("BGU.Core.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("BGU.Core.Entities.Student", "Student")
                         .WithMany("Enrollments")
                         .HasForeignKey("StudentId")
@@ -1145,6 +1160,8 @@ namespace BGU.Infrastructure.Persistence.Migrations
                         .HasForeignKey("TaughtSubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Group");
 
                     b.Navigation("Student");
 
