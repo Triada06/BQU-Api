@@ -259,7 +259,6 @@ public class StudentService(
         {
             var seminarGrades = seminarMap[ts.Id].Select(s => (int)s.Grade).ToList();
             var collGrades = collMap[ts.Id].OrderBy(c => c.OrderNumber).Select(c => (int)c.Grade).ToList();
-            var passedIwCount = iwMap[ts.Id].Count(iw => iw.Grade > Grade.None);
             var iwDtos = iwMap[ts.Id]
                 .OrderBy(iw => iw.Number)
                 .Select(iw => new GetIndependentWorkDto(iw.Id, iw.Number, iw.Grade));
@@ -269,6 +268,18 @@ public class StudentService(
                 .OrderBy(a => a.ClassDate)
                 .Select(a => a.IsPresent)
                 .ToList();
+            
+            var happenedClasses = ts.ClassIds
+                .SelectMany(cid => attendanceMap[cid])
+                .Where(x => x.ClassDate <= DateTime.Today)
+                .OrderBy(a => a.ClassDate)
+                .Select(a => a.IsPresent)
+                .ToList();
+            
+            var subjectPresents = ts.ClassIds
+                .SelectMany(cid => attendanceMap[cid])
+                .Where(x => x.ClassDate <= DateTime.Today)
+                .Count(a => a.IsPresent);
 
             return new AcademicPerformanceDto(
                 ts.SubjectName,
@@ -281,11 +292,13 @@ public class StudentService(
                     collGrades,
                     independentWorks.Select(iw => (int)iw.Grade).ToList(),
                     ts.Hours,
-                    subjectAttendances.Count),
+                    happenedClasses.Count,
+                    subjectAttendances.Count,
+                    subjectPresents),
                 seminarGrades,
                 collGrades,
                 iwDtos,
-                subjectAttendances,
+                happenedClasses,//TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
                 ts.ClassCount
             );
         });
@@ -685,7 +698,9 @@ public class StudentService(
         List<int> colloquiumScores,
         List<int> independentWorkScores,
         int hours,
-        int attendances)
+        int happenedClasses,
+        int attendances,
+        int presents)
     {
         // avg of 3 colloquiums
         double colloquiumAvg = colloquiumScores.Count != 0
@@ -704,7 +719,13 @@ public class StudentService(
 
         double baseScore = colloquiumAvg + independentAvg + seminarWeighted + 10;
 
-        int penalty = GetAttendancePenalty(hours, attendances, (int)Math.Round(baseScore));
+        int absences = happenedClasses - presents;
+
+        int penalty = GetAttendancePenalty(hours, absences, (int)Math.Round(baseScore));
+        if (penalty is -1)
+        {
+            return penalty;
+        }
 
         return Math.Max(0, baseScore - penalty);
     }
@@ -715,7 +736,7 @@ public class StudentService(
             throw new ArgumentException("Invalid subject hours");
 
         if (attendances >= rule.forbidden)
-            return score; // effectively 0, blocked from passing
+            return -1; //-1 means blocked from passing
 
         if (attendances >= rule.twoPoint)
             return 2;
