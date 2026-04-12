@@ -4,6 +4,7 @@ using BGU.Application.Contracts.IndependentWorks.Responses;
 using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
+using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 
@@ -40,10 +41,10 @@ public class IndependentWorkService(
         {
             IsAccepted = false,
             IsConfirmed = false,
-            IsPassed = null,
             Number = request.Number,
             StudentId = request.StudentId,
             TaughtSubjectId = request.TaughtSubjectId,
+            Grade = Grade.None
         };
         if (!await independentWorkRepository.CreateAsync(independentWork))
         {
@@ -69,39 +70,28 @@ public class IndependentWorkService(
                 $"Error while deleting independent work {id}. ");
     }
 
-    public async Task<ApiResult<BulkGradeIndependentWorksDto>> BulkGradeIndependentWorkAsync(
-        BulkGradeIndependentWorksDto dto)
+    public async Task<ApiResult<GradeIndependentWorkDto>> BulkGradeIndependentWorkAsync(string id,
+        GradeIndependentWorkDto dto)
     {
-        var trueIds = dto.IndependentWorkRequests
-            .Where(x => x.IsPassed == true)
-            .Select(x => x.IndependentWorkId)
-            .ToList();
-
-        var falseIds = dto.IndependentWorkRequests
-            .Where(x => x.IsPassed == false)
-            .Select(x => x.IndependentWorkId)
-            .ToList();
-
-        var nullIds = dto.IndependentWorkRequests
-            .Where(x => x.IsPassed == null)
-            .Select(x => x.IndependentWorkId)
-            .ToList();
-
-        if (trueIds.Count > 0)
-            await independentWorkRepository.BulkUpdateAsync(
-                x => trueIds.Contains(x.Id),
-                s => s.SetProperty(x => x.IsPassed, true));
-
-        if (falseIds.Count > 0)
-            await independentWorkRepository.BulkUpdateAsync(
-                x => falseIds.Contains(x.Id),
-                s => s.SetProperty(x => x.IsPassed, false));
-
-        if (nullIds.Count > 0)
-            await independentWorkRepository.BulkUpdateAsync(
-                x => nullIds.Contains(x.Id),
-                s => s.SetProperty(x => x.IsPassed, (bool?)null));
-
-        return ApiResult<BulkGradeIndependentWorksDto>.Success(dto);
+        var iWork = await independentWorkRepository.GetByIdAsync(id, tracking: true);
+        if (iWork is null)
+        {
+            return new ApiResult<GradeIndependentWorkDto>
+            {
+                Data = null,
+                Message = "independent work not found",
+                IsSucceeded = false,
+                StatusCode = 404
+            };
+        }
+        iWork.Grade = dto.Grade ?? Grade.None;
+        var res = await independentWorkRepository.UpdateAsync(iWork);
+        return new ApiResult<GradeIndependentWorkDto>
+        {
+            Data = new GradeIndependentWorkDto(dto.Grade),
+            Message = res ? ResponseMessages.Success : ResponseMessages.Failed,
+            IsSucceeded = res,
+            StatusCode = res ? 200 : 500
+        };
     }
 }

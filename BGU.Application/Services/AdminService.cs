@@ -324,7 +324,7 @@ public class AdminService(
                 Number = i + 1,
                 StudentId = student.Id,
                 TaughtSubjectId = taughtSubjectId,
-                IsPassed = null
+                Grade = Grade.None
             };
             independentWorks.Add(independentWork);
         }

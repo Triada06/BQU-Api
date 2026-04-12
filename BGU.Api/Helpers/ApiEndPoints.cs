@@ -150,8 +150,8 @@ public static class ApiEndPoints
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
 
-        public const string BulkGradeIndependentWork =
-            $"{Base}/grade";
+        public const string Grade =
+            $"{Base}/{{id}}/grade";
     }
 
     public static class Seminar

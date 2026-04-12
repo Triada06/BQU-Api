@@ -241,7 +241,7 @@ public class StudentService(
         var independentWorks = await context.IndependentWorks
             .Where(iw => iw.StudentId == student.Id
                          && taughtSubjectIds.Contains(iw.TaughtSubjectId))
-            .Select(iw => new { iw.Id, iw.Number, iw.IsPassed, iw.TaughtSubjectId })
+            .Select(iw => new { iw.Id, iw.Number, iw.Grade, iw.TaughtSubjectId })
             .ToListAsync();
 
         var attendances = await context.Attendances
@@ -259,10 +259,10 @@ public class StudentService(
         {
             var seminarGrades = seminarMap[ts.Id].Select(s => (int)s.Grade).ToList();
             var collGrades = collMap[ts.Id].OrderBy(c => c.OrderNumber).Select(c => (int)c.Grade).ToList();
-            var passedIwCount = iwMap[ts.Id].Count(iw => iw.IsPassed is true);
+            var passedIwCount = iwMap[ts.Id].Count(iw => iw.Grade > Grade.None);
             var iwDtos = iwMap[ts.Id]
                 .OrderBy(iw => iw.Number)
-                .Select(iw => new GetIndependentWorkDto(iw.Id, iw.Number, iw.IsPassed));
+                .Select(iw => new GetIndependentWorkDto(iw.Id, iw.Number, iw.Grade));
 
             var subjectAttendances = ts.ClassIds
                 .SelectMany(cid => attendanceMap[cid])
@@ -279,7 +279,7 @@ public class StudentService(
                 CalculateOverallSubjectScore(
                     seminarGrades,
                     collGrades,
-                    (Grade)passedIwCount,
+                    independentWorks.Select(iw => (int)iw.Grade).ToList(),
                     ts.Hours,
                     subjectAttendances.Count),
                 seminarGrades,
@@ -488,22 +488,22 @@ public class StudentService(
                 "An error occured while updating the grade");
     }
 
-    public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
-        GradeIndependentWorkRequest request)
-    {
-        var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
-        if (independentWork is null)
-        {
-            return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
-                $"independent work with an Id of {request.IndependentWorkId} not found");
-        }
-
-        independentWork.IsPassed = request.IsPassed;
-        return await independentWorkRepository.UpdateAsync(independentWork)
-            ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
-            : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
-                "An error occured while updating the grade");
-    }
+    // public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
+    //     GradeIndependentWorkRequest request)
+    // {
+    //     var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
+    //     if (independentWork is null)
+    //     {
+    //         return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
+    //             $"independent work with an Id of {request.IndependentWorkId} not found");
+    //     }
+    //
+    //     independentWork.IsPassed = request.IsPassed;
+    //     return await independentWorkRepository.UpdateAsync(independentWork)
+    //         ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
+    //         : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
+    //             "An error occured while updating the grade");
+    // }
 
     public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
     {
@@ -545,7 +545,7 @@ public class StudentService(
 
         return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto(
                 independentWorks.Count > 0
-                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.IsPassed)).ToList()
+                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.Grade)).ToList()
                     : []
             )
         );
@@ -680,44 +680,50 @@ public class StudentService(
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED
-    private static int ApplyAttendancePenalty(int hours, int attendances, int assignmentScore)
+    private static double CalculateOverallSubjectScore(
+        List<int> seminarScores,
+        List<int> colloquiumScores,
+        List<int> independentWorkScores,
+        int hours,
+        int attendances)
+    {
+        // avg of 3 colloquiums
+        double colloquiumAvg = colloquiumScores.Count != 0
+            ? colloquiumScores.Average()
+            : 0;
+
+        // sum of 5 independent works / 5
+        double independentAvg = independentWorkScores.Count != 0
+            ? independentWorkScores.Sum() / 5.0
+            : 0;
+
+        // seminar avg * 3
+        double seminarWeighted = seminarScores.Count != 0
+            ? seminarScores.Average() * 3
+            : 0;
+
+        double baseScore = colloquiumAvg + independentAvg + seminarWeighted + 10;
+
+        int penalty = GetAttendancePenalty(hours, attendances, (int)Math.Round(baseScore));
+
+        return Math.Max(0, baseScore - penalty);
+    }
+
+    private static int GetAttendancePenalty(int hours, int attendances, int score)
     {
         if (!AttendanceRules.TryGetValue(hours, out var rule))
             throw new ArgumentException("Invalid subject hours");
 
         if (attendances >= rule.forbidden)
-            return 0; // buraxılmır
+            return score; // effectively 0, blocked from passing
 
         if (attendances >= rule.twoPoint)
-            return Math.Max(0, assignmentScore - 2);
+            return 2;
 
         if (attendances >= rule.onePoint)
-            return Math.Max(0, assignmentScore - 1);
+            return 1;
 
-        return assignmentScore;
-    }
-
-    private static double CalculateOverallSubjectScore(
-        List<int> seminarScores,
-        List<int> colloquiumScores,
-        Grade assignment,
-        int hours,
-        int attendances)
-    {
-        double seminarAvg = seminarScores.Count != 0
-            ? seminarScores.Average()
-            : 0;
-
-        double colloquiumAvg = colloquiumScores.Count != 0
-            ? colloquiumScores.Average()
-            : 0;
-
-        int finalAssignmentScore =
-            ApplyAttendancePenalty(hours, attendances, (int)assignment);
-
-        return (colloquiumAvg * 1.5)
-               + (seminarAvg * 1.5)
-               + finalAssignmentScore;
+        return 0;
     }
 
     // This method returns current course of the group/student
