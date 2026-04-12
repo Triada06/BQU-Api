@@ -279,7 +279,7 @@ public class StudentService(
                 CalculateOverallSubjectScore(
                     seminarGrades,
                     collGrades,
-                    (Grade)passedIwCount,
+                    independentWorks.Select(iw => (int)iw.Grade).ToList(),
                     ts.Hours,
                     subjectAttendances.Count),
                 seminarGrades,
@@ -680,44 +680,50 @@ public class StudentService(
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED
-    private static int ApplyAttendancePenalty(int hours, int attendances, int assignmentScore)
+    private static double CalculateOverallSubjectScore(
+        List<int> seminarScores,
+        List<int> colloquiumScores,
+        List<int> independentWorkScores,
+        int hours,
+        int attendances)
+    {
+        // avg of 3 colloquiums
+        double colloquiumAvg = colloquiumScores.Count != 0
+            ? colloquiumScores.Average()
+            : 0;
+
+        // sum of 5 independent works / 5
+        double independentAvg = independentWorkScores.Count != 0
+            ? independentWorkScores.Sum() / 5.0
+            : 0;
+
+        // seminar avg * 3
+        double seminarWeighted = seminarScores.Count != 0
+            ? seminarScores.Average() * 3
+            : 0;
+
+        double baseScore = colloquiumAvg + independentAvg + seminarWeighted + 10;
+
+        int penalty = GetAttendancePenalty(hours, attendances, (int)Math.Round(baseScore));
+
+        return Math.Max(0, baseScore - penalty);
+    }
+
+    private static int GetAttendancePenalty(int hours, int attendances, int score)
     {
         if (!AttendanceRules.TryGetValue(hours, out var rule))
             throw new ArgumentException("Invalid subject hours");
 
         if (attendances >= rule.forbidden)
-            return 0; // buraxılmır
+            return score; // effectively 0, blocked from passing
 
         if (attendances >= rule.twoPoint)
-            return Math.Max(0, assignmentScore - 2);
+            return 2;
 
         if (attendances >= rule.onePoint)
-            return Math.Max(0, assignmentScore - 1);
+            return 1;
 
-        return assignmentScore;
-    }
-
-    private static double CalculateOverallSubjectScore(
-        List<int> seminarScores,
-        List<int> colloquiumScores,
-        Grade assignment,
-        int hours,
-        int attendances)
-    {
-        double seminarAvg = seminarScores.Count != 0
-            ? seminarScores.Average()
-            : 0;
-
-        double colloquiumAvg = colloquiumScores.Count != 0
-            ? colloquiumScores.Average()
-            : 0;
-
-        int finalAssignmentScore =
-            ApplyAttendancePenalty(hours, attendances, (int)assignment);
-
-        return (colloquiumAvg * 1.5)
-               + (seminarAvg * 1.5)
-               + finalAssignmentScore;
+        return 0;
     }
 
     // This method returns current course of the group/student
