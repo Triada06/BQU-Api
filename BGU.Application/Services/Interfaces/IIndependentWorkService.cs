@@ -10,5 +10,5 @@ public interface IIndependentWorkService
 {
     Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest  request);
     Task<DeleteIndependentWorkResponse> DeleteAsync(string id);
-    Task<ApiResult<BulkGradeIndependentWorksDto>> BulkGradeIndependentWorkAsync(BulkGradeIndependentWorksDto dto);
+    Task<ApiResult<GradeIndependentWorkDto>> BulkGradeIndependentWorkAsync(string id,GradeIndependentWorkDto dto);
 }

@@ -107,15 +107,15 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return new ObjectResult(res);
     }
 
-    [HttpPut(ApiEndPoints.Student.GradeIndependentWork)]
-    [Authorize(Roles = "Teacher")]
-    public async Task<IActionResult> GradeIndependentWork([FromRoute] string studentId,
-        [FromRoute] string independentWorkId, [FromQuery] bool? isPassed)
-    {
-        var res = await studentService.GradeIndependentWorkAsync(
-            new GradeIndependentWorkRequest(studentId, independentWorkId, isPassed));
-        return new ObjectResult(res);
-    }
+    // [HttpPut(ApiEndPoints.Student.GradeIndependentWork)]
+    // [Authorize(Roles = "Teacher")]
+    // public async Task<IActionResult> GradeIndependentWork([FromRoute] string studentId,
+    //     [FromRoute] string independentWorkId, [FromQuery] bool? isPassed)
+    // {
+    //     var res = await studentService.GradeIndependentWorkAsync(
+    //         new GradeIndependentWorkRequest(studentId, independentWorkId, isPassed));
+    //     return new ObjectResult(res);
+    // }
 
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.GradeSeminar)]

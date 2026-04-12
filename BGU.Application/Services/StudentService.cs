@@ -241,7 +241,7 @@ public class StudentService(
         var independentWorks = await context.IndependentWorks
             .Where(iw => iw.StudentId == student.Id
                          && taughtSubjectIds.Contains(iw.TaughtSubjectId))
-            .Select(iw => new { iw.Id, iw.Number, iw.IsPassed, iw.TaughtSubjectId })
+            .Select(iw => new { iw.Id, iw.Number, iw.Grade, iw.TaughtSubjectId })
             .ToListAsync();
 
         var attendances = await context.Attendances
@@ -259,10 +259,10 @@ public class StudentService(
         {
             var seminarGrades = seminarMap[ts.Id].Select(s => (int)s.Grade).ToList();
             var collGrades = collMap[ts.Id].OrderBy(c => c.OrderNumber).Select(c => (int)c.Grade).ToList();
-            var passedIwCount = iwMap[ts.Id].Count(iw => iw.IsPassed is true);
+            var passedIwCount = iwMap[ts.Id].Count(iw => iw.Grade > Grade.None);
             var iwDtos = iwMap[ts.Id]
                 .OrderBy(iw => iw.Number)
-                .Select(iw => new GetIndependentWorkDto(iw.Id, iw.Number, iw.IsPassed));
+                .Select(iw => new GetIndependentWorkDto(iw.Id, iw.Number, iw.Grade));
 
             var subjectAttendances = ts.ClassIds
                 .SelectMany(cid => attendanceMap[cid])
@@ -488,22 +488,22 @@ public class StudentService(
                 "An error occured while updating the grade");
     }
 
-    public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
-        GradeIndependentWorkRequest request)
-    {
-        var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
-        if (independentWork is null)
-        {
-            return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
-                $"independent work with an Id of {request.IndependentWorkId} not found");
-        }
-
-        independentWork.IsPassed = request.IsPassed;
-        return await independentWorkRepository.UpdateAsync(independentWork)
-            ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
-            : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
-                "An error occured while updating the grade");
-    }
+    // public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
+    //     GradeIndependentWorkRequest request)
+    // {
+    //     var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
+    //     if (independentWork is null)
+    //     {
+    //         return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
+    //             $"independent work with an Id of {request.IndependentWorkId} not found");
+    //     }
+    //
+    //     independentWork.IsPassed = request.IsPassed;
+    //     return await independentWorkRepository.UpdateAsync(independentWork)
+    //         ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
+    //         : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
+    //             "An error occured while updating the grade");
+    // }
 
     public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
     {
@@ -545,7 +545,7 @@ public class StudentService(
 
         return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto(
                 independentWorks.Count > 0
-                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.IsPassed)).ToList()
+                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.Grade)).ToList()
                     : []
             )
         );

@@ -254,7 +254,6 @@ public class TaughtSubjectService(
                         Number = i + 1,
                         StudentId = student!.Id,
                         TaughtSubjectId = taughtSubject.Id,
-                        IsPassed = null,
                         Grade = Grade.None
                     };
                     independentWorks.Add(independentWork);
@@ -488,7 +487,7 @@ public class TaughtSubjectService(
 
             independentWorks.AddRange(studentIndependentWorks.Select(independentWork =>
                 new GetIndependentWorkByTaughtSubjectDto(independentWork.Id, student.Id, independentWork.Number,
-                    independentWork.IsPassed)));
+                    independentWork.Grade)));
         }
 
         return ApiResult<GetIndependentWorksByTaughtSubjectDto>.Success(

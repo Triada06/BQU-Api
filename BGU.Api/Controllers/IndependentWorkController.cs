@@ -26,12 +26,12 @@ public class IndependentWorkController(IIndependentWorkService independentWorkSe
         return new OkObjectResult(res);
     }
 
-    [HttpPut(ApiEndPoints.IndependentWork.BulkGradeIndependentWork)]
-    public async Task<IActionResult> BulkGradeIndependentWork(
-        [FromBody] List<BulkGradeIndependentWorkRequest> independentWorks)
+    [HttpPut(ApiEndPoints.IndependentWork.Grade)]
+    public async Task<IActionResult> BulkGradeIndependentWork([FromRoute] string id,
+        [FromBody] GradeIndependentWorkDto independentWork)
     {
-        var res = await independentWorkService.BulkGradeIndependentWorkAsync(
-            new BulkGradeIndependentWorksDto(independentWorks));
+        var res = await independentWorkService.BulkGradeIndependentWorkAsync(id,
+            independentWork);
         return new ObjectResult(res);
     }
 }
