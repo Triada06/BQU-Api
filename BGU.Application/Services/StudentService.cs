@@ -714,8 +714,18 @@ public class StudentService(
             ? seminarScores.Sum()
             : 0;
 
-        double baseScore = (colloquiumSum + seminarSum) / (seminarScores.Count + colloquiumScores.Count) +
-                           independentAvg  + 10;
+        double baseScore;
+        var countOfSemAndColl = seminarScores.Count + colloquiumScores.Count;
+
+        if (countOfSemAndColl == 0)
+        {
+            baseScore = independentAvg + 10;
+        }
+        else
+        {
+            baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl +
+                        independentAvg + 10;
+        }
 
         int absences = happenedClasses - presents;
 
