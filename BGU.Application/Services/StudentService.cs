@@ -268,14 +268,14 @@ public class StudentService(
                 .OrderBy(a => a.ClassDate)
                 .Select(a => a.IsPresent)
                 .ToList();
-            
+
             var happenedClasses = ts.ClassIds
                 .SelectMany(cid => attendanceMap[cid])
                 .Where(x => x.ClassDate <= DateTime.Today)
                 .OrderBy(a => a.ClassDate)
                 .Select(a => a.IsPresent)
                 .ToList();
-            
+
             var subjectPresents = ts.ClassIds
                 .SelectMany(cid => attendanceMap[cid])
                 .Where(x => x.ClassDate <= DateTime.Today)
@@ -298,7 +298,7 @@ public class StudentService(
                 seminarGrades,
                 collGrades,
                 iwDtos,
-                happenedClasses,//TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
+                happenedClasses, //TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
                 ts.ClassCount
             );
         });
@@ -702,22 +702,20 @@ public class StudentService(
         int attendances,
         int presents)
     {
-        // avg of 3 colloquiums
-        double colloquiumAvg = colloquiumScores.Count != 0
-            ? colloquiumScores.Average() * 3
+        double colloquiumSum = colloquiumScores.Count != 0
+            ? colloquiumScores.Sum()
             : 0;
 
-        // sum of 5 independent works / 5
         double independentAvg = independentWorkScores.Count != 0
-            ? independentWorkScores.Sum() / 5.0
+            ? independentWorkScores.Average()
             : 0;
 
-        // seminar avg * 3
-        double seminarWeighted = seminarScores.Count != 0
-            ? seminarScores.Average() * 3
+        double seminarSum = seminarScores.Count != 0
+            ? seminarScores.Sum()
             : 0;
 
-        double baseScore = colloquiumAvg + independentAvg + seminarWeighted + 10;
+        double baseScore = (colloquiumSum + seminarSum) / (seminarScores.Count + colloquiumScores.Count) +
+                           independentAvg  + 10;
 
         int absences = happenedClasses - presents;
 
