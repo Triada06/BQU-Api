@@ -704,7 +704,7 @@ public class StudentService(
     {
         // avg of 3 colloquiums
         double colloquiumAvg = colloquiumScores.Count != 0
-            ? colloquiumScores.Average()
+            ? colloquiumScores.Average() * 3
             : 0;
 
         // sum of 5 independent works / 5
