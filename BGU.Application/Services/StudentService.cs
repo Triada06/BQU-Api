@@ -707,7 +707,7 @@ public class StudentService(
             : 0;
 
         double independentAvg = independentWorkScores.Count != 0
-            ? independentWorkScores.Average()
+            ? Math.Round(independentWorkScores.Average(), MidpointRounding.AwayFromZero)
             : 0;
 
         double seminarSum = seminarScores.Count != 0
@@ -724,7 +724,11 @@ public class StudentService(
         else
         {
             baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl;
+            baseScore = Math.Round(baseScore, MidpointRounding.AwayFromZero);
+
             baseScore *= 3;
+            baseScore = Math.Round(baseScore, MidpointRounding.AwayFromZero);
+
             baseScore += independentAvg + 10;
         }
 
@@ -736,7 +740,7 @@ public class StudentService(
             return penalty;
         }
 
-        return Math.Round(Math.Max(0, baseScore - penalty));
+        return Math.Round(Math.Max(0, baseScore - penalty), MidpointRounding.AwayFromZero);
     }
 
     private static int GetAttendancePenalty(int hours, int attendances, int score)
