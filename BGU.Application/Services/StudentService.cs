@@ -723,8 +723,9 @@ public class StudentService(
         }
         else
         {
-            baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl +
-                        independentAvg + 10;
+            baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl;
+            baseScore *= 3;
+            baseScore += independentAvg + 10;
         }
 
         int absences = happenedClasses - presents;
@@ -735,7 +736,7 @@ public class StudentService(
             return penalty;
         }
 
-        return Math.Max(0, baseScore - penalty);
+        return Math.Round(Math.Max(0, baseScore - penalty));
     }
 
     private static int GetAttendancePenalty(int hours, int attendances, int score)
