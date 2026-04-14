@@ -290,7 +290,7 @@ public class StudentService(
                 CalculateOverallSubjectScore(
                     seminarGrades,
                     collGrades,
-                    independentWorks.Select(iw => (int)iw.Grade).ToList(),
+                    iwMap[ts.Id].Select(iw => (int)iw.Grade).ToList(),
                     ts.Hours,
                     happenedClasses.Count,
                     subjectAttendances.Count,
@@ -713,24 +713,19 @@ public class StudentService(
         double seminarSum = seminarScores.Count != 0
             ? seminarScores.Sum()
             : 0;
-
-        double baseScore;
-        var countOfSemAndColl = seminarScores.Count + colloquiumScores.Count;
-
-        if (countOfSemAndColl == 0)
+        
+        if (seminarScores.Count == 0 && colloquiumScores.Count <= 2)
         {
-            baseScore = independentAvg + 10;
+            return -1;
         }
-        else
-        {
-            baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl;
-            baseScore = Math.Round(baseScore, MidpointRounding.AwayFromZero);
 
-            baseScore *= 3;
-            baseScore = Math.Round(baseScore, MidpointRounding.AwayFromZero);
+        var countOfSemAndColl = seminarScores.Count + 3;
+        var baseScore = (colloquiumSum + seminarSum) / countOfSemAndColl;
 
-            baseScore += independentAvg + 10;
-        }
+        baseScore *= 3;
+        baseScore = Math.Round(baseScore, MidpointRounding.AwayFromZero);
+
+        baseScore += independentAvg + 10;
 
         int absences = happenedClasses - presents;
 
