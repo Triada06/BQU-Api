@@ -161,4 +161,11 @@ public static class ApiEndPoints
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
     }
+
+    public static class StudentSubjectEnrollments
+    {
+        private const string Base = $"{ApiBase}/student-subject-enrollments";
+        public const string Create = $"{Base}";
+        public const string GetAll = $"{Base}";
+    }
 }

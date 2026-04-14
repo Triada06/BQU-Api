@@ -1,3 +1,4 @@
+using BGU.Api.Helpers;
 using BGU.Application.Dtos.StudentEnrollment;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -5,33 +6,25 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class StudentSubjectEnrollmentsController : ControllerBase
+public class StudentSubjectEnrollmentsController(IStudentSubjectEnrollmentService service) : ControllerBase
 {
-    private readonly IStudentSubjectEnrollmentService _service;
-
-    public StudentSubjectEnrollmentsController(IStudentSubjectEnrollmentService service)
-    {
-        _service = service;
-    }
-
-    [HttpPost]
+    [HttpPost(ApiEndPoints.StudentSubjectEnrollments.Create)]
     public async Task<IActionResult> Create(CreateStudentSubjectEnrollmentDto dto)
     {
-        var result = await _service.CreateAsync(dto);
+        var result = await service.CreateAsync(dto);
         return Ok(result);
     }
 
-    [HttpGet]
+    [HttpGet(ApiEndPoints.StudentSubjectEnrollments.GetAll)]
     public async Task<IActionResult> GetAll()
     {
-        return Ok(await _service.GetAllAsync());
+        return Ok(await service.GetAllAsync());
     }
 
     [HttpGet("{studentId}/{subjectId}/{attempt}")]
     public async Task<IActionResult> Get(string studentId, string subjectId, int attempt)
     {
-        var result = await _service.GetAsync(studentId, subjectId, attempt);
+        var result = await service.GetAsync(studentId, subjectId, attempt);
         if (result == null) return NotFound();
 
         return Ok(result);
@@ -40,7 +33,7 @@ public class StudentSubjectEnrollmentsController : ControllerBase
     [HttpPut("{studentId}/{subjectId}/{attempt}")]
     public async Task<IActionResult> Update(string studentId, string subjectId, int attempt, UpdateStudentSubjectEnrollmentDto dto)
     {
-        var success = await _service.UpdateAsync(studentId, subjectId, attempt, dto);
+        var success = await service.UpdateAsync(studentId, subjectId, attempt, dto);
         if (!success) return NotFound();
 
         return NoContent();
@@ -49,7 +42,7 @@ public class StudentSubjectEnrollmentsController : ControllerBase
     [HttpDelete("{studentId}/{subjectId}/{attempt}")]
     public async Task<IActionResult> Delete(string studentId, string subjectId, int attempt)
     {
-        var success = await _service.DeleteAsync(studentId, subjectId, attempt);
+        var success = await service.DeleteAsync(studentId, subjectId, attempt);
         if (!success) return NotFound();
 
         return NoContent();
