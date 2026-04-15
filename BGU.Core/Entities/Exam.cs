@@ -4,8 +4,22 @@ namespace BGU.Core.Entities;
 
 public class Exam : BaseEntity
 {
-    public Grade Grade { get; set; }
-    public DateTime Date { get; set; }
+    private int? _Grade;
+
+    public int? Grade
+    {
+        get => _Grade;
+        set
+        {
+            if (value is < 0 or > 50)
+            {
+                throw new ArgumentOutOfRangeException(nameof(Grade));
+            }
+            _Grade = value;
+        }
+    }
+
+    public DateTime? Date { get; set; }
     public bool IsConfirmed { get; set; }
 
     public string StudentId { get; set; }

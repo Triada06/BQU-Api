@@ -4,6 +4,7 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
+using BGU.Infrastructure.Workers;
 using Microsoft.AspNetCore.Identity;
 
 namespace BGU.Api.Helpers;
@@ -30,6 +31,7 @@ public static class AppServices {
         services.AddScoped<ISeminarService, SeminarService>();
         services.AddScoped<IIndependentWorkService, IndependentWorkService>();
         services.AddScoped<IStudentSubjectEnrollmentService, StudentSubjectEnrollmentService>();
+        services.AddScoped<IFinalService, FinalService>();
 
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
@@ -52,10 +54,12 @@ public static class AppServices {
         services.AddScoped<ISeminarRepository, SeminarRepository>();
         services.AddScoped<IIndependentWorkRepository, IndependentWorkRepository>();
         services.AddScoped<IStudentSubjectEnrollmentRepository, StudentSubjectEnrollmentRepository>();
+        services.AddScoped<IFinalRepository, FinalRepository>();
 
         
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddSingleton<IEmailSender<AppUser>, MailKitEmailSender>();
+        services.AddHostedService<FinalBackGroundService>();
         return services;
     }
 }

@@ -168,4 +168,10 @@ public static class ApiEndPoints
         public const string Create = $"{Base}";
         public const string GetAll = $"{Base}";
     }
+    public static class Finals
+    {
+        private const string Base = $"{ApiBase}/finals";
+        public const string Create = $"{Base}";
+        public const string GetAll = $"{Base}";
+    }
 }
