@@ -486,7 +486,6 @@ public class StudentService(
     public async Task<GradeStudentColloquiumResponse>
         GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request)
     {
-        // var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: true);
         var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
         if (colloquium is null)
         {
@@ -500,35 +499,19 @@ public class StudentService(
             : new GradeStudentColloquiumResponse(StatusCode.InternalServerError, false,
                 "An error occured while updating the grade");
     }
-
-    // public async Task<GradeStudentIndependentWorkResponse> GradeIndependentWorkAsync(
-    //     GradeIndependentWorkRequest request)
-    // {
-    //     var independentWork = await independentWorkRepository.GetByIdAsync(request.IndependentWorkId, tracking: true);
-    //     if (independentWork is null)
-    //     {
-    //         return new GradeStudentIndependentWorkResponse(StatusCode.BadRequest, false,
-    //             $"independent work with an Id of {request.IndependentWorkId} not found");
-    //     }
-    //
-    //     independentWork.IsPassed = request.IsPassed;
-    //     return await independentWorkRepository.UpdateAsync(independentWork)
-    //         ? new GradeStudentIndependentWorkResponse(StatusCode.Ok, true, ResponseMessages.Success)
-    //         : new GradeStudentIndependentWorkResponse(StatusCode.InternalServerError, false,
-    //             "An error occured while updating the grade");
-    // }
+    
 
     public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
     {
-        var colloquium = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
-        if (colloquium is null)
+        var seminar = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
+        if (seminar is null)
         {
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with an Id of {request.SeminarId} not found");
         }
 
-        colloquium.Grade = request.Grade;
-        return await seminarRepository.UpdateAsync(colloquium)
+        seminar.Grade = request.Grade;
+        return await seminarRepository.UpdateAsync(seminar)
             ? new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success)
             : new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
                 "An error occured while updating the grade");
