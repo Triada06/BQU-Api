@@ -16,12 +16,12 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
     public async Task<GetAllGroupsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
         var groups =
-            (await groupRepository.GetAllAsync(page, pageSize, tracking,
+            (await groupRepository.GetAllAsync(null,page, pageSize, tracking,
                 include: x =>
                     x.Include(e => e.Specialization)
                         .Include(e => e.Students)
                         .Include(e => e.AdmissionYear)
-            ))
+            )).Items
             .Select(x => new GroupDto(
                 x.Id,
                 x.Code,

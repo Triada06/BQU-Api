@@ -74,7 +74,7 @@ public class TaughtSubjectService(
     public async Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
         var subjects =
-            (await taughtSubjectRepository.GetAllAsync(page, pageSize: pageSize,
+            (await taughtSubjectRepository.GetAllAsync(null,page, pageSize: pageSize,
                 include: i => i
                     .Include(x => x.Group)
                     .ThenInclude(x => x.AdmissionYear)
@@ -82,7 +82,7 @@ public class TaughtSubjectService(
                     .ThenInclude(x => x.Department)
                     .Include(x => x.Teacher)
                     .ThenInclude(x => x.AppUser),
-                tracking: false)).Select(x =>
+                tracking: false)).Items.Select(x =>
                 new GetTaughtSubjectDto(x.Id, x.Code, x.Subject.Name,
                     x.Subject.Department.Name,
                     GetYear(x.Group.AdmissionYear.FirstYear),

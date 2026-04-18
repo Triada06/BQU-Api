@@ -34,7 +34,8 @@ public class ApiResult<T>
             IsSucceeded = false,
             StatusCode = 400
         };
-    public static ApiResult<T> BadRequest( string message = "Bad Request")
+
+    public static ApiResult<T> BadRequest(string message = "Bad Request")
         => new()
         {
             Message = message,

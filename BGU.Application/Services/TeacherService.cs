@@ -263,11 +263,11 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
     public async Task<GetAllTeachersResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
-        var teachers = await teacherRepository.GetAllAsync(page, pageSize,
+        var teachers = await teacherRepository.GetAllAsync(null,page, pageSize,
             include: i => i.Include(x => x.AppUser),
             tracking: false);
         return new GetAllTeachersResponse(
-            teachers.Select(x => new GetTeacherDto(x.Id, x.AppUser.Name,
+            teachers.Items.Select(x => new GetTeacherDto(x.Id, x.AppUser.Name,
                 x.AppUser.Surname, x.AppUser.MiddleName,
                 x.AppUser.UserName!,
                 x.DepartmentId, x.TeachingPosition)),

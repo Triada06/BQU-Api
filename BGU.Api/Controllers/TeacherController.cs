@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-public class TeacherController(ITeacherService teacherService) : ControllerBase
+public class TeacherController(ITeacherService teacherService,IFinalService finalService) : ControllerBase
 {
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Teacher.GetAll)]
@@ -17,7 +17,7 @@ public class TeacherController(ITeacherService teacherService) : ControllerBase
         var res = await teacherService.GetAllAsync(page, pageSize);
         return new ObjectResult(res);
     }
-    
+
     [Authorize(Roles = "Teacher")]
     [HttpGet(ApiEndPoints.Teacher.Profile)]
     public async Task<IActionResult> Profile()
@@ -48,7 +48,20 @@ public class TeacherController(ITeacherService teacherService) : ControllerBase
         if (userId is null)
             return Unauthorized();
         var res = await teacherService.GetCourses(userId);
-        return Ok(res); 
+        return Ok(res);
+    }
+
+    [Authorize(Roles = "Teacher,Dean")]
+    [HttpGet(ApiEndPoints.Teacher.Exams)]
+    public async Task<IActionResult> GetExamsToGrade()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId is null)
+            return Unauthorized();
+
+        var res = await finalService.GetAllByTeachAsync(userId);
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
     }
     //
     // [Authorize(Roles = "Dean")]
@@ -74,5 +87,4 @@ public class TeacherController(ITeacherService teacherService) : ControllerBase
     //     var res = await teacherService.GetByIdAsync(id);
     //     return new ObjectResult(res);
     // } 
-    
 }

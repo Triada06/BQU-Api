@@ -12,7 +12,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 {
     public async Task<GetAllRoomsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
-        var rooms = (await roomRepository.GetAllAsync(page, pageSize, tracking)).ToList();
+        var rooms = (await roomRepository.GetAllAsync(null,page, pageSize, tracking)).Items.ToList();
 
         var sorted = rooms
             .OrderBy(x => int.TryParse(x.Name.Split(' ')[1], out var n) ? n : int.MaxValue)

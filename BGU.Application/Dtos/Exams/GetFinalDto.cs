@@ -7,4 +7,5 @@ public sealed record GetFinalDto(
     string StudentName,
     string SubjectCode,
     bool IsConfirmed,
-    string? FormattedDate);
+    string? FormattedDate,
+    int Grade);

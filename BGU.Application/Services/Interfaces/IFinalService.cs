@@ -1,12 +1,16 @@
 using BGU.Application.Common;
 using BGU.Application.Dtos.Exams;
+using BGU.Infrastructure.Constants;
 
 namespace BGU.Application.Services.Interfaces;
 
 public interface IFinalService
 {
-    Task<ApiResult<GetAllFinalDto>> GetAllAsync();
-    Task<bool> SetExamDateAsync(SetExamDto setExamDto);
+    Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search);
+    Task<ApiResult<bool>> SetExamDateAsync(SetExamDto setExamDto);
     Task<ApiResult<string>> CreateAsync(CreateExamDto createExamDto);
-    Task<ApiResult<UpdateExamResponse>> UpdateAsync(UpdateExamDto updateExamDto);
+    Task<ApiResult<UpdateExamResponse>> UpdateAsync(UpdateExamRequest request);
+    Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId);
+    Task<ApiResult<string>> GradeAsync(string userId, string finalId, int grade);
+    Task<ApiResult<bool>> ConfirmAsync(string finalId);
 }

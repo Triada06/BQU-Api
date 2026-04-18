@@ -357,7 +357,7 @@ namespace BGU.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("Date")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("Grade")
+                    b.Property<int>("Grade")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsConfirmed")

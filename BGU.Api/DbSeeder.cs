@@ -118,7 +118,7 @@ public static class DbSeeder
         await UpsertSpecializationsAsync(db, facultyByName[facultySocPed], socPedSpecs, now, ct);
 
         // 4) Rooms
-        var roomNames = GenerateRoomNames(floors: 4, perFloor: 21);
+        var roomNames = GenerateRoomNames(floors: 5, perFloor: 21);
         var existingRoomSet = (await db.Rooms
                 .AsNoTracking()
                 .Where(r => roomNames.Contains(r.Name))

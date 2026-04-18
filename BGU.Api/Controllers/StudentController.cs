@@ -106,7 +106,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
             new GradeStudentColloquiumRequest(studentId, colloquiumId, grade));
         return new ObjectResult(res);
     }
-    
+
 
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.GradeSeminar)]
@@ -137,7 +137,4 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var res = await studentService.GetAcademicHistoryAsync(userId, cp);
         return res.IsSucceeded ? Ok(res) : StatusCode(res.StatusCode, res.Message);
     }
-
-    // [Authorize(Roles = "Teacher")]
-    // [HttpPut(ApiEndPoints.Student.GradeFinal)]
 }

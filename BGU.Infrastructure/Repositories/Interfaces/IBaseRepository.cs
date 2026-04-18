@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using BGU.Core;
+using BGU.Infrastructure.Constants;
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace BGU.Infrastructure.Repositories.Interfaces;
@@ -13,7 +14,8 @@ public interface IBaseRepository<T> where T : class, IBaseEntity
     public Task<T?> GetByIdAsync(string id, Func<IQueryable<T>,
         IIncludableQueryable<T, object>>? include = null, bool tracking = true);
 
-    public Task<IEnumerable<T>> GetAllAsync(int page = 1, int pageSize = 5, bool tracking = true,
+    public Task<PagedResponse<T>> GetAllAsync(Expression<Func<T, bool>>? predicate, int page = 1, int pageSize = 5,
+        bool tracking = true,
         Func<IQueryable<T>, IQueryable<T>>? include = null);
 
     public Task<List<T?>> FindAsync(Expression<Func<T, bool>> predicate, Func<IQueryable<T>,

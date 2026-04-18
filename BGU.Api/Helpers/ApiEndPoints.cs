@@ -62,7 +62,6 @@ public static class ApiEndPoints
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
         public const string MarkAbsence = $"{Base}/{{studentId}}/classes/{{classId}}/mark-absence";
         public const string GradeSeminar = $"{Base}/{{studentId}}/seminars/{{seminarId}}/grade";
-        public const string GradeFinal = $"{Base}/{{studentId}}/finals/{{finalId}}/grade";
         public const string GradeColloquium = $"{Base}/{{studentId}}/colloquiums/{{colloquiumId}}/grade";
 
         public const string GradeIndependentWork =
@@ -129,6 +128,7 @@ public static class ApiEndPoints
         public const string Profile = $"{Base}/profile";
         public const string MyCourses = $"{Base}/courses";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
+        public const string Exams = $"{Base}/me/exams";
     }
 
     public static class Dean
@@ -173,5 +173,10 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/finals";
         public const string Create = $"{Base}";
         public const string GetAll = $"{Base}";
+        public const string SetTime = $"{Base}/{{id}}/set-time";
+        public const string Update = $"{Base}/{{id}}";
+        public const string Confirm = $"{Base}/{{id}}/confirm";
+        public const string Grade = $"{Base}/{{id}}/grade";
+        
     }
 }

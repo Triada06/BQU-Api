@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using BGU.Core;
 using BGU.Core.Entities;
+using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Data;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -50,20 +51,40 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         return returnData;
     }
 
-    public virtual async Task<IEnumerable<T>> GetAllAsync(int page = 1, int pageSize = 5, bool tracking = true,
+    public virtual async Task<PagedResponse<T>> GetAllAsync(
+        Expression<Func<T, bool>>? predicate,
+        int page = 1,
+        int pageSize = 5,
+        bool tracking = true,
         Func<IQueryable<T>, IQueryable<T>>? include = null)
     {
         IQueryable<T> query = _context.Set<T>();
 
         query = tracking ? query : query.AsNoTracking();
 
+        if (predicate is not null)
+        {
+            query = query.Where(predicate);
+        }
+
         if (include != null)
             query = include(query);
 
-        query = query.Skip(page * pageSize - pageSize).Take(pageSize);
-        return await query.ToListAsync();
-    }
+        var totalCount = await query.CountAsync(); // IMPORTANT: before paging
 
+        var items = await query
+            .Skip((page - 1) * pageSize) 
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResponse<T>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
 
     public async Task<List<T?>> FindAsync(Expression<Func<T, bool>> predicate,
         Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool tracking = false)

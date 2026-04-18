@@ -25,7 +25,7 @@ public class FinalBackGroundService : BackgroundService
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var dateNow = DateTime.UtcNow;
-            if (dateNow.Month is 5 or 11)
+            if (dateNow.Month is 4 or 11)
             {
                 var subjects = await db.TaughtSubjects
                     .Include(ts => ts.Group)
@@ -56,7 +56,7 @@ public class FinalBackGroundService : BackgroundService
                         {
                             exams.Add(new Exam
                             {
-                                Grade = null,
+                                Grade = -1,
                                 Date = null,
                                 IsConfirmed = false,
                                 StudentId = student.Id,

@@ -4,14 +4,14 @@ namespace BGU.Core.Entities;
 
 public class Exam : BaseEntity
 {
-    private int? _Grade;
+    private  int _Grade;
 
-    public int? Grade
+    public int Grade
     {
         get => _Grade;
         set
         {
-            if (value is < 0 or > 50)
+            if (value is < -1 or > 50)
             {
                 throw new ArgumentOutOfRangeException(nameof(Grade));
             }

@@ -355,11 +355,11 @@ public class StudentService(
     public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
     {
         //TODO: fix filter, shouldnt be hardcoded with 1000 pagesize
-        var students = (await studentRepository.GetAllAsync(1, 10000, false, x => x
+        var students = (await studentRepository.GetAllAsync(null,1, 10000, false, x => x
             .Include(st => st.Group)
             .Include(st => st.AdmissionYear)
             .Include(st => st.Specialization)
-            .Include(st => st.AppUser))).ToList();
+            .Include(st => st.AppUser))).Items.ToList();
         if (students.Count == 0)
         {
             return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
@@ -438,12 +438,13 @@ public class StudentService(
     public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize)
     {
         var students =
-            (await studentRepository.GetAllAsync(page, pageSize, false,
+            (await studentRepository.GetAllAsync(null,page, pageSize, false,
                 x => x
                     .Include(st => st.Group)
                     .Include(st => st.AdmissionYear)
                     .Include(st => st.Specialization)
                     .Include(st => st.AppUser)))
+            .Items
             .Select(x =>
                 new GetStudentDto(x.Id, x.AppUser.Name + " " + x.AppUser.Surname + " " + x.AppUser.MiddleName,
                     x.AppUser.UserName, x.Group.Code,

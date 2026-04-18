@@ -17,11 +17,11 @@ public class SeminarController(ISeminarService seminarService, ISeminarRepositor
     public async Task<IActionResult> GetAll([FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var seminars = (await seminarRepository.GetAllAsync(page, pageSize, false,
+        var seminars = (await seminarRepository.GetAllAsync(null,page, pageSize, false,
             x =>
                 x.Include(s => s.Student)
                     .ThenInclude(s => s.AppUser)
-                    .Include(s => s.TaughtSubject))).ToList();
+                    .Include(s => s.TaughtSubject))).Items.ToList();
 
         if (seminars.Count == 0)
         {
