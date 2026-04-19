@@ -5,7 +5,6 @@ using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
@@ -20,16 +19,11 @@ public class FinalService(
         var data = await finalRepository.GetAllAsync(
             search is not null
                 ? x =>
-                    search.ToLower().Trim().Contains(x.Student.AppUser.Name.ToLower().Trim(),
-                        StringComparison.CurrentCultureIgnoreCase) ||
-                    search.ToLower().Trim().Contains(x.Student.AppUser.Surname.ToLower().Trim(),
-                        StringComparison.CurrentCultureIgnoreCase) ||
-                    search.ToLower().Trim().Contains(x.Student.AppUser.MiddleName.ToLower().Trim(),
-                        StringComparison.CurrentCultureIgnoreCase) ||
-                    search.ToLower().Trim().Contains(x.TaughtSubject.Code.ToLower().Trim(),
-                        StringComparison.CurrentCultureIgnoreCase) ||
-                    search.ToLower().Trim().Contains(x.TaughtSubject.Subject.Name.ToLower().Trim(),
-                        StringComparison.CurrentCultureIgnoreCase)
+                    search.ToLower().Trim().Contains(x.Student.AppUser.Name.ToLower().Trim()) ||
+                    search.ToLower().Trim().Contains(x.Student.AppUser.Surname.ToLower().Trim()) ||
+                    search.ToLower().Trim().Contains(x.Student.AppUser.MiddleName.ToLower().Trim()) ||
+                    search.ToLower().Trim().Contains(x.TaughtSubject.Code.ToLower().Trim()) ||
+                    search.ToLower().Trim().Contains(x.TaughtSubject.Subject.Name.ToLower().Trim())
                 : null,
             page, pageSize, false,
             include: x => x
@@ -41,7 +35,7 @@ public class FinalService(
         var returnData = data.Items.Select(x =>
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
                 x.TaughtSubject.Code,
-                x.IsConfirmed, x.Date?.ToString("dddd, MMM dd"), x.Grade, x.IsAllowed)).ToList();
+                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
 
         return new ApiResult<PagedResponse<GetFinalDto>>
         {
@@ -168,7 +162,7 @@ public class FinalService(
                 x.TaughtSubjectId,
                 x.TaughtSubject.Subject.Name, x.TaughtSubject.Code,
                 x.TaughtSubject.GroupId, x.TaughtSubject.Group.Code, x.Grade,
-                x.Date?.ToString("dddd, MMM dd")));
+                x.Date?.ToString("yyyy MMMM dd")));
 
         return ApiResult<ExamsToGrade>.Success(new ExamsToGrade(returnData));
     }
