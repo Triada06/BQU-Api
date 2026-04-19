@@ -22,4 +22,5 @@ public interface IStudentService
     Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId, string taughtSubjectId);
     Task<ApiResult<GetStudentPageDto>>  GetByIdAsync(string id,CancellationToken cancellationToken);
     Task<ApiResult<GetAcademicHistoryPageDto>>  GetAcademicHistoryAsync(string id,CancellationToken cancellationToken);
+    Task<double> GetStudentSubjectScoreAsync(string id, string taughtSubjectId);
 }

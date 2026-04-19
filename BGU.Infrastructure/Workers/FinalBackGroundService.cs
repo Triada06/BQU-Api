@@ -25,7 +25,7 @@ public class FinalBackGroundService : BackgroundService
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var dateNow = DateTime.UtcNow;
-            if (dateNow.Month is 4 or 11)
+            if (dateNow.Month is 4 or 11) //TODO: Change to 5 la~ter
             {
                 var subjects = await db.TaughtSubjects
                     .Include(ts => ts.Group)

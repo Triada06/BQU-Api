@@ -13,7 +13,9 @@ namespace BGU.Application.Services;
 public class IndependentWorkService(
     IIndependentWorkRepository independentWorkRepository,
     IStudentRepository studentRepository,
-    ITaughtSubjectRepository taughtSubjectRepository) : IIndependentWorkService
+    ITaughtSubjectRepository taughtSubjectRepository,
+    IStudentService studentService,
+    IFinalRepository finalRepository) : IIndependentWorkService
 {
     public async Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest request)
     {
@@ -84,8 +86,49 @@ public class IndependentWorkService(
                 StatusCode = 404
             };
         }
+
         iWork.Grade = dto.Grade ?? Grade.None;
         var res = await independentWorkRepository.UpdateAsync(iWork);
+
+        if (!res)
+        {
+            return ApiResult<GradeIndependentWorkDto>.SystemError();
+        }
+
+        var subject =
+            (await taughtSubjectRepository.FindAsync(x => x.IndependentWorks.Any(c => c.Id == iWork.Id)))
+            .First();
+
+        if (subject is null)
+        {
+            return new ApiResult<GradeIndependentWorkDto>
+            {
+                Data = null,
+                Message = $"Independent work was graded, but exam eligibility couldn't be updated",
+                IsSucceeded = true,
+                StatusCode = 200
+            };
+        }
+
+        var score = await studentService.GetStudentSubjectScoreAsync(iWork.StudentId, subject.Id);
+
+        bool isEligible = score is not -1;
+
+        var isSucceeded = await finalRepository.ToggleExamEligibilityAsync(iWork.StudentId,iWork.TaughtSubjectId, isEligible);
+
+        if (!isSucceeded)
+        {
+            return new ApiResult<GradeIndependentWorkDto>
+            {
+                Data = null,
+                Message = $"Seminar was graded, but exam eligibility couldn't be updated. " +
+                          $"Either it was not created or a system error. " +
+                          $"If you sure it is created, please, contact the developers or administration",
+                IsSucceeded = true,
+                StatusCode = 200
+            };
+        }
+        
         return new ApiResult<GradeIndependentWorkDto>
         {
             Data = new GradeIndependentWorkDto(dto.Grade),

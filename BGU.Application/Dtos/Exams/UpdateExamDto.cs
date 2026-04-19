@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace BGU.Application.Dtos.Exams;
 
-public sealed record UpdateExamDto(string StudentId, string TaughtSubjectId, DateTime Date, int Grade);
+public sealed record UpdateExamDto(string StudentId, string TaughtSubjectId, DateTime Date, int Grade, bool IsAllowed);
 
 public class UpdateExamDtoValidator : AbstractValidator<UpdateExamDto>
 {

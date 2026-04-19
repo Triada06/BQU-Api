@@ -8,4 +8,5 @@ public sealed record GetFinalDto(
     string SubjectCode,
     bool IsConfirmed,
     string? FormattedDate,
-    int Grade);
+    int Grade,
+    bool IsAllowed);

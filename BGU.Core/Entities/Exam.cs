@@ -4,7 +4,7 @@ namespace BGU.Core.Entities;
 
 public class Exam : BaseEntity
 {
-    private  int _Grade;
+    private int _Grade;
 
     public int Grade
     {
@@ -15,12 +15,14 @@ public class Exam : BaseEntity
             {
                 throw new ArgumentOutOfRangeException(nameof(Grade));
             }
+
             _Grade = value;
         }
     }
 
     public DateTime? Date { get; set; }
     public bool IsConfirmed { get; set; }
+    public bool IsAllowed { get; set; }
 
     public string StudentId { get; set; }
     public Student Student { get; set; }

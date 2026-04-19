@@ -39,8 +39,9 @@ public class FinalService(
                 .ThenInclude(st => st.AppUser));
 
         var returnData = data.Items.Select(x =>
-            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name, x.TaughtSubject.Code,
-                x.IsConfirmed, x.Date?.ToString("dddd, MMM dd"), x.Grade)).ToList();
+            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
+                x.TaughtSubject.Code,
+                x.IsConfirmed, x.Date?.ToString("dddd, MMM dd"), x.Grade, x.IsAllowed)).ToList();
 
         return new ApiResult<PagedResponse<GetFinalDto>>
         {
@@ -63,6 +64,11 @@ public class FinalService(
         if (exam is null)
         {
             return ApiResult<bool>.NotFound();
+        }
+
+        if (!exam.IsAllowed)
+        {
+            return ApiResult<bool>.BadRequest(false, "This student is not allowed to take an exam");
         }
 
         exam.Date = setExamDto.Date;
@@ -110,6 +116,7 @@ public class FinalService(
         exam.Grade = request.Dto.Grade;
         exam.TaughtSubjectId = request.Dto.TaughtSubjectId;
         exam.StudentId = request.Dto.StudentId;
+        exam.IsAllowed = request.Dto.IsAllowed;
 
         if (!await finalRepository.UpdateAsync(exam))
         {
@@ -117,7 +124,7 @@ public class FinalService(
         }
 
         return ApiResult<UpdateExamResponse>.Success(new UpdateExamResponse(exam.Id, exam.StudentId,
-            exam.TaughtSubjectId, exam.Date, exam.Grade));
+            exam.TaughtSubjectId, exam.Date, exam.Grade, exam.IsAllowed));
     }
 
     public async Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId)
@@ -206,7 +213,7 @@ public class FinalService(
         }
 
         exam.IsConfirmed = true;
-        
+
         if (!await finalRepository.UpdateAsync(exam))
         {
             return ApiResult<bool>.SystemError();
