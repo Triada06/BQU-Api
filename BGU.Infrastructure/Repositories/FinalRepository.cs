@@ -15,4 +15,10 @@ public class FinalRepository(AppDbContext context) : BaseRepository<Exam>(contex
             .ExecuteUpdateAsync(x => x.SetProperty(e => e.IsAllowed, toggle));
         return exam > 0;
     }
+
+    public async Task<int> BulkUpdateAsync(List<Exam> exams)
+    {
+         _contextToUse.UpdateRange(exams);
+        return await _contextToUse.SaveChangesAsync();
+    }
 }

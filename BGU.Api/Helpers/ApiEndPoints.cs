@@ -93,6 +93,7 @@ public static class ApiEndPoints
         public const string Delete = $"{Base}/{{id}}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetById = $"{Base}/{{id}}";
+        public const string SetExamDate = $"{Base}/set-exam-date";
     }
 
     public static class ClassTime

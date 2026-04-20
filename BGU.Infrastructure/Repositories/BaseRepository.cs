@@ -45,10 +45,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         query = tracking ? query : query.AsNoTracking();
         if (include != null)
             query = include(query);
-        var data = await query.ToListAsync();
-        var returnData = data.FirstOrDefault(m => m.Id == id);
-
-        return returnData;
+        var data = await query.FirstOrDefaultAsync(m => m.Id == id);
+        return data;
     }
 
     public virtual async Task<PagedResponse<T>> GetAllPaginatedAsync(

@@ -219,32 +219,31 @@ public class FinalService(
 
     public async Task<ApiResult<bool>> SetGroupExamDateAsync(SetGroupExamDto setExamDto)
     {
-        // var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
-        //     include: x => x.Include(st => st.Finals), tracking: true);
-        //
-        // if (students.Count != 0)
-        // {
-        //     return ApiResult<bool>.NotFound($"Students in group not found");
-        // }
-        //
-        // var exams = students.SelectMany(x => x.Finals).ToList();
-        // if (exams.Count == 0)
-        // {
-        //     return ApiResult<bool>.NotFound();
-        // }
-        //
-        // if (!exam.IsAllowed)
-        // {
-        //     return ApiResult<bool>.BadRequest(false, "This student is not allowed to take an exam");
-        // }
-        //
-        // exam.Date = setExamDto.Date;
-        // if (!await finalRepository.UpdateAsync(exam))
-        // {
-        //     return ApiResult<bool>.SystemError("Failed to update exam");
-        // }
-        //
-        // return ApiResult<bool>.Success(true);
-        throw new NotImplementedException();
+        var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
+            include: x => x.Include(st => st.Finals), tracking: true);
+
+        if (students.Count == 0)
+        {
+            return ApiResult<bool>.NotFound($"Students in group not found");
+        }
+
+        var exams = students.SelectMany(x => x.Finals).ToList();
+        if (exams.Count == 0)
+        {
+            return ApiResult<bool>.NotFound("Exams do not exist");
+        }
+
+        foreach (var exam in exams.Where(exam => exam.IsAllowed))
+        {
+            exam.Date = setExamDto.Date;
+        }
+
+
+        if (await finalRepository.BulkUpdateAsync(exams) <= 0)
+        {
+            return ApiResult<bool>.SystemError("Failed to update exam");
+        }
+
+        return ApiResult<bool>.Success(true);
     }
 }
