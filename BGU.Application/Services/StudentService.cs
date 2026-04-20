@@ -369,7 +369,7 @@ public class StudentService(
     public async Task<GetStudentResponse> FilterAsync(string? groupId, int? year)
     {
         //TODO: fix filter, shouldnt be hardcoded with 1000 pagesize
-        var students = (await studentRepository.GetAllAsync(null, 1, 10000, false, x => x
+        var students = (await studentRepository.GetAllPaginatedAsync(null, 1, 10000, false, x => x
             .Include(st => st.Group)
             .Include(st => st.AdmissionYear)
             .Include(st => st.Specialization)
@@ -452,7 +452,7 @@ public class StudentService(
     public async Task<GetStudentResponse> GetAllAsync(int page, int pageSize)
     {
         var students =
-            (await studentRepository.GetAllAsync(null, page, pageSize, false,
+            (await studentRepository.GetAllPaginatedAsync(null, page, pageSize, false,
                 x => x
                     .Include(st => st.Group)
                     .Include(st => st.AdmissionYear)
@@ -795,19 +795,22 @@ public class StudentService(
 
         var seminars = await context.Seminars
             .Where(s => s.StudentId == student.Id && s.TaughtSubjectId == taughtSubjectId && s.Grade != Grade.None)
-            .Select(s => (int)s.Grade)
+            .Select(s => s.Grade)
             .ToListAsync();
+        var seminarScores = seminars.Select(g => (int)g).ToList();
 
         var colloquiums = await context.Colloquiums
             .Where(c => c.StudentId == student.Id && c.TaughtSubjectId == taughtSubjectId && c.Grade != Grade.None)
             .OrderBy(c => c.OrderNumber)
-            .Select(c => (int)c.Grade)
+            .Select(c => c.Grade)
             .ToListAsync();
+        var colloquiumScores = colloquiums.Select(g => (int)g).ToList();
 
         var independentWorks = await context.IndependentWorks
             .Where(iw => iw.StudentId == student.Id && iw.TaughtSubjectId == taughtSubjectId)
-            .Select(iw => (int)iw.Grade)
+            .Select(iw => iw.Grade)
             .ToListAsync();
+        var independentWorkScores = independentWorks.Select(g => (int)g).ToList();
 
         var attendances = await context.Attendances
             .Where(a => a.StudentId == student.Id && taughtSubject.ClassIds.Contains(a.ClassId))
@@ -818,9 +821,9 @@ public class StudentService(
         var presents = happenedClasses.Count(a => a.IsPresent);
 
         return CalculateOverallSubjectScore(
-            seminars,
-            colloquiums,
-            independentWorks,
+            seminarScores,
+            colloquiumScores,
+            independentWorkScores,
             taughtSubject.Hours,
             happenedClasses.Count,
             presents);

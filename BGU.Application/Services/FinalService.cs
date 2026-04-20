@@ -12,11 +12,12 @@ namespace BGU.Application.Services;
 public class FinalService(
     IFinalRepository finalRepository,
     ITeacherRepository teacherRepository,
-    UserManager<AppUser> userManager) : IFinalService
+    UserManager<AppUser> userManager,
+    IStudentRepository studentRepository) : IFinalService
 {
     public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search)
     {
-        var data = await finalRepository.GetAllAsync(
+        var data = await finalRepository.GetAllPaginatedAsync(
             search is not null
                 ? x =>
                     search.ToLower().Trim().Contains(x.Student.AppUser.Name.ToLower().Trim()) ||
@@ -214,5 +215,36 @@ public class FinalService(
         }
 
         return ApiResult<bool>.Success(true);
+    }
+
+    public async Task<ApiResult<bool>> SetGroupExamDateAsync(SetGroupExamDto setExamDto)
+    {
+        // var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
+        //     include: x => x.Include(st => st.Finals), tracking: true);
+        //
+        // if (students.Count != 0)
+        // {
+        //     return ApiResult<bool>.NotFound($"Students in group not found");
+        // }
+        //
+        // var exams = students.SelectMany(x => x.Finals).ToList();
+        // if (exams.Count == 0)
+        // {
+        //     return ApiResult<bool>.NotFound();
+        // }
+        //
+        // if (!exam.IsAllowed)
+        // {
+        //     return ApiResult<bool>.BadRequest(false, "This student is not allowed to take an exam");
+        // }
+        //
+        // exam.Date = setExamDto.Date;
+        // if (!await finalRepository.UpdateAsync(exam))
+        // {
+        //     return ApiResult<bool>.SystemError("Failed to update exam");
+        // }
+        //
+        // return ApiResult<bool>.Success(true);
+        throw new NotImplementedException();
     }
 }

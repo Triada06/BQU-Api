@@ -13,4 +13,5 @@ public interface IFinalService
     Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId);
     Task<ApiResult<string>> GradeAsync(string userId, string finalId, int grade);
     Task<ApiResult<bool>> ConfirmAsync(string finalId);
+    Task<ApiResult<bool>> SetGroupExamDateAsync(SetGroupExamDto setExamDto);
 }

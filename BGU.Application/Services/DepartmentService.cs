@@ -10,7 +10,7 @@ public class DepartmentService(IDepartmentRepository departmentRepository) : IDe
 {
     public async Task<GetAllDepartmentsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
-        var departments = (await departmentRepository.GetAllAsync(null, page, pageSize, tracking)).Items.ToList();
+        var departments = (await departmentRepository.GetAllPaginatedAsync(null, page, pageSize, tracking)).Items.ToList();
         return new GetAllDepartmentsResponse(departments.Count != 0
             ? departments.Select(x => new DepartmentDto(x.Id, x.Name, x.FacultyId))
             : [], StatusCode.Ok, true, ResponseMessages.Success);

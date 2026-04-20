@@ -14,7 +14,12 @@ public interface IBaseRepository<T> where T : class, IBaseEntity
     public Task<T?> GetByIdAsync(string id, Func<IQueryable<T>,
         IIncludableQueryable<T, object>>? include = null, bool tracking = true);
 
-    public Task<PagedResponse<T>> GetAllAsync(Expression<Func<T, bool>>? predicate, int page = 1, int pageSize = 5,
+    public Task<PagedResponse<T>> GetAllPaginatedAsync(Expression<Func<T, bool>>? predicate, int page = 1,
+        int pageSize = 5,
+        bool tracking = true,
+        Func<IQueryable<T>, IQueryable<T>>? include = null);
+
+    public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? predicate,
         bool tracking = true,
         Func<IQueryable<T>, IQueryable<T>>? include = null);
 

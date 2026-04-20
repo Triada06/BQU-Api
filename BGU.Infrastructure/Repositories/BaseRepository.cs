@@ -51,7 +51,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         return returnData;
     }
 
-    public virtual async Task<PagedResponse<T>> GetAllAsync(
+    public virtual async Task<PagedResponse<T>> GetAllPaginatedAsync(
         Expression<Func<T, bool>>? predicate,
         int page = 1,
         int pageSize = 5,
@@ -73,7 +73,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         var totalCount = await query.CountAsync(); // IMPORTANT: before paging
 
         var items = await query
-            .Skip((page - 1) * pageSize) 
+            .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
@@ -84,6 +84,26 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
             PageSize = pageSize,
             TotalCount = totalCount
         };
+    }
+
+    public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? predicate, bool tracking = true,
+        Func<IQueryable<T>, IQueryable<T>>? include = null)
+    {
+        IQueryable<T> query = _context.Set<T>();
+
+        query = tracking ? query : query.AsNoTracking();
+
+        if (predicate is not null)
+        {
+            query = query.Where(predicate);
+        }
+
+        if (include != null)
+            query = include(query);
+
+        var items = await query.ToListAsync();
+
+        return items;
     }
 
     public async Task<List<T?>> FindAsync(Expression<Func<T, bool>> predicate,

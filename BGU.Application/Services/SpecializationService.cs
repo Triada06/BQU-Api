@@ -8,7 +8,7 @@ namespace BGU.Application.Services;
 
 public class SpecializationService(ISpecializationRepository specializationRepository): ISpecializationService {
     public async Task<GetAllSpecializationsResponse> GetAllAsync(int page, int pageSize, bool tracking = false) {
-        var specializations = (await specializationRepository.GetAllAsync(null,page, pageSize, tracking)).Items.ToList();
+        var specializations = (await specializationRepository.GetAllPaginatedAsync(null,page, pageSize, tracking)).Items.ToList();
         return new GetAllSpecializationsResponse(specializations.Count != 0
             ? specializations.Select(x => new SpecializationDto(x.Id, x.Name, x.FacultyId))
             : [], StatusCode.Ok, true, ResponseMessages.Success);
