@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices.JavaScript;
 using BGU.Application.Common;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
@@ -76,7 +77,7 @@ public class TaughtSubjectService(
     public async Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
         var subjects =
-            (await taughtSubjectRepository.GetAllPaginatedAsync(null,page, pageSize: pageSize,
+            (await taughtSubjectRepository.GetAllPaginatedAsync(null, page, pageSize: pageSize,
                 include: i => i
                     .Include(x => x.Group)
                     .ThenInclude(x => x.AdmissionYear)
@@ -295,131 +296,131 @@ public class TaughtSubjectService(
         return new CreateTaughtSubjectResponse(taughtSubject.Id, true, StatusCode.Ok, ResponseMessages.Success);
     }
 
- public async Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendances(string taughtSubjectId)
-{
-    var subject = await context.TaughtSubjects
-        .AsNoTracking()
-        .Where(x => x.Id == taughtSubjectId)
-        .Select(x => new
-        {
-            x.Id,
-            Students = x.Group.Students.Select(s => new
-            {
-                s.Id,
-                s.AppUser.Name,
-                s.AppUser.Surname
-            }).ToList(),
-            Classes = x.Classes.Select(c => new
-            {
-                c.Id,
-                c.ClassType,
-                c.ClassTime.ClassDate,
-                c.ClassTime.Start,
-                c.ClassTime.End
-            })
-            .OrderBy(c => c.ClassDate)
-            .ThenBy(c => c.Start)
-            .ToList()
-        })
-        .FirstOrDefaultAsync();
-
-    if (subject is null)
-        return ApiResult<GetActivitiesAndAttendances>.BadRequest(
-            new GetActivitiesAndAttendances([]),
-            $"Taught Subject with id '{taughtSubjectId}' not found");
-
-    if (subject.Students.Count == 0)
-        return ApiResult<GetActivitiesAndAttendances>.Success(
-            new GetActivitiesAndAttendances([]));
-
-    var studentIds = subject.Students.Select(s => s.Id).ToList();
-    var classIds = subject.Classes.Select(c => c.Id).ToList();
-
-    // single query for all attendances
-    var allAttendances = await context.Attendances
-        .AsNoTracking()
-        .Where(a => studentIds.Contains(a.StudentId) && classIds.Contains(a.ClassId))
-        .Select(a => new { a.Id, a.StudentId, a.ClassId, a.IsPresent })
-        .ToListAsync();
-
-    // single query for all seminars
-    var allSeminars = await context.Seminars
-        .AsNoTracking()
-        .Where(s => studentIds.Contains(s.StudentId) && s.TaughtSubjectId == taughtSubjectId)
-        .Select(s => new { s.Id, s.StudentId, s.Grade, s.CreatedAt })
-        .OrderBy(s => s.CreatedAt)
-        .ToListAsync();
-
-    // group in memory
-    var attendancesByStudent = allAttendances
-        .GroupBy(a => a.StudentId)
-        .ToDictionary(g => g.Key, g => g.ToList());
-
-    var seminarsByStudent = allSeminars
-        .GroupBy(s => s.StudentId)
-        .ToDictionary(g => g.Key, g => g.ToList());
-
-    var result = new List<GetActivityAndAttendance>();
-
-    foreach (var student in subject.Students)
+    public async Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendances(string taughtSubjectId)
     {
-        attendancesByStudent.TryGetValue(student.Id, out var studentAttendances);
-        seminarsByStudent.TryGetValue(student.Id, out var studentSeminars);
+        var subject = await context.TaughtSubjects
+            .AsNoTracking()
+            .Where(x => x.Id == taughtSubjectId)
+            .Select(x => new
+            {
+                x.Id,
+                Students = x.Group.Students.Select(s => new
+                {
+                    s.Id,
+                    s.AppUser.Name,
+                    s.AppUser.Surname
+                }).ToList(),
+                Classes = x.Classes.Select(c => new
+                    {
+                        c.Id,
+                        c.ClassType,
+                        c.ClassTime.ClassDate,
+                        c.ClassTime.Start,
+                        c.ClassTime.End
+                    })
+                    .OrderBy(c => c.ClassDate)
+                    .ThenBy(c => c.Start)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
 
-        studentAttendances ??= [];
-        studentSeminars ??= [];
+        if (subject is null)
+            return ApiResult<GetActivitiesAndAttendances>.BadRequest(
+                new GetActivitiesAndAttendances([]),
+                $"Taught Subject with id '{taughtSubjectId}' not found");
 
-        var seminarIndex = 0;
-        var managedClasses = new List<MangeClassesDto>();
+        if (subject.Students.Count == 0)
+            return ApiResult<GetActivitiesAndAttendances>.Success(
+                new GetActivitiesAndAttendances([]));
 
-        foreach (var classItem in subject.Classes)
+        var studentIds = subject.Students.Select(s => s.Id).ToList();
+        var classIds = subject.Classes.Select(c => c.Id).ToList();
+
+        // single query for all attendances
+        var allAttendances = await context.Attendances
+            .AsNoTracking()
+            .Where(a => studentIds.Contains(a.StudentId) && classIds.Contains(a.ClassId))
+            .Select(a => new { a.Id, a.StudentId, a.ClassId, a.IsPresent })
+            .ToListAsync();
+
+        // single query for all seminars
+        var allSeminars = await context.Seminars
+            .AsNoTracking()
+            .Where(s => studentIds.Contains(s.StudentId) && s.TaughtSubjectId == taughtSubjectId)
+            .Select(s => new { s.Id, s.StudentId, s.Grade, s.CreatedAt })
+            .OrderBy(s => s.CreatedAt)
+            .ToListAsync();
+
+        // group in memory
+        var attendancesByStudent = allAttendances
+            .GroupBy(a => a.StudentId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var seminarsByStudent = allSeminars
+            .GroupBy(s => s.StudentId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var result = new List<GetActivityAndAttendance>();
+
+        foreach (var student in subject.Students)
         {
-            var isSeminar = classItem.ClassType == ClassType.Семинар;
+            attendancesByStudent.TryGetValue(student.Id, out var studentAttendances);
+            seminarsByStudent.TryGetValue(student.Id, out var studentSeminars);
 
-            if (isSeminar)
+            studentAttendances ??= [];
+            studentSeminars ??= [];
+
+            var seminarIndex = 0;
+            var managedClasses = new List<MangeClassesDto>();
+
+            foreach (var classItem in subject.Classes)
             {
-                var seminar = seminarIndex < studentSeminars.Count
-                    ? studentSeminars[seminarIndex++]
-                    : null;
+                var isSeminar = classItem.ClassType == ClassType.Семинар;
 
-                var attendance = studentAttendances.FirstOrDefault(a => a.ClassId == classItem.Id);
+                if (isSeminar)
+                {
+                    var seminar = seminarIndex < studentSeminars.Count
+                        ? studentSeminars[seminarIndex++]
+                        : null;
 
-                managedClasses.Add(new MangeClassesDto(
-                    classItem.Id,
-                    classItem.ClassDate.UtcDateTime,
-                    FormatRange(classItem.Start, classItem.End),
-                    'S',
-                    seminar?.Grade is Grade.None ? attendance?.Id : null,
-                    seminar?.Grade is Grade.None ? attendance?.IsPresent : null,
-                    seminar?.Id,
-                    seminar?.Grade
-                ));
+                    var attendance = studentAttendances.FirstOrDefault(a => a.ClassId == classItem.Id);
+
+                    managedClasses.Add(new MangeClassesDto(
+                        classItem.Id,
+                        classItem.ClassDate.UtcDateTime,
+                        FormatRange(classItem.Start, classItem.End),
+                        'S',
+                        seminar?.Grade is Grade.None ? attendance?.Id : null,
+                        seminar?.Grade is Grade.None ? attendance?.IsPresent : null,
+                        seminar?.Id,
+                        seminar?.Grade
+                    ));
+                }
+                else
+                {
+                    var attendance = studentAttendances.FirstOrDefault(a => a.ClassId == classItem.Id);
+
+                    managedClasses.Add(new MangeClassesDto(
+                        classItem.Id,
+                        classItem.ClassDate.UtcDateTime,
+                        FormatRange(classItem.Start, classItem.End),
+                        'L',
+                        attendance?.Id,
+                        attendance?.IsPresent,
+                        null,
+                        null
+                    ));
+                }
             }
-            else
-            {
-                var attendance = studentAttendances.FirstOrDefault(a => a.ClassId == classItem.Id);
 
-                managedClasses.Add(new MangeClassesDto(
-                    classItem.Id,
-                    classItem.ClassDate.UtcDateTime,
-                    FormatRange(classItem.Start, classItem.End),
-                    'L',
-                    attendance?.Id,
-                    attendance?.IsPresent,
-                    null,
-                    null
-                ));
-            }
+            result.Add(new GetActivityAndAttendance(
+                student.Id,
+                $"{student.Name} {student.Surname}",
+                managedClasses));
         }
 
-        result.Add(new GetActivityAndAttendance(
-            student.Id,
-            $"{student.Name} {student.Surname}",
-            managedClasses));
+        return ApiResult<GetActivitiesAndAttendances>.Success(new GetActivitiesAndAttendances(result));
     }
-
-    return ApiResult<GetActivitiesAndAttendances>.Success(new GetActivitiesAndAttendances(result));
-}
 
 
     public async Task<ApiResult<GetStudentsForSubject>> GetStudentsAsync(string taughtSubjectId)
@@ -442,7 +443,11 @@ public class TaughtSubjectService(
                 $"Taught Subject with an id of {taughtSubjectId} not found");
         }
 
-        var students = subject.Group.Students ?? [];
+        var students = subject.Group.Students
+            .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"),
+                false))
+            .ToList();
+
 
         var studentsDto = students
             .Select(gs =>
