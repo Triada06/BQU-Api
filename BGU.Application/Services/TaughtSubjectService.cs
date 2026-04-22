@@ -444,8 +444,8 @@ public class TaughtSubjectService(
         }
 
         var students = subject.Group.Students
-            .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"),
-                false))
+            .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
+            .ThenBy(x => x.AppUser.Name, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
             .ToList();
 
 
