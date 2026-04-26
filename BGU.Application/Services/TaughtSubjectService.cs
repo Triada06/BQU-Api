@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Runtime.InteropServices.JavaScript;
 using BGU.Application.Common;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Responses;
@@ -22,7 +21,6 @@ public class TaughtSubjectService(
     IGroupRepository groupRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
     ISubjectRepository subjectRepository,
-    IClassTimeRepository classTimeRepository,
     ISyllabusService syllabusService,
     ISyllabusRepository syllabusRepository,
     IClassRepository classRepository,
@@ -206,7 +204,7 @@ public class TaughtSubjectService(
             await studentRepository.FindAsync(st => st.GroupId == request.GroupId);
         var seminarTypes = classes.FindAll(x => x.ClassType == ClassType.Семинар);
 
-        if (studentsInGroup.Count != 0 && studentsInGroup.All(x => x is not null))
+        if (studentsInGroup is not null)
         {
             var attendances = new List<Attendance>();
             var seminars = new List<Seminar>();
@@ -523,7 +521,7 @@ public class TaughtSubjectService(
         }
 
         var syllabus =
-            (await syllabusRepository.FindAsync(x => x.TaughtSubjectId == id, tracking: true)).FirstOrDefault();
+            (await syllabusRepository.FindAsync(x => x.TaughtSubjectId == id, tracking: true))?.FirstOrDefault();
         if (syllabus is null)
         {
             return new ApiResult<bool>

@@ -15,7 +15,8 @@ public class IndependentWorkService(
     IStudentRepository studentRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
     IStudentService studentService,
-    IFinalRepository finalRepository) : IIndependentWorkService
+    IFinalRepository finalRepository,
+    IStudentSubjectResultRepository studentSubjectResultRepository) : IIndependentWorkService
 {
     public async Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest request)
     {
@@ -95,11 +96,10 @@ public class IndependentWorkService(
             return ApiResult<GradeIndependentWorkDto>.SystemError();
         }
 
-        var subject =
-            (await taughtSubjectRepository.FindAsync(x => x.IndependentWorks.Any(c => c.Id == iWork.Id)))
-            .First();
+        var subjects =
+            await taughtSubjectRepository.FindAsync(x => x.IndependentWorks.Any(c => c.Id == iWork.Id));
 
-        if (subject is null)
+        if (subjects.Count == 0)
         {
             return new ApiResult<GradeIndependentWorkDto>
             {
@@ -110,11 +110,69 @@ public class IndependentWorkService(
             };
         }
 
+        var subject = subjects[0];
         var score = await studentService.GetStudentSubjectScoreAsync(iWork.StudentId, subject.Id);
 
-        bool isEligible = score is not -1;
 
-        var isSucceeded = await finalRepository.ToggleExamEligibilityAsync(iWork.StudentId,iWork.TaughtSubjectId, isEligible);
+        if (score is null)
+        {
+            return new ApiResult<GradeIndependentWorkDto>
+            {
+                Data = null,
+                Message = $"Seminar was graded, but exam eligibility couldn't be updated. " +
+                          $"Either it was not created or a system error. " +
+                          $"If you sure it is created, please, contact the developers or administration",
+                IsSucceeded = true,
+                StatusCode = 200
+            };
+        }
+
+        var studentSubjectResult =
+            (await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == iWork.StudentId && x.TaughtSubjectId == subject.Id)).First();
+
+
+        if (studentSubjectResult is null)
+        {
+            var sewStudentSubjectResult = new StudentSubjectResult
+            {
+                StudentId = iWork.StudentId,
+                TaughtSubjectId = subject.Id,
+                FinalGrade = score.Value.score,
+                IsFinalized = false
+            };
+
+            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            {
+                return new ApiResult<GradeIndependentWorkDto>
+                {
+                    Data = null,
+                    Message =
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ",
+                    IsSucceeded = true,
+                    StatusCode = 200
+                };
+            }
+        }
+        else
+        {
+            studentSubjectResult.FinalGrade = score.Value.score;
+            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            {
+                return new ApiResult<GradeIndependentWorkDto>
+                {
+                    Data = null,
+                    Message =
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ",
+                    IsSucceeded = true,
+                    StatusCode = 200
+                };
+            }
+        }
+
+        var isSucceeded =
+            await finalRepository.ToggleExamEligibilityAsync(iWork.StudentId, iWork.TaughtSubjectId,
+                score.Value.IsEligible);
 
         if (!isSucceeded)
         {
@@ -128,7 +186,7 @@ public class IndependentWorkService(
                 StatusCode = 200
             };
         }
-        
+
         return new ApiResult<GradeIndependentWorkDto>
         {
             Data = new GradeIndependentWorkDto(dto.Grade),

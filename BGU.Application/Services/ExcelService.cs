@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Globalization;
 using BGU.Application.Common;
 using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;

@@ -1,4 +1,3 @@
-using BGU.Application.Dtos.TaughtSubject;
 using BGU.Infrastructure.Constants;
 
 namespace BGU.Application.Contracts.TaughtSubjects.Responses;

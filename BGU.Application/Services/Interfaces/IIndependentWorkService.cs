@@ -1,5 +1,4 @@
 using BGU.Application.Common;
-using BGU.Application.Contracts;
 using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.IndependentWorks.Responses;
 using BGU.Application.Dtos.IndependentWorks;

@@ -6,7 +6,6 @@ using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 

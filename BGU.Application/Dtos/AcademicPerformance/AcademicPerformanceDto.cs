@@ -1,6 +1,4 @@
 using BGU.Application.Dtos.IndependentWorks;
-using BGU.Core.Entities;
-using BGU.Core.Enums;
 
 namespace BGU.Application.Dtos.AcademicPerformance;
 

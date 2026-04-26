@@ -3,15 +3,14 @@ using BGU.Application.Contracts.Class.Requests;
 using BGU.Application.Contracts.Class.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace BGU.Application.Services;
 
-public class ClassService(IClassRepository classRepository, UserManager<AppUser> userManager): IClassService
+public class ClassService: IClassService
 {
-    public async Task<ClassGetAllResponse> GetAll(string userId)
+    public Task<ClassGetAllResponse> GetAll(string userId)
     {
         throw new NotImplementedException();
     }

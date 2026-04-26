@@ -1,6 +1,4 @@
 using BGU.Application.Contracts.Dean;
-using BGU.Application.Contracts.User;
-using BGU.Application.Dtos.AppUser;
 using BGU.Application.Dtos.Dean;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
@@ -24,7 +22,7 @@ public class DeanService(IDeanRepository deanRepository, UserManager<AppUser> us
         }
 
         var dean = (await deanRepository.FindAsync(x => x.AppUserId == user.Id,
-            i => i.Include(s => s.Faculty))).FirstOrDefault();
+            i => i.Include(s => s.Faculty)))?.FirstOrDefault();
         if (dean is null)
         {
             return new DeanProfileResponse(

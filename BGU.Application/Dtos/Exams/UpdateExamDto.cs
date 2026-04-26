@@ -1,4 +1,3 @@
-using BGU.Core.Enums;
 using FluentValidation;
 
 namespace BGU.Application.Dtos.Exams;

@@ -1,14 +1,10 @@
-using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Contracts.Teacher.Requests;
 using BGU.Application.Contracts.Teacher.Responses;
 using BGU.Application.Dtos.Class;
-using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
-using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +29,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 .Include(ai => ai.Department)
                 .ThenInclude(g => g.Faculty)
                 .ThenInclude(ts => ts.Specializations)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (teacher == null)
         {
@@ -86,7 +82,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 .Include(x => x.AppUser)
                 .Include(x => x.TaughtSubjects)
                 .ThenInclude(x => x.Subject)
-    )).FirstOrDefault();
+    ))?.FirstOrDefault();
 
     if (teacher == null)
     {
@@ -185,7 +181,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                     .ThenInclude(ts => ts.Specializations)
                     .Include(x => x.TaughtSubjects)
                     .ThenInclude(x => x.Subject)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (teacher == null)
         {
@@ -198,7 +194,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
         }
 
         var courses =
-            teacher.TaughtSubjects?.Select(x =>
+            teacher.TaughtSubjects.Select(x =>
                 new TeacherCourseDto(x.Id, x.Subject.Name, x.Code,x.HasSyllabus, x.Group.Code, x.Subject.CreditsNumber,
                     x.Group.Students.Count, x.Hours));
         return new TeacherCoursesResponse(courses, ResponseMessages.Success, true, (int)StatusCode.Ok);
@@ -207,7 +203,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
     public async Task<UpdateTeacherResponse> UpdateAsync(string teacherId, UpdateTeacherRequest request)
     {
         var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
-            i => i.Include(x => x.AppUser), tracking: true)).FirstOrDefault();
+            i => i.Include(x => x.AppUser), tracking: true))?.FirstOrDefault();
         if (teacher is null)
             return new UpdateTeacherResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
 
@@ -223,7 +219,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
     public async Task<DeleteTeacherResponse> DeleteAsync(string teacherId)
     {
         var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
-            i => i.Include(x => x.AppUser), tracking: true)).FirstOrDefault();
+            i => i.Include(x => x.AppUser), tracking: true))?.FirstOrDefault();
         if (teacher is null)
         {
             return new DeleteTeacherResponse(StatusCode.NotFound, false, ResponseMessages.NotFound);
@@ -275,10 +271,7 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
             true, StatusCode.Ok);
     }
 
-
-    private static int GetToday()
-        => (int)DateTime.Today.DayOfWeek;
-
+    
     private static bool CheckIfUpperWeek()
     {
         var today = DateTime.Today;

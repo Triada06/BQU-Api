@@ -1,6 +1,4 @@
-using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Application.Dtos.Class;
-using BGU.Core.Enums;
 
 namespace BGU.Application.Dtos.TaughtSubject.Requests;
 

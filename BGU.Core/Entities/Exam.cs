@@ -1,5 +1,3 @@
-using BGU.Core.Enums;
-
 namespace BGU.Core.Entities;
 
 public class Exam : BaseEntity

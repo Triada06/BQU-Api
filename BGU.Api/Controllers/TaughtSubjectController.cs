@@ -1,10 +1,8 @@
 using BGU.Api.Helpers;
-using BGU.Application.Contracts.Colloquium.Requests;
 using BGU.Application.Contracts.TaughtSubjects.Requests;
 using BGU.Application.Dtos.TaughtSubject.Requests;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BGU.Api.Controllers;

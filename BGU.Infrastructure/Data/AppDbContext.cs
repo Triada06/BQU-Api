@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Syllabus> Syllabus { get; set; }
     public DbSet<StudentSubjectEnrollment> StudentSubjectEnrollments { get; set; }
+    public DbSet<StudentSubjectResult> StudentSubjectResults { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

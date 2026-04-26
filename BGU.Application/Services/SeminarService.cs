@@ -2,7 +2,6 @@ using BGU.Application.Contracts.Seminars.Requests;
 using BGU.Application.Contracts.Seminars.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 

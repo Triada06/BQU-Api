@@ -1,5 +1,3 @@
-using BGU.Core.Enums;
-
 namespace BGU.Application.Dtos.TaughtSubject;
 
 public record GetTaughtSubjectDto(

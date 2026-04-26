@@ -1,6 +1,5 @@
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.Rooms.Requests;
-using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

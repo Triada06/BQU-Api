@@ -1,4 +1,3 @@
-using BGU.Application.Contracts.Rooms;
 using BGU.Application.Contracts.Rooms.Requests;
 using BGU.Application.Contracts.Rooms.Responses;
 

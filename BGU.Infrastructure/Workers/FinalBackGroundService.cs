@@ -1,5 +1,4 @@
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +24,7 @@ public class FinalBackGroundService : BackgroundService
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var dateNow = DateTime.UtcNow;
-            if (dateNow.Month is 4 or 11) //TODO: Change to 5 later
+            if (dateNow.Month is 4 or 5 or 6 or 10 or 11 or 12) 
             {
                 var subjects = await db.TaughtSubjects
                     .Include(ts => ts.Group)

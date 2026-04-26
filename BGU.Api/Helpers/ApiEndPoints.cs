@@ -1,5 +1,3 @@
-using System.ComponentModel;
-
 namespace BGU.Api.Helpers;
 
 public static class ApiEndPoints
@@ -72,6 +70,7 @@ public static class ApiEndPoints
             $"{Base}/{{studentId}}/taught-subjects/{{taughtSubjectId}}/independent-works";
 
         public const string AcademicHistory = $"{Base}/me/academic-history";
+        public const string GetFinals = $"{Base}/me/finals";
     }
 
     public static class Department

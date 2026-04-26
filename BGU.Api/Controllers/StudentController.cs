@@ -5,7 +5,6 @@ using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
 namespace BGU.Api.Controllers;
 
@@ -127,6 +126,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.AcademicHistory)]
     public async Task<IActionResult> AcademicHistory(CancellationToken cp)
     {
@@ -136,5 +136,19 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
         var res = await studentService.GetAcademicHistoryAsync(userId, cp);
         return res.IsSucceeded ? Ok(res) : StatusCode(res.StatusCode, res.Message);
+    }
+
+    [Authorize(Roles = "Student")]
+    [HttpGet(ApiEndPoints.Student.GetFinals)]
+    public async Task<IActionResult> GetFinals()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized();
+
+        var res = await studentService.GetFinalsAsync(userId);
+        
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
     }
 }

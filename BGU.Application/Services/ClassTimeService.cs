@@ -2,7 +2,6 @@ using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Application.Contracts.ClassTime.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 
@@ -39,7 +38,7 @@ public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRe
                 ct.ClassTime.Start == request.Start &&
                 ct.ClassTime.End == request.End &&
                 ct.ClassTime.DaysOfTheWeek == request.Day
-            , tracking: true)).FirstOrDefault();
+            , tracking: true))?.FirstOrDefault();
 
         if (@class is null)
         {

@@ -1,7 +1,6 @@
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.Group.Requests;
 using BGU.Application.Dtos.Exams;
-using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

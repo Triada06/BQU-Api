@@ -1,6 +1,5 @@
 using BGU.Application.Contracts.Seminars.Requests;
 using BGU.Application.Contracts.Seminars.Responses;
-using BGU.Core.Entities;
 
 namespace BGU.Application.Services.Interfaces;
 

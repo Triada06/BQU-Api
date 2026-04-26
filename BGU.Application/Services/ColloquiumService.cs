@@ -68,7 +68,7 @@ public class ColloquiumService(
                 .ThenInclude(st => st.AppUser)
                 .Include(c => c.TaughtSubject), tracking: false);
 
-        if (colls.Count == 0 || colls.Any(x => x is null))
+        if (colls is null)
         {
             return new GetAllColloquiumResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }

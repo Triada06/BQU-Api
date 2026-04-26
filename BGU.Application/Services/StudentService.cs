@@ -25,7 +25,8 @@ public class StudentService(
     IColloquiumRepository colloquiumRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
     IIndependentWorkRepository independentWorkRepository,
-    IFinalRepository finalRepository) : IStudentService
+    IFinalRepository finalRepository,
+    IStudentSubjectResultRepository studentSubjectResultRepository) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
         new() // to calculate Einstein GPA
@@ -117,7 +118,7 @@ public class StudentService(
                 .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (student == null)
         {
@@ -290,12 +291,15 @@ public class StudentService(
                 happenedClasses.Count,
                 subjectPresents);
 
+            var score = subjectGrade.score;
+            var isEligible = subjectGrade.isEligible;
+
             var semesterExamGrade = student.Finals.FirstOrDefault(x =>
                 x.TaughtSubjectId == ts.Id && x.StudentId == student.Id && x.IsConfirmed);
 
-            if (semesterExamGrade is not null && subjectGrade is not -1)
+            if (semesterExamGrade is not null && isEligible)
             {
-                subjectGrade += semesterExamGrade.Grade;
+                score += semesterExamGrade.Grade;
             }
 
             return new AcademicPerformanceDto(
@@ -304,7 +308,7 @@ public class StudentService(
                 ts.TeacherName,
                 ts.CreditsNumber,
                 ts.Hours,
-                subjectGrade,
+                score,
                 seminarGrades,
                 collGrades,
                 iwDtos,
@@ -318,7 +322,7 @@ public class StudentService(
         // var studentOverallGpa = performance.Select(x => x.OverallScore).Sum();
 
         return new StudentGradesResponse(new StudentGradesDto(performance), null, "Ok", true, 200);
-    } //the problem is if the user is not going to log in, the method will now work so the gpa will not be calculated, needed a separation  
+    }
 
     public async Task<StudentProfileResponse> GetProfile(string userId)
     {
@@ -345,7 +349,7 @@ public class StudentService(
                 .Include(st => st.Group.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (student == null)
         {
@@ -432,6 +436,11 @@ public class StudentService(
                 .Include(st => st.AppUser),
             false);
 
+        if (students.Count == 0)
+        {
+            return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
+        }
+
         return new GetStudentResponse(students.Count == 0
                 ? []
                 : students.Select(x => new GetStudentDto(x.Id,
@@ -494,19 +503,31 @@ public class StudentService(
                 $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
         }
 
-        var subject = (await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId))).First();
+        var subjects = await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId));
 
-        if (subject is null)
+        if (subjects.Count ==0 )
         {
             return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
                 $"Attendance status was updated, but exam eligibility  couldn't be updated");
         }
 
+
+        var subject = subjects[0];
         var score = await GetStudentSubjectScoreAsync(studentId, subject.Id);
 
-        bool isEligible = score is not -1;
+        if (score is null)
+        {
+            return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                $"Attendance status was updated, but exam eligibility couldn't be updated. " +
+                $"Either it was not created or a system error. " +
+                $"If you sure it is created, please, contact the developers or administration");
+        }
 
-        var isSucceeded = await finalRepository.ToggleExamEligibilityAsync(studentId, subject.Id, isEligible);
+
+        //set the exma eligibility status
+        var isSucceeded =
+            await finalRepository.ToggleExamEligibilityAsync(studentId, subject.Id, score.Value.IsEligible);
+
 
         if (!isSucceeded)
         {
@@ -515,6 +536,42 @@ public class StudentService(
                 $"Either it was not created or a system error. " +
                 $"If you sure it is created, please, contact the developers or administration");
         }
+
+
+        //save the moment gpa
+        var studentSubjectResults =
+            (await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == student.Id && x.TaughtSubjectId == subject.Id));
+
+
+        if (studentSubjectResults.Count == 0)
+        {
+            var sewStudentSubjectResult = new StudentSubjectResult
+            {
+                StudentId = studentId,
+                TaughtSubjectId = subject.Id,
+                FinalGrade = score.Value.score,
+                IsFinalized = false
+            };
+
+            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+        else
+        {
+            var studentSubjectResult = studentSubjectResults[0];
+
+            studentSubjectResult.FinalGrade = score.Value.score;
+            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+
 
         return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
             $"Attendance status of the student with an Id of {student.Id} updated successfully");
@@ -538,22 +595,63 @@ public class StudentService(
         }
 
 
-        var subject =
-            (await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id)))
-            .First();
+        var subjects =
+            await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id));
 
-        if (subject is null)
+        if (subjects.Count == 0)
         {
             return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
                 $"Colloquium was graded, but exam eligibility  couldn't be updated");
         }
 
+        var subject = subjects[0];
         var score = await GetStudentSubjectScoreAsync(colloquium.StudentId, subject.Id);
 
-        bool isEligible = score is not -1;
+        if (score is null)
+        {
+            return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                $"Seminar was graded, but exam eligibility couldn't be updated. " +
+                $"Either it was not created or a system error. " +
+                $"If you sure it is created, please, contact the developers or administration");
+        }
+
+        //save the moment gpa
+        var studentSubjectResults =
+            await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == colloquium.StudentId && x.TaughtSubjectId == subject.Id);
+
+
+        if (studentSubjectResults.Count == 0)
+        {
+            var sewStudentSubjectResult = new StudentSubjectResult
+            {
+                StudentId = colloquium.StudentId,
+                TaughtSubjectId = subject.Id,
+                FinalGrade = score.Value.score,
+                IsFinalized = false
+            };
+
+            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            {
+                return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+        else
+        {
+            var studentSubjectResult = studentSubjectResults[0];
+            
+            studentSubjectResult.FinalGrade = score.Value.score;
+            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            {
+                return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+
 
         var isSucceeded =
-            await finalRepository.ToggleExamEligibilityAsync(colloquium.StudentId, subject.Id, isEligible);
+            await finalRepository.ToggleExamEligibilityAsync(colloquium.StudentId, subject.Id, score.Value.IsEligible);
 
         if (!isSucceeded)
         {
@@ -586,21 +684,59 @@ public class StudentService(
                 "An error occured while updating the grade");
         }
 
-        var subject =
-            (await taughtSubjectRepository.FindAsync(x => x.Seminars.Any(c => c.Id == seminar.Id)))
-            .First();
+        var subjects =
+            await taughtSubjectRepository.FindAsync(x => x.Seminars.Any(c => c.Id == seminar.Id));
 
-        if (subject is null)
+        if (subjects.Count ==0)
         {
             return new GradeStudentSeminarResponse(StatusCode.Ok, true,
                 $"Seminar was graded, but exam eligibility  couldn't be updated");
         }
 
+        var subject = subjects[0];
         var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
 
-        bool isEligible = score is not -1;
 
-        var isSucceeded = await finalRepository.ToggleExamEligibilityAsync(seminar.StudentId, subject.Id, isEligible);
+        if (score is null)
+        {
+            return new GradeStudentSeminarResponse(StatusCode.Ok, true, "Partially done");
+        }
+
+        var studentSubjectResults =
+            (await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == seminar.StudentId && x.TaughtSubjectId == subject.Id));
+
+
+        if (studentSubjectResults.Count == 0)
+        {
+            var sewStudentSubjectResult = new StudentSubjectResult
+            {
+                StudentId = seminar.StudentId,
+                TaughtSubjectId = subject.Id,
+                FinalGrade = score.Value.score,
+                IsFinalized = false
+            };
+
+            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            {
+                return new GradeStudentSeminarResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+        else
+        {
+            var studentSubjectResult = studentSubjectResults[0];
+            studentSubjectResult.FinalGrade = score.Value.score;
+            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            {
+                return new GradeStudentSeminarResponse(StatusCode.Ok, true,
+                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+            }
+        }
+
+
+        var isSucceeded =
+            await finalRepository.ToggleExamEligibilityAsync(seminar.StudentId, subject.Id, score.Value.IsEligible);
 
         if (!isSucceeded)
         {
@@ -635,9 +771,14 @@ public class StudentService(
                 independentWork.StudentId == student.Id && taughtSubjectId == independentWork.TaughtSubjectId,
             tracking: false);
 
+        if (independentWorks.Count == 0)
+        {
+            return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto([]));
+        }
+
         return ApiResult<GetIndependentWorksDto>.Success(new GetIndependentWorksDto(
                 independentWorks.Count > 0
-                    ? independentWorks.Select(x => new GetIndependentWorkDto(x!.Id, x.Number, x.Grade)).ToList()
+                    ? independentWorks.Select(x => new GetIndependentWorkDto(x.Id, x.Number, x.Grade)).ToList()
                     : []
             )
         );
@@ -660,7 +801,7 @@ public class StudentService(
                 .Include(x => x.AdmissionYear)
                 .Include(x => x.Specialization)
                 .Include(x => x.AppUser)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (student is null)
         {
@@ -741,7 +882,7 @@ public class StudentService(
                 .ThenInclude(g => g.TaughtSubjects)
                 .ThenInclude(ts => ts.Classes)
                 .ThenInclude(c => c.ClassTime)
-        )).FirstOrDefault();
+        ))?.FirstOrDefault();
 
         if (student is null)
             return ApiResult<GetAcademicHistoryPageDto>.NotFound(
@@ -760,7 +901,7 @@ public class StudentService(
                     .LastOrDefault()?.ClassTime.ClassDate.DateTime
                     .ToString("dd/MM/yyyy") ?? "Unable to load end date";
 
-                var teacherName = course.Teacher?.AppUser?.Name ?? "Unknown";
+                var teacherName = course.Teacher.AppUser.Name;
 
                 return new GetAcademicHistoryDto(
                     course.Id, course.Code, startDate, endDate, teacherName);
@@ -772,14 +913,14 @@ public class StudentService(
     }
 
 
-    public async Task<double> GetStudentSubjectScoreAsync(string id, string taughtSubjectId)
+    public async Task<(double score, bool IsEligible)?> GetStudentSubjectScoreAsync(string id, string taughtSubjectId)
     {
         var student = await context.Students
             .Where(s => s.Id == id)
             .Select(s => new { s.Id, s.GroupId, s.Finals })
             .FirstOrDefaultAsync();
 
-        if (student == null) return -1;
+        if (student == null) return null;
 
         var taughtSubject = await context.TaughtSubjects
             .Where(ts => ts.Id == taughtSubjectId && ts.GroupId == student.GroupId)
@@ -791,7 +932,7 @@ public class StudentService(
             })
             .FirstOrDefaultAsync();
 
-        if (taughtSubject == null) return -1;
+        if (taughtSubject == null) return null;
 
         var seminars = await context.Seminars
             .Where(s => s.StudentId == student.Id && s.TaughtSubjectId == taughtSubjectId && s.Grade != Grade.None)
@@ -820,17 +961,83 @@ public class StudentService(
         var happenedClasses = attendances.Where(a => a.ClassDate <= DateTime.Today).ToList();
         var presents = happenedClasses.Count(a => a.IsPresent);
 
-        return CalculateOverallSubjectScore(
+        var scoreAndEligibility = CalculateOverallSubjectScore(
             seminarScores,
             colloquiumScores,
             independentWorkScores,
             taughtSubject.Hours,
             happenedClasses.Count,
             presents);
+
+        return scoreAndEligibility;
+    }
+
+    public async Task<ApiResult<GetStudentFinals>> GetFinalsAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+
+        if (user is null)
+        {
+            return ApiResult<GetStudentFinals>.NotFound("User not found");
+        }
+
+        var student = await studentRepository.GetByUserId(userId);
+
+        if (student is null)
+        {
+            return ApiResult<GetStudentFinals>.NotFound("Student not found");
+        }
+
+        var today = DateTime.UtcNow.Date;
+
+        var finals = await finalRepository.FindAsync(x =>
+                x.StudentId == student.Id && x.Date.HasValue && x.Date.Value.Date >= today,
+            include: x =>
+                x.Include(final => final.TaughtSubject).ThenInclude(ts => ts.Group)
+                    .Include(exam => exam.TaughtSubject).ThenInclude(ts => ts.Teacher)
+                    .ThenInclude(t => t.AppUser));
+
+        if (finals.Count == 0)
+        {
+            return ApiResult<GetStudentFinals>.Success(new GetStudentFinals([]));
+        }
+
+        var tsIds = finals.Select(s => s.TaughtSubjectId).Distinct().ToList();
+
+        var studentResults =
+            await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == student.Id && tsIds.Contains(x.TaughtSubjectId));
+
+        if (studentResults.Count == 0)
+        {
+            return ApiResult<GetStudentFinals>.Success(new GetStudentFinals([]));
+        }
+
+        var returnData = new List<GetStudentFinal>();
+
+
+        foreach (var final in finals)
+        {
+            var teacherFullName = final.TaughtSubject.Teacher.AppUser.Name + " " +
+                                  final.TaughtSubject.Teacher.AppUser.Surname + " " +
+                                  final.TaughtSubject.Teacher.AppUser.MiddleName;
+
+            var grade = studentResults.First(x =>
+                x.TaughtSubjectId == final.TaughtSubjectId && x.StudentId == final.StudentId);
+
+
+            var dataToAdd = new GetStudentFinal(final.Id, final.TaughtSubject.Code,
+                grade.FinalGrade, final.Date?.ToString("dd/MM/yyyy") ?? "Date not set yet", teacherFullName,
+                final.TaughtSubject.Group.Code);
+
+            returnData.Add(dataToAdd);
+        }
+
+        return ApiResult<GetStudentFinals>.Success(new GetStudentFinals(returnData));
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED
-    private static double CalculateOverallSubjectScore(
+    private static (double score, bool isEligible) CalculateOverallSubjectScore(
         List<int> seminarScores,
         List<int> colloquiumScores,
         List<int> independentWorkScores,
@@ -838,6 +1045,8 @@ public class StudentService(
         int happenedClasses,
         int presents)
     {
+        bool isEligible = true;
+
         double colloquiumSum = colloquiumScores.Count != 0
             ? colloquiumScores.Sum()
             : 0;
@@ -852,7 +1061,7 @@ public class StudentService(
 
         if (seminarScores.Count == 0 && colloquiumScores.Count <= 2)
         {
-            return -1;
+            isEligible = false;
         }
 
         var countOfSemAndColl = seminarScores.Count + 3;
@@ -865,16 +1074,17 @@ public class StudentService(
 
         int absences = happenedClasses - presents;
 
-        int penalty = GetAttendancePenalty(hours, absences, (int)Math.Round(baseScore));
+        int penalty = GetAttendancePenalty(hours, absences);
         if (penalty is -1)
         {
-            return penalty;
+            isEligible = false;
         }
 
-        return Math.Round(Math.Max(0, baseScore - penalty), MidpointRounding.AwayFromZero);
+        var score = Math.Round(Math.Max(0, baseScore - penalty), MidpointRounding.AwayFromZero);
+        return (score, isEligible);
     }
 
-    private static int GetAttendancePenalty(int hours, int attendances, int score)
+    private static int GetAttendancePenalty(int hours, int attendances)
     {
         if (!AttendanceRules.TryGetValue(hours, out var rule))
             throw new ArgumentException("Invalid subject hours");

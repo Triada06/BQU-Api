@@ -3,7 +3,6 @@ using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Dtos.Student;
-using GradeIndependentWorkRequest = BGU.Application.Contracts.Student.Requests.GradeIndependentWorkRequest;
 
 namespace BGU.Application.Services.Interfaces;
 
@@ -22,5 +21,6 @@ public interface IStudentService
     Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId, string taughtSubjectId);
     Task<ApiResult<GetStudentPageDto>>  GetByIdAsync(string id,CancellationToken cancellationToken);
     Task<ApiResult<GetAcademicHistoryPageDto>>  GetAcademicHistoryAsync(string id,CancellationToken cancellationToken);
-    Task<double> GetStudentSubjectScoreAsync(string id, string taughtSubjectId);
+    Task<(double score, bool IsEligible)?> GetStudentSubjectScoreAsync(string id, string taughtSubjectId);
+    Task<ApiResult<GetStudentFinals>> GetFinalsAsync(string userId);
 }

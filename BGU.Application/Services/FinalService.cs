@@ -13,7 +13,8 @@ public class FinalService(
     IFinalRepository finalRepository,
     ITeacherRepository teacherRepository,
     UserManager<AppUser> userManager,
-    IStudentRepository studentRepository) : IFinalService
+    IStudentRepository studentRepository,
+    IStudentSubjectResultRepository studentSubjectResultRepository) : IFinalService
 {
     public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search)
     {
@@ -130,15 +131,15 @@ public class FinalService(
             return ApiResult<ExamsToGrade>.NotFound($"User with an Id of {userId} not found");
         }
 
-        var teacher = (await teacherRepository.FindAsync(x => x.AppUserId == userId, tracking: false)).First();
+        var teachers = await teacherRepository.FindAsync(x => x.AppUserId == userId, tracking: false);
 
-        if (teacher is null)
+        if (teachers.Count == 0)
         {
             return ApiResult<ExamsToGrade>.NotFound($"Teacher not found");
         }
 
         var exams = await finalRepository.FindAsync(
-            x => x.Date != null && x.TaughtSubject.TeacherId == teacher.Id,
+            x => x.Date != null && x.TaughtSubject.TeacherId == teachers[0].Id,
             x => x
                 .Include(e => e.TaughtSubject)
                 .ThenInclude(e => e.Subject)
@@ -159,11 +160,11 @@ public class FinalService(
         }
 
         var returnData = exams
-            .Select(x => new ExamToGrade(x!.Id, x.Student.Id, $"{x.Student.AppUser.Name} {x.Student.AppUser.Surname}",
+            .Select(x => new ExamToGrade(x.Id, x.Student.Id, $"{x.Student.AppUser.Name} {x.Student.AppUser.Surname}",
                 x.TaughtSubjectId,
                 x.TaughtSubject.Subject.Name, x.TaughtSubject.Code,
                 x.TaughtSubject.GroupId, x.TaughtSubject.Group.Code, x.Grade,
-                x.Date?.ToString("yyyy MMMM dd")));
+                x.Date?.ToString("yyyy MMMM dd") ?? "Data was not set"));
 
         return ApiResult<ExamsToGrade>.Success(new ExamsToGrade(returnData));
     }
@@ -212,6 +213,36 @@ public class FinalService(
         if (!await finalRepository.UpdateAsync(exam))
         {
             return ApiResult<bool>.SystemError();
+        }
+
+        var results = await studentSubjectResultRepository.FindAsync(
+            x => x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId, tracking: true);
+
+        if (results.Count == 0)
+        {
+            return new ApiResult<bool>
+            {
+                Data = true,
+                Message = "Exam was confirmed but it's grade wasn't finalized since no matched data found",
+                IsSucceeded = true,
+                StatusCode = 200
+            };
+        }
+
+        var result = results[0];
+
+        result.FinalGrade = +exam.Grade;
+        result.IsFinalized = true;
+
+        if (!await studentSubjectResultRepository.UpdateAsync(result))
+        {
+            return new ApiResult<bool>
+            {
+                Data = true,
+                Message = "Exam was confirmed but it's grade wasn't finalized",
+                IsSucceeded = true,
+                StatusCode = 200
+            };
         }
 
         return ApiResult<bool>.Success(true);

@@ -1,7 +1,6 @@
 using BGU.Application.Contracts.Class;
 using BGU.Application.Contracts.Class.Requests;
 using BGU.Application.Contracts.Class.Responses;
-using BGU.Application.Dtos.Class;
 
 namespace BGU.Application.Services.Interfaces;
 

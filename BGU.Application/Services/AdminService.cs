@@ -34,7 +34,7 @@ public class AdminService(
                     .Include(g => g.TaughtSubjects)
                     .ThenInclude(ts => ts.Classes)
                     .ThenInclude(c => c.ClassTime))
-        ).FirstOrDefault();
+        )?.FirstOrDefault();
 
         if (group == null)
         {
@@ -144,7 +144,7 @@ public class AdminService(
     {
         var department =
             (await departmentRepository.FindAsync(x => x.Name.Trim().ToLower() == dto.DepartmentName.Trim().ToLower()
-            ))
+            ))?
             .FirstOrDefault();
 
         if (department == null)
@@ -162,7 +162,7 @@ public class AdminService(
             var existingTeacher = (await teacherRepository.FindAsync(
                     x => x.AppUserId == existingUser.Id,
                     t => t.Include(m => m.AppUser)
-                ))
+                ))?
                 .SingleOrDefault();
 
             if (existingTeacher == null)

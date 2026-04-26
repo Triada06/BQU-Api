@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace BGU.Core.Entities;
 
 public class Subject : BaseEntity
