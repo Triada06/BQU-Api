@@ -147,7 +147,16 @@ public class StudentController(IStudentService studentService) : ControllerBase
             return Unauthorized();
 
         var res = await studentService.GetFinalsAsync(userId);
-        
+
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
+    }
+
+    [Authorize(Roles = "Dean")]
+    [HttpDelete(ApiEndPoints.Student.Delete)]
+    public async Task<IActionResult> Delete([FromRoute] string id)
+    {
+        var res = await studentService.DeleteAsync(id);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }

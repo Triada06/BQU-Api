@@ -5,6 +5,6 @@ namespace BGU.Infrastructure.Repositories.Interfaces;
 
 public interface IStudentRepository : IBaseRepository<Student>
 {
-    Task<Student?> GetByUserId(string userId, Func<IQueryable<Student>,
+    Task<Student?> GetByUserIdAsync(string userId, Func<IQueryable<Student>,
         IIncludableQueryable<Student, object>>? include = null, bool tracking = true);
 }

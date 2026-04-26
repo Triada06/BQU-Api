@@ -10,7 +10,7 @@ public class StudentRepository(AppDbContext context) : BaseRepository<Student>(c
 {
     private readonly AppDbContext _contextToUse = context;
 
-    public async Task<Student?> GetByUserId(string userId,
+    public async Task<Student?> GetByUserIdAsync(string userId,
         Func<IQueryable<Student>, IIncludableQueryable<Student, object>>? include = null, bool tracking = true)
     {
         IQueryable<Student> query = _contextToUse.Students;

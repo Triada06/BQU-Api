@@ -508,7 +508,7 @@ public class StudentService(
 
         var subjects = await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId));
 
-        if (subjects.Count ==0 )
+        if (subjects.Count == 0)
         {
             return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
                 $"Attendance status was updated, but exam eligibility  couldn't be updated");
@@ -643,7 +643,7 @@ public class StudentService(
         else
         {
             var studentSubjectResult = studentSubjectResults[0];
-            
+
             studentSubjectResult.FinalGrade = score.Value.score;
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
@@ -690,7 +690,7 @@ public class StudentService(
         var subjects =
             await taughtSubjectRepository.FindAsync(x => x.Seminars.Any(c => c.Id == seminar.Id));
 
-        if (subjects.Count ==0)
+        if (subjects.Count == 0)
         {
             return new GradeStudentSeminarResponse(StatusCode.Ok, true,
                 $"Seminar was graded, but exam eligibility  couldn't be updated");
@@ -985,7 +985,7 @@ public class StudentService(
             return ApiResult<GetStudentFinals>.NotFound("User not found");
         }
 
-        var student = await studentRepository.GetByUserId(userId);
+        var student = await studentRepository.GetByUserIdAsync(userId);
 
         if (student is null)
         {
@@ -1038,6 +1038,31 @@ public class StudentService(
         }
 
         return ApiResult<GetStudentFinals>.Success(new GetStudentFinals(returnData));
+    }
+
+    public async Task<ApiResult<bool>> DeleteAsync(string id)
+    {
+        var student = await studentRepository.GetByIdAsync(id, include: x => x.Include(s => s.AppUser));
+
+        if (student is null)
+        {
+            return ApiResult<bool>.NotFound("Student not found");
+        }
+
+        var res = await userManager.DeleteAsync(student.AppUser);
+
+        if (!res.Succeeded)
+        {
+            return new ApiResult<bool>
+            {
+                Data = res.Succeeded,
+                Message = string.Join(", ", res.Errors.Select(e => e.Description)),
+                IsSucceeded = res.Succeeded,
+                StatusCode = res.Succeeded ? 200 : 500
+            };
+        }
+        
+        return ApiResult<bool>.Success(true);
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED

@@ -23,4 +23,5 @@ public interface IStudentService
     Task<ApiResult<GetAcademicHistoryPageDto>>  GetAcademicHistoryAsync(string id,CancellationToken cancellationToken);
     Task<(double score, bool IsEligible)?> GetStudentSubjectScoreAsync(string id, string taughtSubjectId);
     Task<ApiResult<GetStudentFinals>> GetFinalsAsync(string userId);
+    Task<ApiResult<bool>> DeleteAsync(string id);
 }
