@@ -120,7 +120,7 @@ public class TaughtSubjectService(
 
     public async Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request)
     {
-        if (await taughtSubjectRepository.AnyAsync(x => x.Code == request.Code))
+        if (await taughtSubjectRepository.AnyAsync(x => x.Code == request.Code && x.GroupId == request.GroupId))
         {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.Conflict,
                 "Course with this name already exists.");
