@@ -89,7 +89,8 @@ public class StudentService(
                 c.ClassTime.End,
                 new DateTimeOffset(DateTime.Today.Add(c.ClassTime.Start)),
                 c.Room, c.TaughtSubject.Code,
-                c.ClassTime.IsUpperWeek
+                c.ClassTime.IsUpperWeek,
+                c.TaughtSubject.HasSyllabus
             ))
             .OrderBy(c => c.Period)
             .ToList();
@@ -156,7 +157,8 @@ public class StudentService(
                         new DateTimeOffset(classDateTime),
                         c.Room,
                         c.TaughtSubject.Code,
-                        c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                        c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                        c.TaughtSubject.HasSyllabus
                     );
                 })
                 .OrderBy(c => c.Period)
@@ -184,7 +186,8 @@ public class StudentService(
                     new DateTimeOffset(classDateTime),
                     c.Room,
                     c.TaughtSubject.Code,
-                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                    c.TaughtSubject.HasSyllabus
                 );
             })
             .OrderBy(c => c.Period)
@@ -833,7 +836,8 @@ public class StudentService(
                     new DateTimeOffset(classDateTime),
                     c.Room,
                     c.TaughtSubject.Code,
-                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                    c.TaughtSubject.HasSyllabus
                 );
             })
             .OrderBy(c => c.Period)

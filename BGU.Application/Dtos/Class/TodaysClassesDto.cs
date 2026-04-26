@@ -11,4 +11,5 @@ public record TodaysClassesDto(
     DateTimeOffset Period,
     string Room,
     string Code,
-    bool? IsUpperWeek);
+    bool? IsUpperWeek,
+    bool HasSyllabus);

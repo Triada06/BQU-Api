@@ -42,7 +42,7 @@ public class SyllabusService(
         var syllabus = new Syllabus
         {
             Name = fileName,
-            FilePath = filePath,
+            FilePath = fileName,
             TaughtSubjectId = request.TaughtSubjectId,
         };
 
@@ -81,7 +81,7 @@ public class SyllabusService(
         }
 
         syllabus.Name = newFileName;
-        syllabus.FilePath = newFilePath;
+        syllabus.FilePath = newFileName;
 
         if (!await syllabusRepository.UpdateAsync(syllabus))
         {
@@ -104,9 +104,11 @@ public class SyllabusService(
             return new DeleteSyllabusResponse(StatusCode.InternalServerError, false, ResponseMessages.Failed);
         }
 
-        if (File.Exists(syllabus.FilePath))
+        var fullPath = Path.Combine(GetSyllabusPath(), syllabus.FilePath);
+
+        if (File.Exists(fullPath))
         {
-            File.Delete(syllabus.FilePath);
+            File.Delete(fullPath);
         }
 
         // this case unlikely to happen, but it exists to supress the warnings :)
@@ -151,7 +153,9 @@ public class SyllabusService(
             return new GetByIdSyllabusResponse(null, StatusCode.BadRequest, false, ResponseMessages.BadRequest);
         }
 
-        var bytes = await File.ReadAllBytesAsync(syllabus.FilePath);
+        var fullPath = Path.Combine(GetSyllabusPath(), syllabus.FilePath);
+        var bytes = await File.ReadAllBytesAsync(fullPath);
+
         return new GetByIdSyllabusResponse(new GetSyllabusDto(bytes, syllabus.Name), StatusCode.Ok, true,
             ResponseMessages.Success);
     }

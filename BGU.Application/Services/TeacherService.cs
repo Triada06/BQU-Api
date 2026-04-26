@@ -120,7 +120,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                     new DateTimeOffset(classDateTime),
                     c.Room,
                     c.TaughtSubject.Code,
-                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                    c.TaughtSubject.HasSyllabus
                 );
             })
             .OrderBy(c => c.Period)
@@ -148,7 +149,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
                 new DateTimeOffset(classDateTime),
                 c.Room,
                 c.TaughtSubject.Code,
-                c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                c.TaughtSubject.HasSyllabus
             );
         })
         .OrderBy(c => c.Period)

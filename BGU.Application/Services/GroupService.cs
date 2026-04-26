@@ -112,7 +112,8 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
                     new DateTimeOffset(classDateTime),
                     c.Room,
                     c.TaughtSubject.Code,
-                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek()
+                    c.ClassTime.IsUpperWeek ?? CheckIfUpperWeek(),
+                    c.TaughtSubject.HasSyllabus
                 );
             })
             .OrderBy(x => x.Period)
