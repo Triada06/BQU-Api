@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BGU.Api.Helpers;
+using BGU.Application.Contracts.Seminars.Requests;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
@@ -90,9 +91,9 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.MarkAbsence)]
-    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId)
+    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId, [FromBody] MarkAbsenceRequest? markAbsenceRequest)
     {
-        var res = await studentService.MarkAbsenceAsync(studentId, classId);
+        var res = await studentService.MarkAbsenceAsync(studentId, classId, markAbsenceRequest?.SeminarId);
         return new ObjectResult(res);
     }
 
@@ -105,17 +106,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
             new GradeStudentColloquiumRequest(studentId, colloquiumId, grade));
         return new ObjectResult(res);
     }
-
-
-    [Authorize(Roles = "Teacher")]
-    [HttpPut(ApiEndPoints.Student.GradeSeminar)]
-    public async Task<IActionResult> GradeSeminar([FromRoute] string studentId,
-        [FromRoute] string seminarId, [FromQuery] Grade grade)
-    {
-        var res = await studentService.GradeSeminarAsync(
-            new GradeSeminarRequest(studentId, seminarId, grade));
-        return new ObjectResult(res);
-    }
+    
 
     [HttpGet(ApiEndPoints.Student.GetIndependentWorksByStudentId)]
     [Authorize(Roles = "Teacher")]

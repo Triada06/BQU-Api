@@ -55,7 +55,6 @@ public static class ApiEndPoints
         public const string Grades = $"{Base}/me/grades";
         public const string Schedule = $"{Base}/schedule/{{schedule}}";
         public const string MarkAbsence = $"{Base}/{{studentId}}/classes/{{classId}}/mark-absence";
-        public const string GradeSeminar = $"{Base}/{{studentId}}/seminars/{{seminarId}}/grade";
         public const string GradeColloquium = $"{Base}/{{studentId}}/colloquiums/{{colloquiumId}}/grade";
 
         public const string GetIndependentWorksByStudentId =
@@ -152,6 +151,7 @@ public static class ApiEndPoints
         public const string GetAll = $"{Base}";
         public const string Create = $"{Base}";
         public const string Delete = $"{Base}/{{id}}";
+        public const string GradeSeminar = $"{Base}/{{seminarId}}/grade";
     }
 
     public static class StudentSubjectEnrollments

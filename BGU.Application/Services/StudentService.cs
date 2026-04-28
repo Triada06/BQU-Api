@@ -16,6 +16,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
+//TODO: TS FILE FULLY REQUIRES A REFACTORING ONG
+
 public class StudentService(
     AppDbContext context,
     UserManager<AppUser> userManager,
@@ -26,7 +28,9 @@ public class StudentService(
     ITaughtSubjectRepository taughtSubjectRepository,
     IIndependentWorkRepository independentWorkRepository,
     IFinalRepository finalRepository,
-    IStudentSubjectResultRepository studentSubjectResultRepository) : IStudentService
+    IStudentSubjectResultRepository studentSubjectResultRepository,
+    IAttendanceRepository attendanceRepository,
+    IClassRepository classRepository) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
         new() // to calculate Einstein GPA
@@ -481,7 +485,7 @@ public class StudentService(
         return new GetStudentResponse(students, StatusCode.Ok, true, ResponseMessages.Success);
     }
 
-    public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string classId)
+    public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string classId, string? seminarId)
     {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
@@ -499,11 +503,41 @@ public class StudentService(
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
         }
 
+        var isPresent = attendance.IsPresent;
+
         var res = await attendanceService.UpdateAttendanceAsync(attendance);
         if (!res.IsSucceeded)
         {
             return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
                 $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
+        }
+
+        var attendanceClass = await classRepository.GetByIdAsync(classId, tracking: true);
+
+        if (attendanceClass is null)
+        {
+            //todo: handle this, the case is unlikely but is written so the compiler would stfu :(
+            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
+        }
+
+
+        // if the previous status was present, remove the grade since ain't no nga has gotten a grade while being absent
+        if (seminarId is not null && isPresent && attendanceClass.ClassType == ClassType.Семинар)
+        {
+            var seminar = await seminarRepository.GetByIdAsync(seminarId, tracking: true);
+
+            if (seminar is null)
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Seminar id {seminar} not found ");
+            }
+
+            seminar.Grade = Grade.None;
+
+            if (!await seminarRepository.UpdateAsync(seminar))
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
+                    "Failed to remove previous grade fromt he calss");
+            }
         }
 
         var subjects = await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId));
@@ -672,14 +706,31 @@ public class StudentService(
     public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
     {
         var seminar = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
+
         if (seminar is null)
         {
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with an Id of {request.SeminarId} not found");
         }
 
+        var attendances = await attendanceRepository.FindAsync(x =>
+            x.ClassId == request.SeminarData.ClassId && x.StudentId == request.SeminarData.StudentId);
 
-        seminar.Grade = request.Grade;
+        if (attendances.Count == 0)
+        {
+            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
+                $"Attendance with an Id of {request.SeminarData.ClassId} not found");
+        }
+
+        var attendance = attendances[0];
+
+        if (!attendance.IsPresent)
+        {
+            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
+                "Gradeing a class with an attendance of absent is not allowed");
+        }
+
+        seminar.Grade = request.SeminarData.Grade;
 
         if (!await seminarRepository.UpdateAsync(seminar))
         {
@@ -693,7 +744,7 @@ public class StudentService(
         if (subjects.Count == 0)
         {
             return new GradeStudentSeminarResponse(StatusCode.Ok, true,
-                $"Seminar was graded, but exam eligibility  couldn't be updated");
+                $"Seminar was graded, but exam eligibility couldn't be updated");
         }
 
         var subject = subjects[0];
@@ -1061,7 +1112,7 @@ public class StudentService(
                 StatusCode = res.Succeeded ? 200 : 500
             };
         }
-        
+
         return ApiResult<bool>.Success(true);
     }
 
