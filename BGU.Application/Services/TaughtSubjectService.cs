@@ -128,8 +128,8 @@ public class TaughtSubjectService(
 
         var subject =
             (await subjectRepository.FindAsync(x => x.Name.ToLower().Trim() == request.Title.ToLower().Trim(),
-                tracking: true))
-            .FirstOrDefault();
+                tracking: true)).FirstOrDefault();
+        
         if (subject == null)
         {
             subject = new Subject
@@ -204,7 +204,7 @@ public class TaughtSubjectService(
             await studentRepository.FindAsync(st => st.GroupId == request.GroupId);
         var seminarTypes = classes.FindAll(x => x.ClassType == ClassType.Семинар);
 
-        if (studentsInGroup is not null)
+        if (studentsInGroup.Count != 0)
         {
             var attendances = new List<Attendance>();
             var seminars = new List<Seminar>();
