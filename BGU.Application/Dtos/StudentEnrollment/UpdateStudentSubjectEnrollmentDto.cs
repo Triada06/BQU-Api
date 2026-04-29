@@ -1,6 +1,6 @@
 namespace BGU.Application.Dtos.StudentEnrollment;
 
-public class UpdateStudentSubjectEnrollmentDto
-{
-    public string TaughtSubjectId { get; set; }
-}
+public record UpdateStudentSubjectEnrollmentDto(
+    string StudentId,
+    int Attempt,
+    string TaughtSubjectId);

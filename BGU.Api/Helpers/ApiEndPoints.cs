@@ -159,6 +159,9 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/student-subject-enrollments";
         public const string Create = $"{Base}";
         public const string GetAll = $"{Base}";
+        public const string Update = $"{Base}/{{id}}";
+        public const string Delete = $"{Base}/{{id}}";
+        public const string GetById = $"{Base}/{{id}}";
     }
     public static class Finals
     {
