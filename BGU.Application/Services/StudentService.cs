@@ -503,7 +503,6 @@ public class StudentService(
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
         }
 
-        var isPresent = attendance.IsPresent;
 
         var res = await attendanceService.UpdateAttendanceAsync(attendance);
         if (!res.IsSucceeded)
@@ -521,8 +520,8 @@ public class StudentService(
         }
 
 
-        // if the previous status was present, remove the grade since ain't no nga has gotten a grade while being absent
-        if (seminarId is not null && isPresent && attendanceClass.ClassType == ClassType.Семинар)
+        // remove the previous grade no matter what
+        if (seminarId is not null && attendanceClass.ClassType == ClassType.Семинар)
         {
             var seminar = await seminarRepository.GetByIdAsync(seminarId, tracking: true);
 
