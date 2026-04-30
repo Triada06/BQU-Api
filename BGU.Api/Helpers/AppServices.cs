@@ -1,4 +1,6 @@
 using BGU.Application.Common;
+using BGU.Application.Common.HelperServices;
+using BGU.Application.Common.HelperServices.Interfaces;
 using BGU.Application.Services;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
@@ -33,7 +35,7 @@ public static class AppServices {
         services.AddScoped<IStudentSubjectEnrollmentService, StudentSubjectEnrollmentService>();
         services.AddScoped<IFinalService, FinalService>();
         services.AddScoped<IStudentSubjectResultService, StudentSubjectResultService>();
-
+        services.AddScoped<IAcademicHelper, AcademicHelper>();
         
         //repos
         services.AddScoped<IUserRepository, UserRepository>();

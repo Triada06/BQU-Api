@@ -1,4 +1,5 @@
 using BGU.Application.Common;
+using BGU.Application.Common.HelperServices.Interfaces;
 using BGU.Application.Dtos.StudentEnrollment;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
@@ -8,23 +9,56 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
-public class StudentSubjectEnrollmentService(IStudentSubjectEnrollmentRepository repo)
+public class StudentSubjectEnrollmentService(
+    IStudentSubjectEnrollmentRepository repo,
+    IAcademicHelper academicHelper,
+    ITaughtSubjectRepository taughtSubjectRepository,
+    IStudentRepository studentRepository)
     : IStudentSubjectEnrollmentService
 {
     public async Task<ApiResult<string>> CreateAsync(CreateStudentSubjectEnrollmentDto dto)
     {
+        var taughtSubject =
+            await taughtSubjectRepository.GetByIdAsync(dto.TaughtSubjectId, include: i => i.Include(x => x.Classes),
+                tracking:
+                true);
+
+        if (taughtSubject is null)
+        {
+            return ApiResult<string>.BadRequest($"Taught subject with an Id of {dto.TaughtSubjectId} not found");
+        }
+
+        var student = await studentRepository.GetByIdAsync(dto.StudentId, tracking: true);
+
+        if (student is null)
+        {
+            return ApiResult<string>.BadRequest($"Student with an Id of {dto.StudentId} not found");
+        }
+
+
+        var academicStuffResponse =
+            await academicHelper.CreateAcademicRequirementsAsync(taughtSubject.Classes.ToList(), student,
+                dto.TaughtSubjectId);
+
+        if (!academicStuffResponse)
+        {
+            return ApiResult<string>.SystemError("An error occured while creating academic requirements");
+        }
+        
+        var attempt = dto.Attempt ?? 1;
+
         var entity = new StudentSubjectEnrollment
         {
             StudentId = dto.StudentId,
             TaughtSubjectId = dto.TaughtSubjectId,
-            Attempt = dto.Attempt ?? 1
+            Attempt = attempt
         };
 
         var res = await repo.CreateAsync(entity);
 
-        return !res
-            ? ApiResult<string>.SystemError("An error occured while deleting the enrollment")
-            : ApiResult<string>.Success(entity.Id);
+        return res
+            ? ApiResult<string>.Success(entity.Id)
+            : ApiResult<string>.SystemError("An error occured while deleting the enrollment");
     }
 
     public async Task<ApiResult<PagedResponse<GetEnrollmentDto>>> GetAllAsync(int page, int pageSize)

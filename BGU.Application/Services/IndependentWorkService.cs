@@ -129,7 +129,7 @@ public class IndependentWorkService(
 
         var studentSubjectResult =
             (await studentSubjectResultRepository.FindAsync(x =>
-                x.StudentId == iWork.StudentId && x.TaughtSubjectId == subject.Id)).First();
+                x.StudentId == iWork.StudentId && x.TaughtSubjectId == subject.Id)).FirstOrDefault();
 
 
         if (studentSubjectResult is null)

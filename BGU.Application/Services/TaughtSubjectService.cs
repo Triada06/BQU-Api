@@ -29,7 +29,8 @@ public class TaughtSubjectService(
     IAttendanceRepository attendanceRepository,
     ISeminarRepository seminarRepository,
     IIndependentWorkRepository independentWorkRepository,
-    AppDbContext context) : ITaughtSubjectService
+    AppDbContext context,
+    IStudentSubjectEnrollmentRepository studentSubjectEnrollmentRepository) : ITaughtSubjectService
 {
     public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id)
     {
@@ -129,7 +130,7 @@ public class TaughtSubjectService(
         var subject =
             (await subjectRepository.FindAsync(x => x.Name.ToLower().Trim() == request.Title.ToLower().Trim(),
                 tracking: true)).FirstOrDefault();
-        
+
         if (subject == null)
         {
             subject = new Subject
@@ -445,6 +446,27 @@ public class TaughtSubjectService(
             .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
             .ThenBy(x => x.AppUser.Name, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
             .ToList();
+
+        // emil peyser
+        var subGroups =
+            await studentSubjectEnrollmentRepository.FindAsync(x => x.TaughtSubjectId == taughtSubjectId, include: i
+                => i.Include(g => g.Student)
+                    .ThenInclude(s => s.AppUser)
+                    .Include(x => x.TaughtSubject)
+                    .ThenInclude(x => x.Teacher)
+                    .ThenInclude(t => t.AppUser));
+
+        if (subGroups.Count != 0)
+        {
+            var studentsInSubGroup = subGroups.Select(x => x.Student).ToList();
+
+            var orderedStudents = studentsInSubGroup
+                .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
+                .ThenBy(x => x.AppUser.Name, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
+                .ToList();
+            
+            students.AddRange(orderedStudents);
+        }
 
 
         var studentsDto = students
