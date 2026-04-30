@@ -6,4 +6,5 @@ public record GetEnrollmentDto(
     string StudentFullName,
     string SubjectName,
     string TaughtSubjectId,
-    string TaughtSubjectCode);
+    string TaughtSubjectCode,
+    string GroupCode);

@@ -44,7 +44,7 @@ public class StudentSubjectEnrollmentService(
         {
             return ApiResult<string>.SystemError("An error occured while creating academic requirements");
         }
-        
+
         var attempt = dto.Attempt ?? 1;
 
         var entity = new StudentSubjectEnrollment
@@ -65,7 +65,8 @@ public class StudentSubjectEnrollmentService(
     {
         var data = await repo.GetAllPaginatedAsync(null, page, pageSize, include: x =>
             x.Include(e => e.Student).ThenInclude(st => st.AppUser)
-                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Subject));
+                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Subject)
+                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Group));
 
         if (!data.Items.Any())
         {
@@ -93,7 +94,8 @@ public class StudentSubjectEnrollmentService(
                                   item.Student.AppUser.MiddleName;
 
             var dto = new GetEnrollmentDto(item.Id, item.StudentId, studentFullName,
-                item.TaughtSubject.Subject.Name, item.TaughtSubjectId, item.TaughtSubject.Code);
+                item.TaughtSubject.Subject.Name, item.TaughtSubjectId, item.TaughtSubject.Code,
+                item.TaughtSubject.Group.Code);
             returnData.Add(dto);
         }
 
@@ -116,9 +118,9 @@ public class StudentSubjectEnrollmentService(
     public async Task<ApiResult<GetEnrollmentDto>> GetByIdAsync(string id)
     {
         var enrollment = await repo.GetByIdAsync(id, x =>
-                x.Include(e => e.Student).ThenInclude(st => st.AppUser)
-                    .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Subject),
-            tracking: true);
+            x.Include(e => e.Student).ThenInclude(st => st.AppUser)
+                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Subject)
+                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Group));
 
         if (enrollment == null) return ApiResult<GetEnrollmentDto>.BadRequest("Student enrollment not found");
 
@@ -127,7 +129,8 @@ public class StudentSubjectEnrollmentService(
                               enrollment.Student.AppUser.MiddleName;
 
         var dto = new GetEnrollmentDto(enrollment.Id, enrollment.StudentId, studentFullName,
-            enrollment.TaughtSubject.Subject.Name, enrollment.TaughtSubjectId, enrollment.TaughtSubject.Code);
+            enrollment.TaughtSubject.Subject.Name, enrollment.TaughtSubjectId, enrollment.TaughtSubject.Code,
+            enrollment.TaughtSubject.Group.Code);
 
 
         return ApiResult<GetEnrollmentDto>.Success(dto);
@@ -140,8 +143,6 @@ public class StudentSubjectEnrollmentService(
         if (enrollment == null) return ApiResult.BadRequest("Student enrollment not found");
 
         enrollment.Attempt = dto.Attempt;
-        enrollment.TaughtSubjectId = dto.TaughtSubjectId;
-        enrollment.StudentId = dto.StudentId;
 
         var res = await repo.UpdateAsync(enrollment);
 
