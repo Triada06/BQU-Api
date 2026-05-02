@@ -13,19 +13,44 @@ public class StudentSubjectEnrollmentService(
     IStudentSubjectEnrollmentRepository repo,
     IAcademicHelper academicHelper,
     ITaughtSubjectRepository taughtSubjectRepository,
-    IStudentRepository studentRepository)
+    IStudentRepository studentRepository,
+    IFinalRepository finalRepository)
     : IStudentSubjectEnrollmentService
 {
     public async Task<ApiResult<string>> CreateAsync(CreateStudentSubjectEnrollmentDto dto)
     {
         var taughtSubject =
-            await taughtSubjectRepository.GetByIdAsync(dto.TaughtSubjectId, include: i => i.Include(x => x.Classes),
+            await taughtSubjectRepository.GetByIdAsync(dto.TaughtSubjectId,
+                include: i =>
+                    i.Include(x => x.Classes)
+                        .ThenInclude(x => x.ClassTime),
                 tracking:
                 true);
 
         if (taughtSubject is null)
         {
             return ApiResult<string>.BadRequest($"Taught subject with an Id of {dto.TaughtSubjectId} not found");
+        }
+
+        var finals = await finalRepository.FindAsync(x =>
+            x.StudentId == dto.StudentId &&
+            x.TaughtSubject.Code.Trim().ToLower() == dto.FailedSubjectCode.Trim().ToLower(), tracking: false);
+
+        if (finals.Count == 0)
+        {
+            return ApiResult<string>.BadRequest($"No finals found for student {dto.StudentId}");
+        }
+
+        var exam = finals[0];
+
+        if (exam.IsAllowed && exam.Grade >= 17)
+        {
+            return ApiResult<string>.BadRequest($"Student {dto.StudentId}: exam already passed (grade: {exam.Grade})");
+        }
+
+        if (exam.Date is null && !exam.IsAllowed)
+        {
+            return ApiResult<string>.BadRequest($"Student {dto.StudentId}: final exam not yet started");
         }
 
         var student = await studentRepository.GetByIdAsync(dto.StudentId, tracking: true);

@@ -15,7 +15,7 @@ public interface ITaughtSubjectService
     Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false);
     Task<GetByIdTaughtSubjectResponse> GetByIdAsync(string id, bool tracking = false);
     Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request);
-    Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendances(string taughtSubjectId);
+    Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendancesAsync(string taughtSubjectId);
     Task<ApiResult<GetStudentsForSubject>> GetStudentsAsync(string taughtSubjectId);
 
     Task<ApiResult<GetIndependentWorksByTaughtSubjectDto>> GetIndependentWorksByTaughtSubjectIdAsync(

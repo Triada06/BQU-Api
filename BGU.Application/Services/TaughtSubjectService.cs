@@ -295,7 +295,7 @@ public class TaughtSubjectService(
         return new CreateTaughtSubjectResponse(taughtSubject.Id, true, StatusCode.Ok, ResponseMessages.Success);
     }
 
-    public async Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendances(string taughtSubjectId)
+    public async Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendancesAsync(string taughtSubjectId)
     {
         var subject = await context.TaughtSubjects
             .AsNoTracking()
@@ -326,23 +326,39 @@ public class TaughtSubjectService(
         if (subject is null)
             return ApiResult<GetActivitiesAndAttendances>.BadRequest(
                 new GetActivitiesAndAttendances([]),
-                $"Taught Subject with id '{taughtSubjectId}' not found");
+                $"TaughtSubject '{taughtSubjectId}' not found");
 
-        if (subject.Students.Count == 0)
+        // load enrolled (subgroup) students
+        var enrollments = await studentSubjectEnrollmentRepository
+            .FindAsync(
+                x => x.TaughtSubjectId == taughtSubjectId,
+                include: i => i.Include(x => x.Student).ThenInclude(s => s.AppUser));
+
+        var enrolledStudents = enrollments
+            .Select(e => new
+            {
+                e.Student.Id,
+                e.Student.AppUser.Name,
+                e.Student.AppUser.Surname
+            })
+            .ToList();
+
+        // group students first, enrolled at the bottom
+        var allStudents = subject.Students.Concat(enrolledStudents).ToList();
+
+        if (allStudents.Count == 0)
             return ApiResult<GetActivitiesAndAttendances>.Success(
                 new GetActivitiesAndAttendances([]));
 
-        var studentIds = subject.Students.Select(s => s.Id).ToList();
+        var studentIds = allStudents.Select(s => s.Id).ToList();
         var classIds = subject.Classes.Select(c => c.Id).ToList();
 
-        // single query for all attendances
         var allAttendances = await context.Attendances
             .AsNoTracking()
             .Where(a => studentIds.Contains(a.StudentId) && classIds.Contains(a.ClassId))
             .Select(a => new { a.Id, a.StudentId, a.ClassId, a.IsPresent })
             .ToListAsync();
 
-        // single query for all seminars
         var allSeminars = await context.Seminars
             .AsNoTracking()
             .Where(s => studentIds.Contains(s.StudentId) && s.TaughtSubjectId == taughtSubjectId)
@@ -350,7 +366,6 @@ public class TaughtSubjectService(
             .OrderBy(s => s.CreatedAt)
             .ToListAsync();
 
-        // group in memory
         var attendancesByStudent = allAttendances
             .GroupBy(a => a.StudentId)
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -361,7 +376,7 @@ public class TaughtSubjectService(
 
         var result = new List<GetActivityAndAttendance>();
 
-        foreach (var student in subject.Students)
+        foreach (var student in allStudents)
         {
             attendancesByStudent.TryGetValue(student.Id, out var studentAttendances);
             seminarsByStudent.TryGetValue(student.Id, out var studentSeminars);
@@ -447,7 +462,7 @@ public class TaughtSubjectService(
             .ThenBy(x => x.AppUser.Name, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
             .ToList();
 
-        // emil peyser
+
         var subGroups =
             await studentSubjectEnrollmentRepository.FindAsync(x => x.TaughtSubjectId == taughtSubjectId, include: i
                 => i.Include(g => g.Student)
@@ -464,7 +479,7 @@ public class TaughtSubjectService(
                 .OrderBy(x => x.AppUser.Surname, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
                 .ThenBy(x => x.AppUser.Name, StringComparer.Create(new CultureInfo("az-Latn-AZ"), false))
                 .ToList();
-            
+
             students.AddRange(orderedStudents);
         }
 

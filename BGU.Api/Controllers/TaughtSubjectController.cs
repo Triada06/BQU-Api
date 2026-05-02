@@ -76,7 +76,7 @@ public class TaughtSubjectController(
     [HttpGet(ApiEndPoints.TaughtSubject.GetStudentsAndAttendances)]
     public async Task<IActionResult> GetStudentsAndAttendances([FromRoute] string taughtSubjectId)
     {
-        var res = await taughtSubjectService.GetStudentsAndAttendances(taughtSubjectId);
+        var res = await taughtSubjectService.GetStudentsAndAttendancesAsync(taughtSubjectId);
         return new ObjectResult(res);
     }
 
