@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BGU.Api.Helpers;
 using BGU.Application.Contracts.Seminars.Requests;
 using BGU.Application.Contracts.Student.Requests;
+using BGU.Application.Contracts.User;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-public class StudentController(IStudentService studentService) : ControllerBase
+public class StudentController(IStudentService studentService, IUserService userService) : ControllerBase
 {
     [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.DashBoard)]
@@ -91,7 +92,8 @@ public class StudentController(IStudentService studentService) : ControllerBase
 
     [Authorize(Roles = "Teacher")]
     [HttpPut(ApiEndPoints.Student.MarkAbsence)]
-    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId, [FromBody] MarkAbsenceRequest? markAbsenceRequest)
+    public async Task<IActionResult> MarkAbsence([FromRoute] string studentId, [FromRoute] string classId,
+        [FromBody] MarkAbsenceRequest? markAbsenceRequest)
     {
         var res = await studentService.MarkAbsenceAsync(studentId, classId, markAbsenceRequest?.SeminarId);
         return new ObjectResult(res);
@@ -106,7 +108,7 @@ public class StudentController(IStudentService studentService) : ControllerBase
             new GradeStudentColloquiumRequest(studentId, colloquiumId, grade));
         return new ObjectResult(res);
     }
-    
+
 
     [HttpGet(ApiEndPoints.Student.GetIndependentWorksByStudentId)]
     [Authorize(Roles = "Teacher")]
@@ -150,5 +152,15 @@ public class StudentController(IStudentService studentService) : ControllerBase
         var res = await studentService.DeleteAsync(id);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
+    }
+
+    [Authorize(Roles = "Dean")]
+    [HttpPut(ApiEndPoints.Student.ResetPassword)]
+    public async Task<IActionResult> ResetStudentPassword([FromRoute] string id,
+        [FromBody] ChangePasswordDto changePasswordDto)
+    {
+        var response = await userService.ResetStudentPasswordAsync(id, changePasswordDto.NewPassword);
+        Response.StatusCode = (int)response.StatusCode;
+        return new ObjectResult(response);
     }
 }

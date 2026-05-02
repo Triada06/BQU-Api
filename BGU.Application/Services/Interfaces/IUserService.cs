@@ -9,6 +9,7 @@ public interface IUserService
 {
     public Task<AuthResponse> SignInAsync(AppUserSignInDto appUserDto);
     public Task<AuthResponse> ResetPasswordAsync(string userId, string newPassword, CancellationToken cp);
+    public Task<AuthResponse> ResetStudentPasswordAsync(string studentId, string newPassword);
     public Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken cp);
     public Task<bool> ConfirmEmailAsync(string userId, string token, CancellationToken ct);
     public Task<bool> AddEmailAsync(string userId, AddEmailRequest request, CancellationToken cp);

@@ -7,6 +7,7 @@ using BGU.Application.Dtos.AppUser;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
+using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
@@ -21,7 +22,8 @@ public class UserService(
     IEmailSender<AppUser> emailSender,
     UserManager<AppUser> userManager,
     IOptions<UrlOptions> urlOptions,
-    IConfiguration config) : IUserService
+    IConfiguration config,
+    IStudentRepository studentRepository) : IUserService
 {
     private readonly UrlOptions _urlOptions = urlOptions.Value;
 
@@ -43,6 +45,32 @@ public class UserService(
     public async Task<AuthResponse> ResetPasswordAsync(string userId, string newPassword, CancellationToken cp)
     {
         var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["User not found"]);
+        }
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var res = await userManager.ResetPasswordAsync(user, token, newPassword);
+
+        if (!res.Succeeded)
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest,
+                res.Errors.Select(e => e.Description).ToArray());
+        }
+
+        return new AuthResponse(await GenerateJwtToken(user), DateTime.UtcNow.AddDays(7), true, StatusCode.Ok, null);
+    }
+
+    public async Task<AuthResponse> ResetStudentPasswordAsync(string studentId, string newPassword)
+    {
+        var student = await studentRepository.GetByIdAsync(studentId, tracking: true);
+        if (student is null)
+        {
+            return new AuthResponse(null, null, false, StatusCode.BadRequest, ["Student not found"]);
+        }
+
+        var user = await userManager.FindByIdAsync(student.AppUserId);
         if (user is null)
         {
             return new AuthResponse(null, null, false, StatusCode.BadRequest, ["User not found"]);
@@ -119,8 +147,7 @@ public class UserService(
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null) return;
 
-       
-        
+
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
@@ -129,7 +156,7 @@ public class UserService(
             ["userId"] = user.Id,
             ["token"] = encodedToken
         };
-        
+
         var resetLink = QueryHelpers.AddQueryString(_urlOptions.ResetPasswordUrl, query);
 
         await emailSender.SendPasswordResetLinkAsync(user, request.Email, resetLink);
@@ -164,7 +191,7 @@ public class UserService(
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(3),
+            Expires = DateTime.UtcNow.AddHours(12),
             SigningCredentials = creds,
             Issuer = config["Jwt:Issuer"],
             Audience = config["Jwt:Audience"]
