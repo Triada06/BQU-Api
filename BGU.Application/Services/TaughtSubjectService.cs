@@ -175,6 +175,7 @@ public class TaughtSubjectService(
             GroupId = request.GroupId,
             SubjectId = subject.Id,
             Hours = request.Hours,
+            Semester = request.Year * request.Semester
         };
 
         if (!await taughtSubjectRepository.CreateAsync(taughtSubject))

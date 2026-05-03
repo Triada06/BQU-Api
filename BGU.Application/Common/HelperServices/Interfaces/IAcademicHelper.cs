@@ -6,4 +6,6 @@ public interface IAcademicHelper
 {
     Task<bool> CreateAcademicRequirementsAsync(List<Class> classes, Student student,
         string taughtSubjectId);
+
+    // Task<GenerateTranscriptResult> GenerateTranscript();
 }

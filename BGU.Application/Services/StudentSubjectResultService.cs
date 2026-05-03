@@ -23,7 +23,7 @@ public class StudentSubjectResultService(IStudentSubjectResultRepository student
         {
             StudentId = dto.StudentId,
             TaughtSubjectId = dto.TaughtSubjectId,
-            FinalGrade = dto.Grade,
+            // FinalGrade = dto.Grade,
             IsFinalized = dto.IsFinalised
         };
 
@@ -41,7 +41,7 @@ public class StudentSubjectResultService(IStudentSubjectResultRepository student
 
         studentResult.StudentId = dto.StudentId;
         studentResult.TaughtSubjectId = dto.TaughtSubjectId;
-        studentResult.FinalGrade = dto.Grade;
+        // studentResult.FinalGrade = dto.Grade;
         studentResult.IsFinalized = dto.IsFinalised;
 
         var res = await studentSubjectResultRepository.UpdateAsync(studentResult);

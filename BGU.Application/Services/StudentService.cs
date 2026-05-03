@@ -586,10 +586,12 @@ public class StudentService(
             {
                 StudentId = studentId,
                 TaughtSubjectId = subject.Id,
-                FinalGrade = score.Value.score,
+                GradeBeforeExam = score.Value.score,
                 IsFinalized = false
             };
 
+            sewStudentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
@@ -600,7 +602,10 @@ public class StudentService(
         {
             var studentSubjectResult = studentSubjectResults[0];
 
-            studentSubjectResult.FinalGrade = score.Value.score;
+            studentSubjectResult.GradeBeforeExam = score.Value.score;
+            
+            studentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
@@ -663,10 +668,13 @@ public class StudentService(
             {
                 StudentId = colloquium.StudentId,
                 TaughtSubjectId = subject.Id,
-                FinalGrade = score.Value.score,
+                GradeBeforeExam = score.Value.score,
                 IsFinalized = false
             };
 
+            
+            sewStudentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
@@ -677,7 +685,10 @@ public class StudentService(
         {
             var studentSubjectResult = studentSubjectResults[0];
 
-            studentSubjectResult.FinalGrade = score.Value.score;
+            studentSubjectResult.GradeBeforeExam = score.Value.score;
+            
+            studentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
@@ -749,6 +760,13 @@ public class StudentService(
         var subject = subjects[0];
         var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
 
+        
+        // total score now => 68
+        // non exam score is 34
+        //new non exam score is 38
+        //  exam score is 34
+        //
+        
 
         if (score is null)
         {
@@ -762,15 +780,17 @@ public class StudentService(
 
         if (studentSubjectResults.Count == 0)
         {
-            var sewStudentSubjectResult = new StudentSubjectResult
+            var newStudentSubjectResult = new StudentSubjectResult
             {
                 StudentId = seminar.StudentId,
                 TaughtSubjectId = subject.Id,
-                FinalGrade = score.Value.score,
+                GradeBeforeExam = score.Value.score,
                 IsFinalized = false
             };
 
-            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            newStudentSubjectResult.UpdateFinalGrade();
+            
+            if (!await studentSubjectResultRepository.CreateAsync(newStudentSubjectResult))
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,
                     "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
@@ -779,7 +799,10 @@ public class StudentService(
         else
         {
             var studentSubjectResult = studentSubjectResults[0];
-            studentSubjectResult.FinalGrade = score.Value.score;
+            
+            studentSubjectResult.GradeBeforeExam = score.Value.score;
+            studentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,

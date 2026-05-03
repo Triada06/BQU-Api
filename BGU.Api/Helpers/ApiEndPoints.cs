@@ -63,6 +63,8 @@ public static class ApiEndPoints
         public const string AcademicHistory = $"{Base}/me/academic-history";
         public const string GetFinals = $"{Base}/me/finals";
         public const string ResetPassword = $"{Base}/{{id}}/reset-password";
+        public const string GetTranscriptPdf = $"{Base}/me/get-transcript-pdf";
+        public const string GetTranscriptExcel = $"{Base}/me/get-transcript-excel";
     }
 
     public static class Department

@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using DotNetEnv;
+using QuestPDF.Infrastructure;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,7 +69,6 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
-// builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("DbConStr"))
@@ -81,7 +81,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ResponseStatusCodeFilter>();
-    options.Filters.Add<ValidationFilter>(); 
+    options.Filters.Add<ValidationFilter>();
 });
 builder.Services.AddProblemDetails();
 
@@ -137,6 +137,10 @@ builder.Services.AddCors(options =>
         // .AllowCredentials() // включай ТОЛЬКО если используешь куки/credentials
     );
 });
+
+
+// Licenses
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

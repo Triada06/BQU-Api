@@ -36,6 +36,7 @@ public static class AppServices {
         services.AddScoped<IFinalService, FinalService>();
         services.AddScoped<IStudentSubjectResultService, StudentSubjectResultService>();
         services.AddScoped<IAcademicHelper, AcademicHelper>();
+        services.AddScoped<ITranscriptService, TranscriptService>();
         
         //repos
         services.AddScoped<IUserRepository, UserRepository>();

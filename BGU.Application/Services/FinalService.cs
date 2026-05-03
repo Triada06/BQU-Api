@@ -108,6 +108,7 @@ public class FinalService(
             return ApiResult<UpdateExamResponse>.NotFound($"An exam with an Id of {request.Id} was not found");
         }
 
+        var oldGrade = exam.Grade;
         exam.Date = request.Dto.Date;
         exam.Grade = request.Dto.Grade;
         exam.TaughtSubjectId = request.Dto.TaughtSubjectId;
@@ -117,6 +118,42 @@ public class FinalService(
         if (!await finalRepository.UpdateAsync(exam))
         {
             return ApiResult<UpdateExamResponse>.SystemError();
+        }
+
+
+        var results = await studentSubjectResultRepository.FindAsync(x =>
+            x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId);
+
+        if (results.Count == 0)
+        {
+            // this code should never be executed since by this time the object already must be created
+            var result = new StudentSubjectResult
+            {
+                StudentId = exam.StudentId,
+                TaughtSubjectId = exam.TaughtSubjectId,
+                ExamGrade = exam.Grade,
+                IsFinalized = exam.IsConfirmed
+            };
+
+            result.UpdateFinalGrade();
+            
+            await studentSubjectResultRepository.CreateAsync(result);
+            // can also add if block to check whether succeeded or failed but there's no point of that
+            // since the exam was already updated and without the transactions, the data will be "damaged"
+            // so there's no point of returning 500 or smth like that
+        }
+        else
+        {
+            var result = results[0];
+            result.ExamGrade =  exam.Grade;
+            result.IsFinalized = exam.IsConfirmed;
+            
+            result.UpdateFinalGrade();
+            
+            await studentSubjectResultRepository.UpdateAsync(result);
+            // can also add if block to check whether succeeded or failed but there's no point of that
+            // since the exam was already updated and without the transactions, the data will be "damaged"
+            // so there's no point of returning 500 or smth like that
         }
 
         return ApiResult<UpdateExamResponse>.Success(new UpdateExamResponse(exam.Id, exam.StudentId,
@@ -177,13 +214,6 @@ public class FinalService(
             return ApiResult<string>.NotFound($"User with an Id of {userId} not found");
         }
 
-        var teacher = (await teacherRepository.FindAsync(x => x.AppUserId == userId, tracking: false)).First();
-
-        if (teacher is null)
-        {
-            return ApiResult<string>.NotFound($"Teacher not found");
-        }
-
         var exam = await finalRepository.GetByIdAsync(finalId, tracking: false);
         if (exam is null)
         {
@@ -231,8 +261,9 @@ public class FinalService(
 
         var result = results[0];
 
-        result.FinalGrade = +exam.Grade;
+        result.ExamGrade = exam.Grade;
         result.IsFinalized = true;
+        result.UpdateFinalGrade();
 
         if (!await studentSubjectResultRepository.UpdateAsync(result))
         {

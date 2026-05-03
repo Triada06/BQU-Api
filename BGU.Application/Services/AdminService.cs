@@ -4,7 +4,6 @@ using BGU.Application.Dtos.Student;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
-using BGU.Core.Enums;
 using BGU.Infrastructure.Data;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -176,7 +175,6 @@ public class AdminService(
             existingTeacher.AppUser.MiddleName = dto.MiddleName;
             existingTeacher.AppUser.UserName = dto.UserName;
 
-            // NOTE: adjust property names if your Teacher entity differs.
             existingTeacher.DepartmentId = department.Id;
             existingTeacher.TeachingPosition = dto.Position;
 
@@ -215,7 +213,6 @@ public class AdminService(
         await userManager.AddToRoleAsync(user, "Teacher");
 
         // Create teacher
-        // NOTE: adjust property names if your Teacher entity differs.
         var teacher = new Teacher
         {
             AppUserId = user.Id,

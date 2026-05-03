@@ -138,10 +138,12 @@ public class IndependentWorkService(
             {
                 StudentId = iWork.StudentId,
                 TaughtSubjectId = subject.Id,
-                FinalGrade = score.Value.score,
+                GradeBeforeExam = score.Value.score,
                 IsFinalized = false
             };
 
+            sewStudentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new ApiResult<GradeIndependentWorkDto>
@@ -156,7 +158,10 @@ public class IndependentWorkService(
         }
         else
         {
-            studentSubjectResult.FinalGrade = score.Value.score;
+            studentSubjectResult.GradeBeforeExam = score.Value.score;
+            
+            studentSubjectResult.UpdateFinalGrade();
+            
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new ApiResult<GradeIndependentWorkDto>

@@ -4,6 +4,22 @@ namespace BGU.Core.Entities;
 
 public class TaughtSubject : BaseEntity
 {
+    private int _Semester;
+
+    public int Semester
+    {
+        get => _Semester;
+        set
+        {
+            if (value is < 1 or > 8)
+            {
+                throw new ArgumentOutOfRangeException(nameof(Semester));
+            }
+
+            _Semester = value;
+        }
+    }
+
     public string Code { get; set; }
     public bool HasSyllabus { get; set; }
     public string SubjectId { get; set; }

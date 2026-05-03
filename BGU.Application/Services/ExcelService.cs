@@ -9,17 +9,22 @@ using OfficeOpenXml.Style;
 
 namespace BGU.Application.Services;
 
-public class ExcelService : IExcelService {
-    public async Task<List<StudentDto>> ParseStudentExcelAsync(Stream fileStream) {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+public class ExcelService : IExcelService
+{
+    public async Task<List<StudentDto>> ParseStudentExcelAsync(Stream fileStream)
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("BQU LMS");
         var students = new List<StudentDto>();
 
-        using (var package = new ExcelPackage(fileStream)) {
+        using (var package = new ExcelPackage(fileStream))
+        {
             var worksheet = package.Workbook.Worksheets[0];
             var rowCount = worksheet.Dimension.Rows;
 
-            for (int row = 2; row <= rowCount; row++) {
-                try {
+            for (int row = 2; row <= rowCount; row++)
+            {
+                try
+                {
                     var student = new StudentDto(
                         Name: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
                         Surname: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
@@ -31,7 +36,8 @@ public class ExcelService : IExcelService {
 
                     students.Add(student);
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     Console.WriteLine($"Error parsing row {row}: {ex.Message}");
                 }
             }
@@ -41,16 +47,20 @@ public class ExcelService : IExcelService {
     }
 
 
-    public async Task<List<TeacherDto>> ParseTeacherExcelAsync(Stream fileStream) {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+    public async Task<List<TeacherDto>> ParseTeacherExcelAsync(Stream fileStream)
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("BQU LMS");
         var teachers = new List<TeacherDto>();
 
-        using (var package = new ExcelPackage(fileStream)) {
+        using (var package = new ExcelPackage(fileStream))
+        {
             var worksheet = package.Workbook.Worksheets[0];
             var rowCount = worksheet.Dimension.Rows;
 
-            for (int row = 2; row <= rowCount; row++) {
-                try {
+            for (int row = 2; row <= rowCount; row++)
+            {
+                try
+                {
                     teachers.Add(new TeacherDto(
                         Name: worksheet.Cells[row, 1].Value?.ToString()?.Trim(),
                         Surname: worksheet.Cells[row, 2].Value?.ToString()?.Trim(),
@@ -60,7 +70,8 @@ public class ExcelService : IExcelService {
                         Position: ParseEnum<TeachingPosition>(worksheet.Cells[row, 6].Value)
                     ));
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     Console.WriteLine($"Error parsing Teacher row {row}: {ex.Message}");
                 }
             }
@@ -69,7 +80,8 @@ public class ExcelService : IExcelService {
         return teachers;
     }
 
-    private T ParseEnum<T>(object cellValue) where T : struct, Enum {
+    private T ParseEnum<T>(object cellValue) where T : struct, Enum
+    {
         if (cellValue == null)
             throw new ArgumentException("Cell value is null");
 
@@ -82,8 +94,9 @@ public class ExcelService : IExcelService {
         throw new ArgumentException($"Cannot parse '{stringValue}' to {typeof(T).Name}");
     }
 
-    public byte[] GenerateUserResultsExcel(List<BulkImportResult> results) {
-        ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
+    public byte[] GenerateUserResultsExcel(List<BulkImportResult> results)
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("BQU LMS");
 
         using var package = new ExcelPackage();
         var ws = package.Workbook.Worksheets.Add("Import Results");
@@ -153,7 +166,8 @@ public class ExcelService : IExcelService {
         ws.Cells[headerRow, failColStart + 2].Value = "Message";
 
         // Header style (одинаковый для обоих блоков)
-        void StyleHeaderRange(int row, int colStart, int colCount) {
+        void StyleHeaderRange(int row, int colStart, int colCount)
+        {
             using var range = ws.Cells[row, colStart, row, colStart + colCount - 1];
             range.Style.Font.Bold = true;
             range.Style.Fill.PatternType = ExcelFillStyle.Solid;
@@ -166,7 +180,8 @@ public class ExcelService : IExcelService {
 
         // Data - Successful
         var r1 = dataStartRow;
-        foreach (var r in successful) {
+        foreach (var r in successful)
+        {
             ws.Cells[r1, successColStart + 0].Value = r.FullName ?? "";
             ws.Cells[r1, successColStart + 1].Value = r.UserName ?? "";
             ws.Cells[r1, successColStart + 2].Value = r.TemporaryPassword ?? "";
@@ -175,7 +190,8 @@ public class ExcelService : IExcelService {
 
         // Data - Failed
         var r2 = dataStartRow;
-        foreach (var r in failed) {
+        foreach (var r in failed)
+        {
             ws.Cells[r2, failColStart + 0].Value = r.FullName ?? "";
             ws.Cells[r2, failColStart + 1].Value = r.UserName ?? "";
             ws.Cells[r2, failColStart + 2].Value = r.Message ?? "";
