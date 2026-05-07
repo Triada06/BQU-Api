@@ -1,5 +1,4 @@
 using BGU.Application.Contracts.Seminars.Requests;
-using BGU.Core.Enums;
 using FluentValidation;
 
 namespace BGU.Application.Contracts.Student.Requests;

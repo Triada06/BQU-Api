@@ -54,7 +54,7 @@ public class UserController(IUserService userService) : ControllerBase
         var response = await userService.CheckPasswordAsync(userId, checkPasswordRequest.Password, cp);
         return response ? Ok() : BadRequest("Invalid password");
     }
-    
+
     [HttpPost(ApiEndPoints.Auth.ForgotPassword)]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cp)
@@ -70,8 +70,8 @@ public class UserController(IUserService userService) : ControllerBase
         var success = await userService.ResetPasswordAsync(request, cp);
         return success ? Ok() : BadRequest("Invalid or expired token.");
     }
-    
-       
+
+
     [Authorize(Roles = "Student, Teacher, Dean")]
     [HttpPost(ApiEndPoints.User.AddEmail)]
     public async Task<IActionResult> AddEmail([FromBody] AddEmailRequest addEmailRequest,
@@ -86,12 +86,22 @@ public class UserController(IUserService userService) : ControllerBase
         var response = await userService.AddEmailAsync(userId, addEmailRequest, cp);
         return response ? Ok() : BadRequest("Failed to add email");
     }
-    
+
     [HttpGet(ApiEndPoints.User.ConfirmEmail)]
     [AllowAnonymous]
-    public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token, CancellationToken cp)
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token,
+        CancellationToken cp)
     {
         var success = await userService.ConfirmEmailAsync(userId, token, cp);
         return success ? Ok() : BadRequest("Invalid or expired token.");
+    }
+
+    [Authorize(Roles = "Teacher, Dean")]
+    [HttpGet(ApiEndPoints.User.GetAll)]
+    public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 30)
+    {
+        var res = await userService.GetAllAsync(search, page, pageSize);
+        return Ok(res);
     }
 }

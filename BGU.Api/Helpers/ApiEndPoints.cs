@@ -7,11 +7,14 @@ public static class ApiEndPoints
     public static class User
     {
         private const string Base = $"{ApiBase}/user";
+        public const string GetAll = $"{Base}";
         public const string SignIn = $"{Base}/signin";
         public const string ChangePassword = $"{Base}/me/change-password";
         public const string CheckPassword = $"{Base}/check-password";
         public const string AddEmail = $"{Base}/me/add-email";
         public const string ConfirmEmail = $"{Base}/me/confirm-email";
+        public const string GetNotifications = $"{Base}/me/notifications";
+        public const string MarkAllAsRead = $"{Base}/me/notifications/mark-as-read";
     }
 
     public static class Auth
@@ -175,6 +178,11 @@ public static class ApiEndPoints
         public const string Update = $"{Base}/{{id}}";
         public const string Confirm = $"{Base}/{{id}}/confirm";
         public const string Grade = $"{Base}/{{id}}/grade";
-        
+    }
+    public static class Notification
+    {
+        private const string Base = $"{ApiBase}/notifications";
+        public const string Create = $"{Base}";
+        public const string MarkAsRead = $"{Base}/{{id}}/mark-as-read";
     }
 }

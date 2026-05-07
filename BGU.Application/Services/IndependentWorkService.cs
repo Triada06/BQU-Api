@@ -1,6 +1,7 @@
 using BGU.Application.Common;
 using BGU.Application.Contracts.IndependentWorks.Requests;
 using BGU.Application.Contracts.IndependentWorks.Responses;
+using BGU.Application.Contracts.Notification.Requests;
 using BGU.Application.Dtos.IndependentWorks;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
@@ -16,7 +17,8 @@ public class IndependentWorkService(
     ITaughtSubjectRepository taughtSubjectRepository,
     IStudentService studentService,
     IFinalRepository finalRepository,
-    IStudentSubjectResultRepository studentSubjectResultRepository) : IIndependentWorkService
+    IStudentSubjectResultRepository studentSubjectResultRepository,
+    INotificationService notificationService) : IIndependentWorkService
 {
     public async Task<CreateIndependentWorkResponse> CreateAsync(GradeIndependentWorkRequest request)
     {
@@ -88,6 +90,13 @@ public class IndependentWorkService(
             };
         }
 
+        var student = await studentRepository.GetByIdAsync(iWork.StudentId, tracking: false);
+        if (student is null)
+        {
+            return ApiResult<GradeIndependentWorkDto>.NotFound("Student not found");
+        }
+
+
         iWork.Grade = dto.Grade ?? Grade.None;
         var res = await independentWorkRepository.UpdateAsync(iWork);
 
@@ -111,6 +120,13 @@ public class IndependentWorkService(
         }
 
         var subject = subjects[0];
+
+
+        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+            NotificationType.Info,
+            $"{subject.Code} fənnindən fərdi iş qiymətiniz {(iWork.Grade is Grade.None ? "ləğv edildi" : iWork.Grade.ToString())} olaraq qeyd edildi"
+        ));
+        
         var score = await studentService.GetStudentSubjectScoreAsync(iWork.StudentId, subject.Id);
 
 
@@ -143,7 +159,7 @@ public class IndependentWorkService(
             };
 
             sewStudentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new ApiResult<GradeIndependentWorkDto>
@@ -159,9 +175,9 @@ public class IndependentWorkService(
         else
         {
             studentSubjectResult.GradeBeforeExam = score.Value.score;
-            
+
             studentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new ApiResult<GradeIndependentWorkDto>

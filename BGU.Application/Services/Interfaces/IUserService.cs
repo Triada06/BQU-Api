@@ -1,5 +1,7 @@
+using BGU.Application.Common;
 using BGU.Application.Contracts.User;
 using BGU.Application.Dtos.AppUser;
+using BGU.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity.Data;
 using ResetPasswordRequest = BGU.Application.Contracts.User.ResetPasswordRequest;
 
@@ -15,4 +17,5 @@ public interface IUserService
     public Task<bool> AddEmailAsync(string userId, AddEmailRequest request, CancellationToken cp);
     Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct);
     Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct);
+    Task<ApiResult<PagedResponse<GetUserResponse>>> GetAllAsync(string? search, int page, int pageSize);
 }

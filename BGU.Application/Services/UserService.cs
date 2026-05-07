@@ -11,6 +11,7 @@ using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -171,6 +172,39 @@ public class UserService(
 
         var result = await userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
         return result.Succeeded;
+    }
+
+    public async Task<ApiResult<PagedResponse<GetUserResponse>>> GetAllAsync(string? search, int page, int pageSize)
+    {
+        IQueryable<AppUser> query = userManager.Users.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(u =>
+                u.UserName.Contains(search) || u.Name.Contains(search) || u.Surname.Contains(search) ||
+                u.MiddleName.Contains(search));
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new ApiResult<PagedResponse<GetUserResponse>>
+        {
+            Data = new PagedResponse<GetUserResponse>
+            {
+                Items = items.Count != 0
+                    ? items.Select(x => new GetUserResponse(x.Id, x.Name + " " + x.Surname + " " + x.MiddleName))
+                    : [],
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            },
+            Message = "Success",
+            IsSucceeded = true,
+            StatusCode = 200
+        };
     }
 
     private async Task<string> GenerateJwtToken(AppUser user)

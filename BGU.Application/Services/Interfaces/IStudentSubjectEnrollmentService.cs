@@ -1,6 +1,5 @@
 using BGU.Application.Common;
 using BGU.Application.Dtos.StudentEnrollment;
-using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
 
 namespace BGU.Application.Services.Interfaces;

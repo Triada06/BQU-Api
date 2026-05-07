@@ -37,6 +37,7 @@ public static class AppServices {
         services.AddScoped<IStudentSubjectResultService, StudentSubjectResultService>();
         services.AddScoped<IAcademicHelper, AcademicHelper>();
         services.AddScoped<ITranscriptService, TranscriptService>();
+        services.AddScoped<INotificationService, NotificationService>();
         
         //repos
         services.AddScoped<IUserRepository, UserRepository>();
@@ -61,6 +62,7 @@ public static class AppServices {
         services.AddScoped<IStudentSubjectEnrollmentRepository, StudentSubjectEnrollmentRepository>();
         services.AddScoped<IFinalRepository, FinalRepository>();
         services.AddScoped<IStudentSubjectResultRepository, StudentSubjectResultRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));

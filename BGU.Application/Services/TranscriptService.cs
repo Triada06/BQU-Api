@@ -1,9 +1,7 @@
 using BGU.Application.Common;
 using BGU.Application.Dtos.Transcript;
 using BGU.Application.Services.Interfaces;
-using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;

@@ -1,4 +1,5 @@
 using BGU.Application.Common;
+using BGU.Application.Contracts.Notification.Requests;
 using BGU.Application.Contracts.Student.Requests;
 using BGU.Application.Contracts.Student.Responses;
 using BGU.Application.Dtos.AcademicPerformance;
@@ -30,7 +31,8 @@ public class StudentService(
     IFinalRepository finalRepository,
     IStudentSubjectResultRepository studentSubjectResultRepository,
     IAttendanceRepository attendanceRepository,
-    IClassRepository classRepository) : IStudentService
+    IClassRepository classRepository,
+    INotificationService notificationService) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
         new() // to calculate Einstein GPA
@@ -319,7 +321,8 @@ public class StudentService(
                 seminarGrades,
                 collGrades,
                 iwDtos,
-                happenedClasses, //TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
+                happenedClasses,
+                // subjectAttendances, //TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
                 ts.ClassCount
             );
         });
@@ -518,6 +521,11 @@ public class StudentService(
             //todo: handle this, the case is unlikely but is written so the compiler would stfu :(
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
         }
+        
+        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+            NotificationType.Info,
+            $"{attendanceClass.ClassTime.ClassDate:dddd, MMM dd} tarixindəki dərsinizə davamiyyətiniz {(attendance.IsPresent ? "iştirak etdi" : "iştirak etmədi")} olaraq qeyd edildi"
+        ));
 
 
         // remove the previous grade no matter what
@@ -591,7 +599,7 @@ public class StudentService(
             };
 
             sewStudentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
@@ -603,9 +611,9 @@ public class StudentService(
             var studentSubjectResult = studentSubjectResults[0];
 
             studentSubjectResult.GradeBeforeExam = score.Value.score;
-            
+
             studentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
@@ -635,7 +643,14 @@ public class StudentService(
                 "An error occured while updating the grade");
         }
 
+        
+        var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: false);
 
+        if (student is null)
+        {
+            return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false, "Student not found");
+        }
+        
         var subjects =
             await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id));
 
@@ -646,6 +661,12 @@ public class StudentService(
         }
 
         var subject = subjects[0];
+        
+        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+            NotificationType.Info,
+            $"{subject.Code} fənnindən kollokvium qiymətiniz {request.Grade} olaraq qeyd edildi"
+        ));
+        
         var score = await GetStudentSubjectScoreAsync(colloquium.StudentId, subject.Id);
 
         if (score is null)
@@ -672,9 +693,9 @@ public class StudentService(
                 IsFinalized = false
             };
 
-            
+
             sewStudentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
@@ -686,9 +707,9 @@ public class StudentService(
             var studentSubjectResult = studentSubjectResults[0];
 
             studentSubjectResult.GradeBeforeExam = score.Value.score;
-            
+
             studentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
@@ -722,6 +743,14 @@ public class StudentService(
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with an Id of {request.SeminarId} not found");
         }
+        
+        var student = await studentRepository.GetByIdAsync(request.SeminarData.StudentId, tracking: false);
+
+        if (student is null)
+        {
+            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false, "Student not found");
+        }
+        
 
         var attendances = await attendanceRepository.FindAsync(x =>
             x.ClassId == request.SeminarData.ClassId && x.StudentId == request.SeminarData.StudentId);
@@ -736,8 +765,13 @@ public class StudentService(
 
         if (!attendance.IsPresent)
         {
-            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
-                "Gradeing a class with an attendance of absent is not allowed");
+            attendance.IsPresent = true;
+
+            if (!await attendanceRepository.UpdateAsync(attendance))
+            {
+                return new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
+                    "Something went wrong while updating the presence status");
+            }
         }
 
         seminar.Grade = request.SeminarData.Grade;
@@ -758,15 +792,13 @@ public class StudentService(
         }
 
         var subject = subjects[0];
+        
+        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+            NotificationType.Info,
+            $"{subject.Code} fənnindən seminar qiymətiniz {request.SeminarData.Grade} olaraq qeyd edildi"
+        ));
+        
         var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
-
-        
-        // total score now => 68
-        // non exam score is 34
-        //new non exam score is 38
-        //  exam score is 34
-        //
-        
 
         if (score is null)
         {
@@ -789,7 +821,7 @@ public class StudentService(
             };
 
             newStudentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.CreateAsync(newStudentSubjectResult))
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,
@@ -799,10 +831,10 @@ public class StudentService(
         else
         {
             var studentSubjectResult = studentSubjectResults[0];
-            
+
             studentSubjectResult.GradeBeforeExam = score.Value.score;
             studentSubjectResult.UpdateFinalGrade();
-            
+
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,

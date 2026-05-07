@@ -31,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Syllabus> Syllabus { get; set; }
     public DbSet<StudentSubjectEnrollment> StudentSubjectEnrollments { get; set; }
     public DbSet<StudentSubjectResult> StudentSubjectResults { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
