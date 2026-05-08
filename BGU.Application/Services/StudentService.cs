@@ -663,7 +663,7 @@ public class StudentService(
 
         var subject = subjects[0];
 
-        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+       await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
             NotificationType.Info,
             $"{subject.Code} fənnindən kollokvium qiymətiniz {request.Grade} olaraq qeyd edildi"
         ));

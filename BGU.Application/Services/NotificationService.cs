@@ -14,9 +14,12 @@ public class NotificationService(INotificationRepository notificationRepository,
 {
     public async Task<ApiResult> SendAsync(SendNotificationRequest request)
     {
-        if (!await EnsureUserExists(request.From))
+        if (!request.From.Trim().Equals("system", StringComparison.CurrentCultureIgnoreCase))
         {
-            return ApiResult.NotFound($"User with an id of {request.From} does not exist.");
+            if (!await EnsureUserExists(request.From))
+            {
+                return ApiResult.NotFound($"User with an id of {request.From} does not exist.");
+            }
         }
 
         if (!await EnsureUserExists(request.To))
