@@ -514,14 +514,15 @@ public class StudentService(
                 $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
         }
 
-        var attendanceClass = await classRepository.GetByIdAsync(classId, tracking: true);
+        var attendanceClass =
+            await classRepository.GetByIdAsync(classId, i => i.Include(x => x.ClassTime), tracking: true);
 
         if (attendanceClass is null)
         {
             //todo: handle this, the case is unlikely but is written so the compiler would stfu :(
             return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
         }
-        
+
         await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
             NotificationType.Info,
             $"{attendanceClass.ClassTime.ClassDate:dddd, MMM dd} tarixindəki dərsinizə davamiyyətiniz {(attendance.IsPresent ? "iştirak etdi" : "iştirak etmədi")} olaraq qeyd edildi"
@@ -643,14 +644,14 @@ public class StudentService(
                 "An error occured while updating the grade");
         }
 
-        
+
         var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: false);
 
         if (student is null)
         {
             return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false, "Student not found");
         }
-        
+
         var subjects =
             await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id));
 
@@ -661,12 +662,12 @@ public class StudentService(
         }
 
         var subject = subjects[0];
-        
+
         await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
             NotificationType.Info,
             $"{subject.Code} fənnindən kollokvium qiymətiniz {request.Grade} olaraq qeyd edildi"
         ));
-        
+
         var score = await GetStudentSubjectScoreAsync(colloquium.StudentId, subject.Id);
 
         if (score is null)
@@ -743,14 +744,14 @@ public class StudentService(
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
                 $"Seminar with an Id of {request.SeminarId} not found");
         }
-        
+
         var student = await studentRepository.GetByIdAsync(request.SeminarData.StudentId, tracking: false);
 
         if (student is null)
         {
             return new GradeStudentSeminarResponse(StatusCode.BadRequest, false, "Student not found");
         }
-        
+
 
         var attendances = await attendanceRepository.FindAsync(x =>
             x.ClassId == request.SeminarData.ClassId && x.StudentId == request.SeminarData.StudentId);
@@ -792,12 +793,12 @@ public class StudentService(
         }
 
         var subject = subjects[0];
-        
+
         await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
             NotificationType.Info,
             $"{subject.Code} fənnindən seminar qiymətiniz {request.SeminarData.Grade} olaraq qeyd edildi"
         ));
-        
+
         var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
 
         if (score is null)
