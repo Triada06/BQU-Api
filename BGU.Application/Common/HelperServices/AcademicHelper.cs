@@ -36,7 +36,7 @@ public class AcademicHelper(
             seminars.Add(seminar);
         }
 
-        if (!await seminarRepository.BulkCreate(seminars))
+        if (!await seminarRepository.BulkCreateAsync(seminars))
         {
             return false;
         }

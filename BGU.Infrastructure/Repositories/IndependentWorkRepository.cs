@@ -12,12 +12,6 @@ public class IndependentWorkRepository(AppDbContext context)
 {
     private readonly AppDbContext _context1 = context;
 
-    public async Task<bool> BulkCreateAsync(List<IndependentWork> independentWorks)
-    {
-        await _context1.IndependentWorks.AddRangeAsync(independentWorks);
-        return await _context1.SaveChangesAsync() > 0;
-    }
-
     public Task<int> BulkUpdateAsync(
         Expression<Func<IndependentWork, bool>> predicate,
         Expression<Func<SetPropertyCalls<IndependentWork>, SetPropertyCalls<IndependentWork>>> setters)

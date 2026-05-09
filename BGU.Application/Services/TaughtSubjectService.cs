@@ -226,7 +226,7 @@ public class TaughtSubjectService(
                     }));
                 }
 
-                if (!await seminarRepository.BulkCreate(seminars))
+                if (!await seminarRepository.BulkCreateAsync(seminars))
                 {
                     return new CreateTaughtSubjectResponse(null, false, StatusCode.InternalServerError,
                         "Failed to create seminars");
