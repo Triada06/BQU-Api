@@ -15,6 +15,7 @@ public static class ApiEndPoints
         public const string ConfirmEmail = $"{Base}/me/confirm-email";
         public const string GetNotifications = $"{Base}/me/notifications";
         public const string MarkAllAsRead = $"{Base}/me/notifications/mark-as-read";
+        public const string SendNotificationToAll = $"{Base}/send-notification";
     }
 
     public static class Auth
@@ -89,6 +90,7 @@ public static class ApiEndPoints
         public const string Delete = $"{Base}/{{id}}";
         public const string Update = $"{Base}/{{id}}";
         public const string GetById = $"{Base}/{{id}}";
+        public const string SendNotification = $"{Base}/{{id}}/send-notification";
         public const string SetExamDate = $"{Base}/set-exam-date";
     }
 

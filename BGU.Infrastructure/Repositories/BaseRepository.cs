@@ -37,6 +37,12 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         return await _context.SaveChangesAsync() > 0;
     }
 
+    public async Task<bool> BulkCreateAsync(List<T> entities)
+    {
+        _entities.AddRange(entities);
+        return await _context.SaveChangesAsync() > 0;
+    }
+
     public async Task<T?> GetByIdAsync(string id, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
         bool tracking = true)
     {

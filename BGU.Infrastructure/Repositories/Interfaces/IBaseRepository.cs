@@ -10,6 +10,7 @@ public interface IBaseRepository<T> where T : class, IBaseEntity
     public Task<bool> CreateAsync(T entity);
     public Task<bool> UpdateAsync(T entity);
     public Task<bool> DeleteAsync(T entity);
+    public Task<bool> BulkCreateAsync(List<T> entities);
 
     public Task<T?> GetByIdAsync(string id, Func<IQueryable<T>,
         IIncludableQueryable<T, object>>? include = null, bool tracking = true);
