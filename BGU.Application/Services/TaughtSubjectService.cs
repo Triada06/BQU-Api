@@ -48,32 +48,29 @@ public class TaughtSubjectService(
         return new DeleteTaughtSubjectResponse(StatusCode.Ok, false, ResponseMessages.Success);
     }
 
-    public async Task<UpdateTaughtSubjectResponse> UpdateAsync(string id, UpdateTaughtSubjectRequest taughtSubject)
+    public async Task<ApiResult<string>> UpdateAsync(string id, UpdateTaughtSubjectRequest taughtSubject)
     {
         var subjectToUpdate =
             await taughtSubjectRepository.GetByIdAsync(id, include: i => i.Include(x => x.Subject), tracking: true);
         if (subjectToUpdate is null)
         {
-            return new UpdateTaughtSubjectResponse(null, StatusCode.NotFound, false, ResponseMessages.NotFound);
+            return ApiResult<string>.NotFound($"Subject with an Id of {id} not found");
         }
 
         subjectToUpdate.Subject.CreditsNumber = taughtSubject.Credits;
         subjectToUpdate.Code = taughtSubject.Code;
-        subjectToUpdate.Subject.DepartmentId = taughtSubject.DepartmentId;
-        subjectToUpdate.GroupId = taughtSubject.GroupId;
         subjectToUpdate.Subject.Name = taughtSubject.Title;
         subjectToUpdate.TeacherId = taughtSubject.TeacherId;
         if (!await taughtSubjectRepository.UpdateAsync(subjectToUpdate))
         {
-            return new UpdateTaughtSubjectResponse(null, StatusCode.InternalServerError, false,
-                ResponseMessages.Failed);
+            return ApiResult<string>.SystemError("Something went wrong while updating the subject");
         }
 
-        return new UpdateTaughtSubjectResponse(subjectToUpdate.Id,
-            StatusCode.Ok, true, ResponseMessages.Success);
+        return ApiResult<string>.Success(id);
     }
 
-    public async Task<GetAllTaughtSubjectResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
+    public async Task<ApiResult<IEnumerable<GetTaughtSubjectDto>?>> GetAllAsync(int page, int pageSize,
+        bool tracking = false)
     {
         var subjects =
             (await taughtSubjectRepository.GetAllPaginatedAsync(null, page, pageSize: pageSize,
@@ -89,9 +86,9 @@ public class TaughtSubjectService(
                     x.Subject.Department.Name,
                     GetYear(x.Group.AdmissionYear.FirstYear),
                     x.Teacher.AppUser.Name, x.Group.Code,
-                    x.Subject.CreditsNumber));
+                    x.Subject.CreditsNumber, x.TeacherId));
 
-        return new GetAllTaughtSubjectResponse(subjects, StatusCode.Ok, true, ResponseMessages.Success);
+        return ApiResult<IEnumerable<GetTaughtSubjectDto>?>.Success(subjects);
     }
 
     public async Task<GetByIdTaughtSubjectResponse> GetByIdAsync(string id, bool tracking = false)
@@ -116,7 +113,7 @@ public class TaughtSubjectService(
             GetYear(subject.Group.AdmissionYear.FirstYear),
             subject.Teacher.AppUser.Name,
             subject.Group.Code,
-            subject.Subject.CreditsNumber), StatusCode.Ok, true, ResponseMessages.Success);
+            subject.Subject.CreditsNumber, subject.TeacherId), StatusCode.Ok, true, ResponseMessages.Success);
     }
 
     public async Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request)

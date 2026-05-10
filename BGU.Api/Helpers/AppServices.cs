@@ -67,7 +67,10 @@ public static class AppServices {
         
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddSingleton<IEmailSender<AppUser>, MailKitEmailSender>();
+        
+        
         services.AddHostedService<FinalBackGroundService>();
+        services.AddHostedService<NotificationCleanerBackgroundService>();
         return services;
     }
 }

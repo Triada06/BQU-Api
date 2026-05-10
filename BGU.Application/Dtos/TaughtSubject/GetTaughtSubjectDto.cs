@@ -8,4 +8,5 @@ public record GetTaughtSubjectDto(
     int Year,
     string Teacher,
     string GroupCode,
-    int Credits); 
+    int Credits,
+    string TeacherId); 
