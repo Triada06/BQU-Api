@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace BGU.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Dean")]
 public class GroupController(IGroupService groupService, IFinalService finalService) : ControllerBase
 {
     [Authorize(Roles = "Dean, Teacher")]
@@ -19,6 +18,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Group.GetById)]
     public async Task<IActionResult> GetById([FromRoute] string id)
     {
@@ -26,6 +26,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Group.Schedule)]
     public async Task<IActionResult> Schedule(string id)
     {
@@ -33,6 +34,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return Ok(data);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpDelete(ApiEndPoints.Group.Delete)]
     public async Task<IActionResult> Delete([FromRoute] string id)
     {
@@ -40,6 +42,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpPut(ApiEndPoints.Group.Update)]
     public async Task<IActionResult> Update([FromRoute] string id, UpdateGroupRequest request)
     {
@@ -47,6 +50,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpPost(ApiEndPoints.Group.Create)]
     public async Task<IActionResult> Create(CreateGroupRequest request)
     {
@@ -54,6 +58,7 @@ public class GroupController(IGroupService groupService, IFinalService finalServ
         return new ObjectResult(res);
     }
 
+    [Authorize(Roles = "Dean")]
     [HttpPut(ApiEndPoints.Group.SetExamDate)]
     public async Task<IActionResult> SetExamDate([FromBody] SetGroupExamDto request)
     {
