@@ -59,21 +59,23 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         int page = 1,
         int pageSize = 5,
         bool tracking = true,
-        Func<IQueryable<T>, IQueryable<T>>? include = null)
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null) 
     {
         IQueryable<T> query = _context.Set<T>();
 
         query = tracking ? query : query.AsNoTracking();
 
         if (predicate is not null)
-        {
             query = query.Where(predicate);
-        }
 
         if (include != null)
             query = include(query);
 
-        var totalCount = await query.CountAsync(); // IMPORTANT: before paging
+        if (orderBy != null)
+            query = orderBy(query); // before paging
+
+        var totalCount = await query.CountAsync();
 
         var items = await query
             .Skip((page - 1) * pageSize)

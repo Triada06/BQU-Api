@@ -3,6 +3,7 @@ using BGU.Application.Contracts.Notification.Requests;
 using BGU.Application.Contracts.Notification.Responses;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
+using BGU.Infrastructure.Constants;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -76,7 +77,7 @@ public class NotificationService(
             };
             notifications.Add(notification);
         }
-        
+
         var res = await notificationRepository.BulkCreateAsync(notifications);
 
         return res ? ApiResult.Success() : ApiResult.SystemError();
@@ -150,29 +151,30 @@ public class NotificationService(
         return ApiResult.Success();
     }
 
-    public async Task<ApiResult<GetAllNotificationResponse>> GetAllByUserId(string userId)
+    public async Task<ApiResult<PagedResponse<NotificationResponseDto>>> GetAllByUserId(string userId, int page,
+        int pageSize)
     {
         if (!await EnsureUserExists(userId))
         {
-            return ApiResult<GetAllNotificationResponse>.NotFound($"User with an id of {userId} does not exist.");
+            return ApiResult<PagedResponse<NotificationResponseDto>>.NotFound(
+                $"User with an id of {userId} does not exist.");
         }
 
-        var notifications = await notificationRepository.FindAsync(x => x.To == userId, tracking: false);
+        var notifications = await notificationRepository.GetAllPaginatedAsync(
+            x => x.To == userId,
+            page,
+            pageSize,
+            orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+            tracking: false);
 
-        if (notifications.Count == 0)
-        {
-            return ApiResult<GetAllNotificationResponse>.Success(
-                new GetAllNotificationResponse(new List<NotificationResponseDto>()));
-        }
+        var returnData = notifications.Items.ToList();
 
-        notifications = notifications.OrderByDescending(x => x.CreatedAt).ToList();
-
-        var fromIds = notifications.Select(x => x.From).Distinct().ToList();
+        var fromIds = returnData.Select(x => x.From).Distinct().ToList();
         var users = await userManager.Users.Where(x => fromIds.Contains(x.Id)).ToListAsync();
 
         IList<NotificationResponseDto> notificationResponses = new List<NotificationResponseDto>();
 
-        foreach (var notification in notifications)
+        foreach (var notification in returnData)
         {
             var user = users.Find(x => x.Id == notification.From);
             var userName = user is null ? "System" : user.Name + " " + user.Surname + " " + user.MiddleName;
@@ -181,8 +183,13 @@ public class NotificationService(
                 notification.CreatedAt.ToString("dddd, MMM dd"), notification.Type, notification.IsRead));
         }
 
-        return ApiResult<GetAllNotificationResponse>.Success(
-            new GetAllNotificationResponse(notificationResponses));
+        return ApiResult<PagedResponse<NotificationResponseDto>>.Success(new PagedResponse<NotificationResponseDto>
+        {
+            Items = notificationResponses,
+            Page = notifications.Page,
+            PageSize = notifications.PageSize,
+            TotalCount = notifications.TotalCount
+        });
     }
 
 

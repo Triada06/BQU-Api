@@ -34,7 +34,7 @@ public class NotificationController(INotificationService notificationService) : 
 
     [Authorize(Roles = "Student, Teacher, Dean")]
     [HttpGet(ApiEndPoints.User.GetNotifications)]
-    public async Task<IActionResult> GetNotifications()
+    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery] int pageSize = 100)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
@@ -42,7 +42,7 @@ public class NotificationController(INotificationService notificationService) : 
             return Unauthorized();
         }
 
-        var res = await notificationService.GetAllByUserId(userId);
+        var res = await notificationService.GetAllByUserId(userId,page,pageSize);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }

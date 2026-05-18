@@ -11,6 +11,7 @@ namespace BGU.Api.Controllers;
 [Authorize(Roles = "Dean")]
 public class GroupController(IGroupService groupService, IFinalService finalService) : ControllerBase
 {
+    [Authorize(Roles = "Dean, Teacher")]
     [HttpGet(ApiEndPoints.Group.GetAll)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
     {
