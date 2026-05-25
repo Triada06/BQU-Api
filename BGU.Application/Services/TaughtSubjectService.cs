@@ -399,7 +399,7 @@ public class TaughtSubjectService(
 
                     managedClasses.Add(new MangeClassesDto(
                         classItem.Id,
-                        classItem.ClassDate.UtcDateTime,
+                        classItem.ClassDate.Date,
                         FormatRange(classItem.Start, classItem.End),
                         'S',
                         seminar?.Grade is Grade.None ? attendance?.Id : null,
@@ -414,7 +414,7 @@ public class TaughtSubjectService(
 
                     managedClasses.Add(new MangeClassesDto(
                         classItem.Id,
-                        classItem.ClassDate.UtcDateTime,
+                        classItem.ClassDate.Date,
                         FormatRange(classItem.Start, classItem.End),
                         'L',
                         attendance?.Id,
