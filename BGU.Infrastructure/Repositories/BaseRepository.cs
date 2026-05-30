@@ -60,7 +60,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
         int pageSize = 5,
         bool tracking = true,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
-        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null) 
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        Expression<Func<T, bool>>? filterBy =null) 
     {
         IQueryable<T> query = _context.Set<T>();
 
@@ -68,6 +69,9 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class, IBaseEntity
 
         if (predicate is not null)
             query = query.Where(predicate);
+        
+        if (filterBy is not null)
+            query = query.Where(filterBy);
 
         if (include != null)
             query = include(query);

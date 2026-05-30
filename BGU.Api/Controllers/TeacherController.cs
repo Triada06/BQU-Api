@@ -59,7 +59,7 @@ public class TeacherController(ITeacherService teacherService,IFinalService fina
         if (userId is null)
             return Unauthorized();
 
-        var res = await finalService.GetAllByTeachAsync(userId);
+        var res = await finalService.GetAllByTeachAsync(userId, true);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }

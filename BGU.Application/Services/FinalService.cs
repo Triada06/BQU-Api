@@ -1,8 +1,10 @@
+using System.Linq.Expressions;
 using BGU.Application.Common;
 using BGU.Application.Dtos.Exams;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
+using BGU.Infrastructure.Data;
 using BGU.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,23 +18,26 @@ public class FinalService(
     IStudentRepository studentRepository,
     IStudentSubjectResultRepository studentSubjectResultRepository) : IFinalService
 {
-    public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search)
+    public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search,
+        string? groupId)
     {
+        var cleanSearch = search?.ToLower().Trim();
+
         var data = await finalRepository.GetAllPaginatedAsync(
-            search is not null
-                ? x =>
-                    search.ToLower().Trim().Contains(x.Student.AppUser.Name.ToLower().Trim()) ||
-                    search.ToLower().Trim().Contains(x.Student.AppUser.Surname.ToLower().Trim()) ||
-                    search.ToLower().Trim().Contains(x.Student.AppUser.MiddleName.ToLower().Trim()) ||
-                    search.ToLower().Trim().Contains(x.TaughtSubject.Code.ToLower().Trim()) ||
-                    search.ToLower().Trim().Contains(x.TaughtSubject.Subject.Name.ToLower().Trim())
+            cleanSearch is not null
+                ? x => (x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
+                        x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
+                        x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
+                        x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
+                        x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch))
                 : null,
             page, pageSize, false,
             include: x => x
                 .Include(g => g.TaughtSubject)
                 .ThenInclude(ts => ts.Group)
                 .Include(e => e.Student)
-                .ThenInclude(st => st.AppUser));
+                .ThenInclude(st => st.AppUser),
+            filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
 
         var returnData = data.Items.Select(x =>
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
@@ -136,7 +141,7 @@ public class FinalService(
             };
 
             result.UpdateFinalGrade();
-            
+
             await studentSubjectResultRepository.CreateAsync(result);
             // can also add if block to check whether succeeded or failed but there's no point of that
             // since the exam was already updated and without the transactions, the data will be "damaged"
@@ -145,11 +150,11 @@ public class FinalService(
         else
         {
             var result = results[0];
-            result.ExamGrade =  exam.Grade;
+            result.ExamGrade = exam.Grade;
             result.IsFinalized = exam.IsConfirmed;
-            
+
             result.UpdateFinalGrade();
-            
+
             await studentSubjectResultRepository.UpdateAsync(result);
             // can also add if block to check whether succeeded or failed but there's no point of that
             // since the exam was already updated and without the transactions, the data will be "damaged"
@@ -160,7 +165,7 @@ public class FinalService(
             exam.TaughtSubjectId, exam.Date, exam.Grade, exam.IsAllowed));
     }
 
-    public async Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId)
+    public async Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId, bool forGrade)
     {
         var user = await userManager.FindByIdAsync(userId);
         if (user is null)
@@ -175,15 +180,33 @@ public class FinalService(
             return ApiResult<ExamsToGrade>.NotFound($"Teacher not found");
         }
 
-        var exams = await finalRepository.FindAsync(
-            x => x.Date != null && x.TaughtSubject.TeacherId == teachers[0].Id,
-            x => x
-                .Include(e => e.TaughtSubject)
-                .ThenInclude(e => e.Subject)
-                .Include(e => e.Student)
-                .ThenInclude(st => st.AppUser)
-                .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Group),
-            tracking: false);
+        List<Exam> exams;
+
+        if (forGrade)
+        {
+            exams = await finalRepository.FindAsync(
+                x => x.Date != null && x.TaughtSubject.TeacherId == teachers[0].Id && x.Grade == -1,
+                x => x
+                    .Include(e => e.TaughtSubject)
+                    .ThenInclude(e => e.Subject)
+                    .Include(e => e.Student)
+                    .ThenInclude(st => st.AppUser)
+                    .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Group),
+                tracking: false);
+        }
+        else
+        {
+            exams = await finalRepository.FindAsync(
+                x => x.Date != null && x.TaughtSubject.TeacherId == teachers[0].Id,
+                x => x
+                    .Include(e => e.TaughtSubject)
+                    .ThenInclude(e => e.Subject)
+                    .Include(e => e.Student)
+                    .ThenInclude(st => st.AppUser)
+                    .Include(e => e.TaughtSubject).ThenInclude(ts => ts.Group),
+                tracking: false);
+        }
+
 
         if (exams.Count == 0)
         {
@@ -289,7 +312,11 @@ public class FinalService(
             return ApiResult<bool>.NotFound($"Students in group not found");
         }
 
-        var exams = students.SelectMany(x => x.Finals).ToList();
+        var exams = students
+            .SelectMany(x => x.Finals)
+            .Where(x => x.TaughtSubjectId == setExamDto.TaughtSubjectId)
+            .ToList();
+
         if (exams.Count == 0)
         {
             return ApiResult<bool>.NotFound("Exams do not exist");

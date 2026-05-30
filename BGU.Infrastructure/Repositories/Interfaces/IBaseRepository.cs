@@ -19,7 +19,8 @@ public interface IBaseRepository<T> where T : class, IBaseEntity
         int pageSize = 5,
         bool tracking = true,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
-        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        Expression<Func<T, bool>>? filterBy =null);
 
     public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? predicate,
         bool tracking = true,

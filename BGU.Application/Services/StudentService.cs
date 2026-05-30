@@ -1,3 +1,4 @@
+using System.Globalization;
 using BGU.Application.Common;
 using BGU.Application.Contracts.Notification.Requests;
 using BGU.Application.Contracts.Student.Requests;
@@ -430,11 +431,18 @@ public class StudentService(
             return new GetStudentResponse([], StatusCode.Ok, true, ResponseMessages.Success);
         }
 
-        var filteredUsers = users.Where(u =>
-            u.Name.Contains(searchString, StringComparison.CurrentCultureIgnoreCase) ||
-            u.Surname.Contains(searchString, StringComparison.CurrentCultureIgnoreCase) ||
-            u.MiddleName.Contains(searchString, StringComparison.CurrentCultureIgnoreCase));
+        var azCulture = new CultureInfo("az-AZ");
+        var enCulture = new CultureInfo("en-US");
 
+        bool MatchesSearch(string field, string search) =>
+            azCulture.CompareInfo.IndexOf(field, search, CompareOptions.IgnoreCase) >= 0 ||
+            enCulture.CompareInfo.IndexOf(field, search, CompareOptions.IgnoreCase) >= 0;
+
+        var filteredUsers = users.Where(u =>
+            MatchesSearch(u.Name, searchString) ||
+            MatchesSearch(u.Surname, searchString) ||
+            MatchesSearch(u.MiddleName, searchString));
+        
         var userIds = filteredUsers.Select(u => u.Id).ToList();
 
         var students = await studentRepository.FindAsync(

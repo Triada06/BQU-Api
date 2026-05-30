@@ -13,9 +13,9 @@ public class FinalController(IFinalService finalService) : ControllerBase
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Finals.GetAll)]
     public async Task<IActionResult> GetAll(
-        [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] string? search, [FromQuery] string? groupId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var res = await finalService.GetAllAsync(page, pageSize, search);
+        var res = await finalService.GetAllAsync(page, pageSize, search, groupId);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }
