@@ -67,5 +67,13 @@ public class FinalController(IFinalService finalService) : ControllerBase
         var res = await finalService.ConfirmAsync(id);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
-    }   
+    }
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Finals.FinalsToConfirm)]
+    public async Task<IActionResult> FinalsToConfirm()
+    {
+        var res = await finalService.GetAllToConfirmAsync();
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
+    }
 }

@@ -59,6 +59,28 @@ public class FinalService(
         };
     }
 
+    public async Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync()
+    {
+        var data = await finalRepository.FindAsync(x => x.IsAllowed && x.Grade != -1 && !x.IsConfirmed, tracking: false,
+            include: x => x
+            .Include(g => g.TaughtSubject)
+            .ThenInclude(ts => ts.Group)
+            .Include(e => e.Student)
+            .ThenInclude(st => st.AppUser));
+        
+        if (data.Count == 0)
+        {
+            return ApiResult<IEnumerable<GetFinalDto>>.Success([]);
+        }
+
+        var returnData = data.Select(x =>
+            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
+                x.TaughtSubject.Code,
+                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
+
+        return ApiResult<IEnumerable<GetFinalDto>>.Success(returnData);
+    }
+
     public async Task<ApiResult<bool>> SetExamDateAsync(SetExamDto setExamDto)
     {
         var exam = await finalRepository.GetByIdAsync(setExamDto.Id, tracking: true);

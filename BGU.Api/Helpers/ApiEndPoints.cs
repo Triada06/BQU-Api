@@ -176,6 +176,7 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/finals";
         public const string Create = $"{Base}";
         public const string GetAll = $"{Base}";
+        public const string FinalsToConfirm = $"{Base}/to-confirm";
         public const string SetTime = $"{Base}/{{id}}/set-time";
         public const string Update = $"{Base}/{{id}}";
         public const string Confirm = $"{Base}/{{id}}/confirm";
