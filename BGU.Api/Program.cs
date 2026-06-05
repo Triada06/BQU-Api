@@ -2,6 +2,7 @@ using System.Text;
 using BGU.Api;
 using BGU.Api.Filters;
 using BGU.Api.Helpers;
+using BGU.Api.Middleware;
 using BGU.Application.Common;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Data;
@@ -180,6 +181,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
