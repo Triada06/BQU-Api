@@ -33,6 +33,7 @@ public class StudentService(
     IStudentSubjectResultRepository studentSubjectResultRepository,
     IAttendanceRepository attendanceRepository,
     IClassRepository classRepository,
+    ITransactionService transactionService,
     INotificationService notificationService) : IStudentService
 {
     private static readonly Dictionary<int, (int onePoint, int twoPoint, int forbidden)> AttendanceRules =
@@ -498,6 +499,8 @@ public class StudentService(
 
     public async Task<MarkAbsenceStudentResponse> MarkAbsenceAsync(string studentId, string classId, string? seminarId)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var student =
             await studentRepository.GetByIdAsync(studentId, include: x => x
                 .Include(e => e.Group)
@@ -604,7 +607,8 @@ public class StudentService(
                 StudentId = studentId,
                 TaughtSubjectId = subject.Id,
                 GradeBeforeExam = score.Value.score,
-                IsFinalized = false
+                IsFinalized = false,
+                IsExamEligible = score.Value.IsEligible
             };
 
             sewStudentSubjectResult.UpdateFinalGrade();
@@ -620,6 +624,7 @@ public class StudentService(
             var studentSubjectResult = studentSubjectResults[0];
 
             studentSubjectResult.GradeBeforeExam = score.Value.score;
+            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
 
             studentSubjectResult.UpdateFinalGrade();
 
@@ -633,10 +638,15 @@ public class StudentService(
 
         return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
             $"Attendance status of the student with an Id of {student.Id} updated successfully");
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage.EndsWith("updated successfully"));
     }
 
     public async Task<GradeStudentColloquiumResponse> GradeStudentColloquiumAsync(GradeStudentColloquiumRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
         if (colloquium is null)
         {
@@ -699,7 +709,8 @@ public class StudentService(
                 StudentId = colloquium.StudentId,
                 TaughtSubjectId = subject.Id,
                 GradeBeforeExam = score.Value.score,
-                IsFinalized = false
+                IsFinalized = false,
+                IsExamEligible = score.Value.IsEligible,
             };
 
 
@@ -716,7 +727,8 @@ public class StudentService(
             var studentSubjectResult = studentSubjectResults[0];
 
             studentSubjectResult.GradeBeforeExam = score.Value.score;
-
+            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
+            
             studentSubjectResult.UpdateFinalGrade();
 
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
@@ -740,11 +752,16 @@ public class StudentService(
 
 
         return new GradeStudentColloquiumResponse(StatusCode.Ok, true, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponserMessage == ResponseMessages.Success);
     }
 
 
     public async Task<GradeStudentSeminarResponse> GradeSeminarAsync(GradeSeminarRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var seminar = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
 
         if (seminar is null)
@@ -826,7 +843,8 @@ public class StudentService(
                 StudentId = seminar.StudentId,
                 TaughtSubjectId = subject.Id,
                 GradeBeforeExam = score.Value.score,
-                IsFinalized = false
+                IsFinalized = false,
+                IsExamEligible = score.Value.IsEligible
             };
 
             newStudentSubjectResult.UpdateFinalGrade();
@@ -842,6 +860,7 @@ public class StudentService(
             var studentSubjectResult = studentSubjectResults[0];
 
             studentSubjectResult.GradeBeforeExam = score.Value.score;
+            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
             studentSubjectResult.UpdateFinalGrade();
 
             if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
@@ -864,6 +883,9 @@ public class StudentService(
         }
 
         return new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponserMessage == ResponseMessages.Success);
     }
 
     public async Task<ApiResult<GetIndependentWorksDto>> GetIndependentWorksByUserIdAsync(string studentId,

@@ -39,16 +39,39 @@ public class FinalBackGroundService(
 
                     var existingExams = await db.Exams
                         .Where(e => subjectIds.Contains(e.TaughtSubjectId))
-                        .Select(e => new
-                        {
-                            e.StudentId,
-                            e.TaughtSubjectId
-                        })
                         .ToListAsync(stoppingToken);
 
                     var existingSet = existingExams
                         .Select(e => (e.StudentId, e.TaughtSubjectId))
                         .ToHashSet();
+
+                    var examEligibilityRows = await db.StudentSubjectResults
+                        .Where(r => subjectIds.Contains(r.TaughtSubjectId))
+                        .Select(r => new
+                        {
+                            r.StudentId,
+                            r.TaughtSubjectId,
+                            r.IsExamEligible
+                        })
+                        .ToListAsync(stoppingToken);
+
+                    var examEligibility = examEligibilityRows
+                        .GroupBy(r => (r.StudentId, r.TaughtSubjectId))
+                        .ToDictionary(g => g.Key, g => g.First().IsExamEligible);
+
+                    var updatedCount = 0;
+
+                    foreach (var exam in existingExams)
+                    {
+                        if (!examEligibility.TryGetValue((exam.StudentId, exam.TaughtSubjectId), out var isAllowed) ||
+                            exam.IsAllowed == isAllowed)
+                        {
+                            continue;
+                        }
+
+                        exam.IsAllowed = isAllowed;
+                        updatedCount++;
+                    }
 
                     var exams = new List<Exam>();
 
@@ -65,6 +88,8 @@ public class FinalBackGroundService(
                                     Grade = -1,
                                     Date = null,
                                     IsConfirmed = false,
+                                    IsAllowed = examEligibility.TryGetValue((student.Id, subject.Id), out var isAllowed) &&
+                                                isAllowed,
                                     StudentId = student.Id,
                                     TaughtSubjectId = subject.Id
                                 });
@@ -75,11 +100,16 @@ public class FinalBackGroundService(
                     if (exams.Count > 0)
                     {
                         db.Exams.AddRange(exams);
+                    }
+
+                    if (exams.Count > 0 || updatedCount > 0)
+                    {
                         await db.SaveChangesAsync(stoppingToken);
 
                         logger.LogInformation(
-                            "Created {Count} exams",
-                            exams.Count);
+                            "Created {CreatedCount} exams and updated {UpdatedCount} exam eligibility statuses",
+                            exams.Count,
+                            updatedCount);
                     }
                 }
 

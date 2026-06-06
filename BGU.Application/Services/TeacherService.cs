@@ -1,5 +1,6 @@
 using BGU.Application.Contracts.Teacher.Requests;
 using BGU.Application.Contracts.Teacher.Responses;
+using BGU.Application.Common;
 using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.Teacher;
 using BGU.Application.Services.Interfaces;
@@ -11,7 +12,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
-public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository teacherRepository) : ITeacherService
+public class TeacherService(
+    UserManager<AppUser> userManager,
+    ITeacherRepository teacherRepository,
+    ITransactionService transactionService) : ITeacherService
 {
     public async Task<TeacherProfileResponse> GetProfile(string userId)
     {
@@ -220,6 +224,8 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
     public async Task<DeleteTeacherResponse> DeleteAsync(string teacherId)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var teacher = (await teacherRepository.FindAsync(x => x.Id == teacherId,
             i => i.Include(x => x.AppUser), tracking: true))?.FirstOrDefault();
         if (teacher is null)
@@ -242,6 +248,9 @@ public class TeacherService(UserManager<AppUser> userManager, ITeacherRepository
 
 
         return new DeleteTeacherResponse(StatusCode.Ok, true, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage == ResponseMessages.Success);
     }
 
     public async Task<GetByIdTeacherResponse> GetByIdAsync(string teacherId)

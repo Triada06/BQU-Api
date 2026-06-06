@@ -1,6 +1,7 @@
 using BGU.Application.Contracts.Syllabus.Requests;
 using BGU.Application.Contracts.Syllabus.Responses;
 using BGU.Application.Dtos.Syllabus;
+using BGU.Application.Common;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
@@ -12,10 +13,13 @@ namespace BGU.Application.Services;
 public class SyllabusService(
     ISyllabusRepository syllabusRepository,
     ITaughtSubjectRepository taughtSubjectRepository,
+    ITransactionService transactionService,
     IWebHostEnvironment env) : ISyllabusService
 {
     public async Task<CreateSyllabusResponse> CreateAsync(CreateSyllabusRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var course =
             await taughtSubjectRepository.GetByIdAsync(request.TaughtSubjectId, tracking: true);
 
@@ -53,10 +57,17 @@ public class SyllabusService(
         }
 
         course.HasSyllabus = true;
-        await taughtSubjectRepository.UpdateAsync(course);
+        if (!await taughtSubjectRepository.UpdateAsync(course))
+        {
+            return new CreateSyllabusResponse(null, StatusCode.InternalServerError, false,
+                ResponseMessages.Failed);
+        }
 
         return new CreateSyllabusResponse(syllabus.Id, StatusCode.Ok, true,
             ResponseMessages.CreatedSuccessfully);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage == ResponseMessages.CreatedSuccessfully);
     }
 
     public async Task<UpdateSyllabusResponse> UpdateAsync(UpdateSyllabusRequest request)
@@ -93,6 +104,8 @@ public class SyllabusService(
 
     public async Task<DeleteSyllabusResponse> DeleteAsync(string id)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var syllabus = await syllabusRepository.GetByIdAsync(id, tracking: true);
         if (syllabus is null)
         {
@@ -126,9 +139,15 @@ public class SyllabusService(
         }
 
         course.HasSyllabus = false;
-        await taughtSubjectRepository.UpdateAsync(course);
+        if (!await taughtSubjectRepository.UpdateAsync(course))
+        {
+            return new DeleteSyllabusResponse(StatusCode.InternalServerError, false, ResponseMessages.Failed);
+        }
 
         return new DeleteSyllabusResponse(StatusCode.Ok, true, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage == ResponseMessages.Success);
     }
 
     public async Task<GetByIdSyllabusResponse> GetByIdAsync(string id)

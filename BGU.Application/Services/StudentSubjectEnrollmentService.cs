@@ -14,11 +14,14 @@ public class StudentSubjectEnrollmentService(
     IAcademicHelper academicHelper,
     ITaughtSubjectRepository taughtSubjectRepository,
     IStudentRepository studentRepository,
+    ITransactionService transactionService,
     IFinalRepository finalRepository)
     : IStudentSubjectEnrollmentService
 {
     public async Task<ApiResult<string>> CreateAsync(CreateStudentSubjectEnrollmentDto dto)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var taughtSubject =
             await taughtSubjectRepository.GetByIdAsync(dto.TaughtSubjectId,
                 include: i =>
@@ -84,6 +87,7 @@ public class StudentSubjectEnrollmentService(
         return res
             ? ApiResult<string>.Success(entity.Id)
             : ApiResult<string>.SystemError("An error occured while deleting the enrollment");
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
     public async Task<ApiResult<PagedResponse<GetEnrollmentDto>>> GetAllAsync(int page, int pageSize)

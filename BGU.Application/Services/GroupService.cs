@@ -2,6 +2,7 @@ using BGU.Application.Contracts.Group.Requests;
 using BGU.Application.Contracts.Group.Responses;
 using BGU.Application.Dtos.Class;
 using BGU.Application.Dtos.Group;
+using BGU.Application.Common;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
@@ -10,13 +11,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BGU.Application.Services;
 
-public class GroupService(IGroupRepository groupRepository, IAdmissionYearRepository admissionYearRepository)
+public class GroupService(
+    IGroupRepository groupRepository,
+    IAdmissionYearRepository admissionYearRepository,
+    ITransactionService transactionService)
     : IGroupService
 {
     public async Task<GetAllGroupsResponse> GetAllAsync(int page, int pageSize, bool tracking = false)
     {
         var groups =
-            (await groupRepository.GetAllPaginatedAsync(null,page, pageSize, tracking,
+            (await groupRepository.GetAllPaginatedAsync(null, page, pageSize, tracking,
                 include: x =>
                     x.Include(e => e.Specialization)
                         .Include(e => e.Students)
@@ -163,39 +167,46 @@ public class GroupService(IGroupRepository groupRepository, IAdmissionYearReposi
 
     public async Task<CreateGroupsResponse> CreateAsync(CreateGroupRequest request)
     {
-        var code = request.GroupCode.Trim();
-        if (string.IsNullOrWhiteSpace(code))
-            return new CreateGroupsResponse(null, StatusCode.BadRequest, false, "GroupCode is required");
-
-        var normalized = code.ToUpper(); // or ToLower()
-
-        var exists = await groupRepository.AnyAsync(g => g.Code.Trim().ToUpper() == normalized);
-
-        if (exists)
-            return new CreateGroupsResponse(null, StatusCode.Conflict, false, ResponseMessages.Failed);
-        var admissionYear = GetAdmissionYear(request.Year);
-        if (!await admissionYearRepository.CreateAsync(admissionYear))
+        return await transactionService.ExecuteAsync(async () =>
         {
-            return new CreateGroupsResponse(null, StatusCode.Conflict, false, "Failed to initialize  admission year");
-        }
+            var code = request.GroupCode.Trim();
+            if (string.IsNullOrWhiteSpace(code))
+                return new CreateGroupsResponse(null, StatusCode.BadRequest, false, "GroupCode is required");
 
-        // IMPORTANT: store normalized/trimmed form consistently
-        var group = new Group
-        {
-            Code = code,
-            AdmissionYearId = admissionYear.Id,
-            EducationLanguage = request.EducationLanguage,
-            EducationLevel = request.EducationLevel,
-            SpecializationId = request.SpecializationId,
-        };
+            var normalized = code.ToUpper(); // or ToLower()
+
+            var exists = await groupRepository.AnyAsync(g => g.Code.Trim().ToUpper() == normalized);
+
+            if (exists)
+                return new CreateGroupsResponse(null, StatusCode.Conflict, false, ResponseMessages.Failed);
+            var admissionYear = GetAdmissionYear(request.Year);
+            if (!await admissionYearRepository.CreateAsync(admissionYear))
+            {
+                return new CreateGroupsResponse(null, StatusCode.Conflict, false,
+                    "Failed to initialize  admission year");
+            }
+
+            // IMPORTANT: store normalized/trimmed form consistently
+            var group = new Group
+            {
+                Code = code,
+                AdmissionYearId = admissionYear.Id,
+                EducationLanguage = request.EducationLanguage,
+                EducationLevel = request.EducationLevel,
+                SpecializationId = request.SpecializationId,
+            };
 
 
-        if (!await groupRepository.CreateAsync(group))
-        {
-            return new CreateGroupsResponse(null, StatusCode.InternalServerError, false, "Failed to create the group");
-        }
+            if (!await groupRepository.CreateAsync(group))
+            {
+                return new CreateGroupsResponse(null, StatusCode.InternalServerError, false,
+                    "Failed to create the group");
+            }
 
-        return new CreateGroupsResponse(group.Id, StatusCode.Ok, true, ResponseMessages.Success);
+            return new CreateGroupsResponse(group.Id, StatusCode.Ok, true, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage == ResponseMessages.Success);
     }
 
     private static AdmissionYear GetAdmissionYear(int year) //3, today is 2025

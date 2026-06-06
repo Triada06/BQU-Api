@@ -7,6 +7,7 @@ using BGU.Core.Entities;
 using BGU.Infrastructure.Repositories;
 using BGU.Infrastructure.Repositories.Interfaces;
 using BGU.Infrastructure.Workers;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 
 namespace BGU.Api.Helpers;
@@ -38,6 +39,8 @@ public static class AppServices {
         services.AddScoped<IAcademicHelper, AcademicHelper>();
         services.AddScoped<ITranscriptService, TranscriptService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ITransactionService, TransactionService>();
+        services.AddValidatorsFromAssembly(typeof(IUserService).Assembly);
         
         //repos
         services.AddScoped<IUserRepository, UserRepository>();

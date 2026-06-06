@@ -13,12 +13,20 @@ public class FinalRepository(AppDbContext context) : BaseRepository<Exam>(contex
     {
         var exam = await _contextToUse.Exams.Where(x => x.StudentId == studentId && x.TaughtSubjectId == subjectId)
             .ExecuteUpdateAsync(x => x.SetProperty(e => e.IsAllowed, toggle));
+        
+        if (exam > 0)
+        {
+            await _contextToUse.StudentSubjectResults
+                .Where(x => x.StudentId == studentId && x.TaughtSubjectId == subjectId)
+                .ExecuteUpdateAsync(x => x.SetProperty(r => r.IsExamEligible, toggle));
+        }
+        
         return exam > 0;
     }
 
     public async Task<int> BulkUpdateAsync(List<Exam> exams)
     {
-         _contextToUse.UpdateRange(exams);
+        _contextToUse.UpdateRange(exams);
         return await _contextToUse.SaveChangesAsync();
     }
 }

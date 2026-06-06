@@ -1,5 +1,6 @@
 using BGU.Application.Contracts.ClassTime.Requests;
 using BGU.Application.Contracts.ClassTime.Responses;
+using BGU.Application.Common;
 using BGU.Application.Services.Interfaces;
 using BGU.Core.Entities;
 using BGU.Infrastructure.Constants;
@@ -7,10 +8,15 @@ using BGU.Infrastructure.Repositories.Interfaces;
 
 namespace BGU.Application.Services;
 
-public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRepository classRepository): IClassTimeService
+public class ClassTimeService(
+    IClassTimeRepository classTimeRepository,
+    IClassRepository classRepository,
+    ITransactionService transactionService): IClassTimeService
 {
     public async Task<CreateClassTimeResponse> CreateAsync(CreateClassTimeRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         if (request.Start >= request.End)
         {
             return new CreateClassTimeResponse(
@@ -85,5 +91,8 @@ public class ClassTimeService(IClassTimeRepository classTimeRepository, IClassRe
             true,
             ResponseMessages.Success
         );
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ResponseMessage == ResponseMessages.Success);
     }
 }

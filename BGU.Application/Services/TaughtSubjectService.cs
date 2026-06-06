@@ -30,6 +30,7 @@ public class TaughtSubjectService(
     ISeminarRepository seminarRepository,
     IIndependentWorkRepository independentWorkRepository,
     AppDbContext context,
+    ITransactionService transactionService,
     IStudentSubjectEnrollmentRepository studentSubjectEnrollmentRepository) : ITaughtSubjectService
 {
     public async Task<DeleteTaughtSubjectResponse> DeleteAsync(string id)
@@ -118,6 +119,8 @@ public class TaughtSubjectService(
 
     public async Task<CreateTaughtSubjectResponse> CreateAsync(CreateTaughtSubjectRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         if (await taughtSubjectRepository.AnyAsync(x => x.Code == request.Code && x.GroupId == request.GroupId))
         {
             return new CreateTaughtSubjectResponse(null, false, StatusCode.Conflict,
@@ -291,6 +294,9 @@ public class TaughtSubjectService(
 
 
         return new CreateTaughtSubjectResponse(taughtSubject.Id, true, StatusCode.Ok, ResponseMessages.Success);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == StatusCode.Ok &&
+                       response.ErrorMessage == ResponseMessages.Success);
     }
 
     public async Task<ApiResult<GetActivitiesAndAttendances>> GetStudentsAndAttendancesAsync(string taughtSubjectId)
@@ -543,6 +549,8 @@ public class TaughtSubjectService(
 
     public async Task<ApiResult<bool>> DeleteSyllabusAsync(string id)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var course = await taughtSubjectRepository.GetByIdAsync(id, tracking: true);
         if (course is null)
         {
@@ -587,6 +595,9 @@ public class TaughtSubjectService(
             IsSucceeded = true,
             StatusCode = 200
         };
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == 200 &&
+                       response.Message == ResponseMessages.Success);
     }
 
     private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(

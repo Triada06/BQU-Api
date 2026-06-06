@@ -16,6 +16,7 @@ public class FinalService(
     ITeacherRepository teacherRepository,
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
+    ITransactionService transactionService,
     IStudentSubjectResultRepository studentSubjectResultRepository) : IFinalService
 {
     public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search,
@@ -129,6 +130,8 @@ public class FinalService(
 
     public async Task<ApiResult<UpdateExamResponse>> UpdateAsync(UpdateExamRequest request)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var exam = await finalRepository.GetByIdAsync(request.Id, tracking: true);
         if (exam is null)
         {
@@ -164,10 +167,10 @@ public class FinalService(
 
             result.UpdateFinalGrade();
 
-            await studentSubjectResultRepository.CreateAsync(result);
-            // can also add if block to check whether succeeded or failed but there's no point of that
-            // since the exam was already updated and without the transactions, the data will be "damaged"
-            // so there's no point of returning 500 or smth like that
+            if (!await studentSubjectResultRepository.CreateAsync(result))
+            {
+                return ApiResult<UpdateExamResponse>.SystemError("Failed to create student result");
+            }
         }
         else
         {
@@ -177,14 +180,15 @@ public class FinalService(
 
             result.UpdateFinalGrade();
 
-            await studentSubjectResultRepository.UpdateAsync(result);
-            // can also add if block to check whether succeeded or failed but there's no point of that
-            // since the exam was already updated and without the transactions, the data will be "damaged"
-            // so there's no point of returning 500 or smth like that
+            if (!await studentSubjectResultRepository.UpdateAsync(result))
+            {
+                return ApiResult<UpdateExamResponse>.SystemError("Failed to update student result");
+            }
         }
 
         return ApiResult<UpdateExamResponse>.Success(new UpdateExamResponse(exam.Id, exam.StudentId,
             exam.TaughtSubjectId, exam.Date, exam.Grade, exam.IsAllowed));
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
     public async Task<ApiResult<ExamsToGrade>> GetAllByTeachAsync(string userId, bool forGrade)
@@ -277,6 +281,8 @@ public class FinalService(
 
     public async Task<ApiResult<bool>> ConfirmAsync(string finalId)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var exam = await finalRepository.GetByIdAsync(finalId, tracking: false);
         if (exam is null)
         {
@@ -322,10 +328,15 @@ public class FinalService(
         }
 
         return ApiResult<bool>.Success(true);
+        }, response => response.IsSucceeded &&
+                       response.StatusCode == 200 &&
+                       response.Message == ResponseMessages.Success);
     }
 
     public async Task<ApiResult<bool>> SetGroupExamDateAsync(SetGroupExamDto setExamDto)
     {
+        return await transactionService.ExecuteAsync(async () =>
+        {
         var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
             include: x => x.Include(st => st.Finals), tracking: true);
 
@@ -356,5 +367,6 @@ public class FinalService(
         }
 
         return ApiResult<bool>.Success(true);
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 }
