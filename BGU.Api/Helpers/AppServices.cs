@@ -40,6 +40,7 @@ public static class AppServices {
         services.AddScoped<ITranscriptService, TranscriptService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ILibraryService, LibraryService>();
         services.AddValidatorsFromAssembly(typeof(IUserService).Assembly);
         
         //repos
@@ -66,6 +67,7 @@ public static class AppServices {
         services.AddScoped<IFinalRepository, FinalRepository>();
         services.AddScoped<IStudentSubjectResultRepository, StudentSubjectResultRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<ILibraryBookRepository, LibraryBookRepository>();
 
         
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));

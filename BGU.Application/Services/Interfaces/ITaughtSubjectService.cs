@@ -21,5 +21,5 @@ public interface ITaughtSubjectService
     Task<ApiResult<GetIndependentWorksByTaughtSubjectDto>> GetIndependentWorksByTaughtSubjectIdAsync(
         string taughtSubjectId);
 
-    Task<ApiResult<bool>> DeleteSyllabusAsync(string id);
+    Task<ApiResult> DeleteSyllabusAsync(string id);
 }

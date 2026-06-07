@@ -15,7 +15,6 @@ public class StudentSubjectResult : BaseEntity
     public bool IsFinalized { get; set; }
 
     public bool IsExamEligible { get; set; }
-    //todo: probably needs a IsExamEligible property. That would help to automatically set exam eligibility on creation 
 
     public void UpdateFinalGrade()
     {

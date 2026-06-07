@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using DotNetEnv;
 using QuestPDF.Infrastructure;
@@ -77,6 +78,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add Data Protection services (required for Identity token providers)
 builder.Services.AddDataProtection();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAppServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers(options =>
@@ -159,6 +161,13 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db);
     await IdentitySeeder.SeedDeansFromEnvAsync(db, userManager, roleManager);
 }
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                       ForwardedHeaders.XForwardedHost |
+                       ForwardedHeaders.XForwardedProto
+});
 
 app.UseStaticFiles();
 app.UseRouting();

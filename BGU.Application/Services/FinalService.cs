@@ -82,26 +82,26 @@ public class FinalService(
         return ApiResult<IEnumerable<GetFinalDto>>.Success(returnData);
     }
 
-    public async Task<ApiResult<bool>> SetExamDateAsync(SetExamDto setExamDto)
+    public async Task<ApiResult> SetExamDateAsync(SetExamDto setExamDto)
     {
         var exam = await finalRepository.GetByIdAsync(setExamDto.Id, tracking: true);
         if (exam is null)
         {
-            return ApiResult<bool>.NotFound();
+            return ApiResult.NotFound();
         }
 
         if (!exam.IsAllowed)
         {
-            return ApiResult<bool>.BadRequest(false, "This student is not allowed to take an exam");
+            return ApiResult.BadRequest("This student is not allowed to take an exam");
         }
 
         exam.Date = setExamDto.Date;
         if (!await finalRepository.UpdateAsync(exam))
         {
-            return ApiResult<bool>.SystemError("Failed to update exam");
+            return ApiResult.SystemError("Failed to update exam");
         }
 
-        return ApiResult<bool>.Success(true);
+        return ApiResult.Success();
     }
 
     public async Task<ApiResult<string>> CreateAsync(CreateExamDto createExamDto)
@@ -279,21 +279,21 @@ public class FinalService(
         return ApiResult<string>.Success(exam.Id);
     }
 
-    public async Task<ApiResult<bool>> ConfirmAsync(string finalId)
+    public async Task<ApiResult> ConfirmAsync(string finalId)
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var exam = await finalRepository.GetByIdAsync(finalId, tracking: false);
+        var exam = await finalRepository.GetByIdAsync(finalId, tracking: true);
         if (exam is null)
         {
-            return ApiResult<bool>.NotFound($"Exam with an Id of {finalId} not found");
+            return ApiResult.NotFound($"Exam with an Id of {finalId} not found");
         }
 
         exam.IsConfirmed = true;
 
         if (!await finalRepository.UpdateAsync(exam))
         {
-            return ApiResult<bool>.SystemError();
+            return ApiResult.SystemError();
         }
 
         var results = await studentSubjectResultRepository.FindAsync(
@@ -301,13 +301,7 @@ public class FinalService(
 
         if (results.Count == 0)
         {
-            return new ApiResult<bool>
-            {
-                Data = true,
-                Message = "Exam was confirmed but it's grade wasn't finalized since no matched data found",
-                IsSucceeded = true,
-                StatusCode = 200
-            };
+            return ApiResult.Success("Exam was confirmed but it's grade wasn't finalized since no matched data found");
         }
 
         var result = results[0];
@@ -318,22 +312,83 @@ public class FinalService(
 
         if (!await studentSubjectResultRepository.UpdateAsync(result))
         {
-            return new ApiResult<bool>
-            {
-                Data = true,
-                Message = "Exam was confirmed but it's grade wasn't finalized",
-                IsSucceeded = true,
-                StatusCode = 200
-            };
+            return ApiResult.Success("Exam was confirmed but it's grade wasn't finalized");
         }
 
-        return ApiResult<bool>.Success(true);
-        }, response => response.IsSucceeded &&
-                       response.StatusCode == 200 &&
-                       response.Message == ResponseMessages.Success);
+        return ApiResult.Success();
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
-    public async Task<ApiResult<bool>> SetGroupExamDateAsync(SetGroupExamDto setExamDto)
+    public async Task<ApiResult> BulkConfirmAsync(BulkConfirmFinalsRequest? request)
+    {
+        if (request?.Ids is null)
+        {
+            return ApiResult.BadRequest("At least one exam id is required");
+        }
+
+        var ids = request.Ids
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            return ApiResult.BadRequest("At least one exam id is required");
+        }
+
+        return await transactionService.ExecuteAsync(async () =>
+        {
+            var exams = await finalRepository.FindAsync(x => ids.Contains(x.Id), tracking: true);
+            if (exams.Count != ids.Count)
+            {
+                var foundIds = exams.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
+                var missingIds = ids.Where(x => !foundIds.Contains(x));
+
+                return ApiResult.BadRequest($"Exams not found: {string.Join(", ", missingIds)}");
+            }
+
+            var notFinalizedCount = 0;
+
+            foreach (var exam in exams)
+            {
+                exam.IsConfirmed = true;
+
+                if (!await finalRepository.UpdateAsync(exam))
+                {
+                    return ApiResult.SystemError($"Failed to confirm exam with an Id of {exam.Id}");
+                }
+
+                var results = await studentSubjectResultRepository.FindAsync(
+                    x => x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId,
+                    tracking: true);
+
+                if (results.Count == 0)
+                {
+                    notFinalizedCount++;
+                    continue;
+                }
+
+                var result = results[0];
+                result.ExamGrade = exam.Grade;
+                result.IsFinalized = true;
+                result.UpdateFinalGrade();
+
+                if (!await studentSubjectResultRepository.UpdateAsync(result))
+                {
+                    return ApiResult.SystemError(
+                        $"Failed to finalize student result for exam with an Id of {exam.Id}");
+                }
+            }
+
+            return notFinalizedCount == 0
+                ? ApiResult.Success($"Confirmed {exams.Count} exams")
+                : ApiResult.Success(
+                    $"Confirmed {exams.Count} exams, but {notFinalizedCount} grade results were not finalized because no matched data was found");
+        }, response => response.IsSucceeded && response.StatusCode == 200);
+    }
+
+    public async Task<ApiResult> SetGroupExamDateAsync(SetGroupExamDto setExamDto)
     {
         return await transactionService.ExecuteAsync(async () =>
         {
@@ -342,7 +397,7 @@ public class FinalService(
 
         if (students.Count == 0)
         {
-            return ApiResult<bool>.NotFound($"Students in group not found");
+            return ApiResult.NotFound($"Students in group not found");
         }
 
         var exams = students
@@ -352,7 +407,7 @@ public class FinalService(
 
         if (exams.Count == 0)
         {
-            return ApiResult<bool>.NotFound("Exams do not exist");
+            return ApiResult.NotFound("Exams do not exist");
         }
 
         foreach (var exam in exams.Where(exam => exam.IsAllowed))
@@ -363,10 +418,10 @@ public class FinalService(
 
         if (await finalRepository.BulkUpdateAsync(exams) <= 0)
         {
-            return ApiResult<bool>.SystemError("Failed to update exam");
+            return ApiResult.SystemError("Failed to update exam");
         }
 
-        return ApiResult<bool>.Success(true);
+        return ApiResult.Success();
         }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 }

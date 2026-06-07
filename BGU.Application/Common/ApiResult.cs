@@ -62,7 +62,6 @@ public class ApiResult<T>
         };
 }
 
-// todo:refactor all the service methods where ResponseModel<bool> was used, using ts👇🏻
 
 public class ApiResult
 {

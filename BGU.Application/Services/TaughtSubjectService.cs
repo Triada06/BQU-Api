@@ -547,57 +547,36 @@ public class TaughtSubjectService(
             new GetIndependentWorksByTaughtSubjectDto(independentWorks));
     }
 
-    public async Task<ApiResult<bool>> DeleteSyllabusAsync(string id)
+    public async Task<ApiResult> DeleteSyllabusAsync(string id)
     {
         return await transactionService.ExecuteAsync(async () =>
         {
         var course = await taughtSubjectRepository.GetByIdAsync(id, tracking: true);
         if (course is null)
         {
-            return new ApiResult<bool>
-            {
-                Data = false,
-                Message = $"Course with an Id of {id} not found",
-                IsSucceeded = false,
-                StatusCode = 400
-            };
+            return ApiResult.BadRequest($"Course with an Id of {id} not found");
         }
 
         var syllabus =
             (await syllabusRepository.FindAsync(x => x.TaughtSubjectId == id, tracking: true))?.FirstOrDefault();
         if (syllabus is null)
         {
-            return new ApiResult<bool>
-            {
-                Data = false,
-                Message = "No syllabus found for this course",
-                IsSucceeded = false,
-                StatusCode = 400
-            };
+            return ApiResult.BadRequest("No syllabus found for this course");
         }
 
         var deleteRes = await syllabusService.DeleteAsync(syllabus.Id);
         if (!deleteRes.IsSucceeded)
         {
-            return new ApiResult<bool>
+            return new ApiResult
             {
-                Data = false,
                 Message = deleteRes.ResponseMessage,
                 IsSucceeded = false,
                 StatusCode = (int)deleteRes.StatusCode
             };
         }
 
-        return new ApiResult<bool>
-        {
-            Data = false,
-            Message = "Success",
-            IsSucceeded = true,
-            StatusCode = 200
-        };
-        }, response => response.IsSucceeded &&
-                       response.StatusCode == 200 &&
-                       response.Message == ResponseMessages.Success);
+        return ApiResult.Success(ResponseMessages.Success);
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
     private static (List<Class> Classes, List<ClassTime> ClassTimes) GenerateClassesAndClassTimes(

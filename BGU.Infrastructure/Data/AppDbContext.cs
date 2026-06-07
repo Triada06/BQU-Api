@@ -32,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<StudentSubjectEnrollment> StudentSubjectEnrollments { get; set; }
     public DbSet<StudentSubjectResult> StudentSubjectResults { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<LibraryBook> LibraryBooks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -92,6 +93,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .WithOne(t => t.Syllabus)
             .HasForeignKey<Syllabus>(s => s.TaughtSubjectId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<LibraryBook>(b =>
+        {
+            b.Property(x => x.Title).HasMaxLength(200);
+            b.Property(x => x.Category).HasMaxLength(100);
+            b.Property(x => x.Language).HasMaxLength(50);
+            b.Property(x => x.Status).HasMaxLength(20);
+            b.Property(x => x.Format).HasMaxLength(20);
+            b.Property(x => x.Isbn).HasMaxLength(30);
+            b.Property(x => x.Publisher).HasMaxLength(150);
+            b.Property(x => x.Edition).HasMaxLength(50);
+            b.Property(x => x.FileName).HasMaxLength(260);
+            b.Property(x => x.StoredFileName).HasMaxLength(260);
+            b.Property(x => x.CoverImageFileName).HasMaxLength(260);
+            b.Property(x => x.FileContentType).HasMaxLength(100);
+            b.HasOne(x => x.CreatedBy)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
         
         builder.Entity<StudentSubjectEnrollment>()
             .HasOne(x => x.TaughtSubject)

@@ -180,6 +180,7 @@ public static class ApiEndPoints
         public const string SetTime = $"{Base}/{{id}}/set-time";
         public const string Update = $"{Base}/{{id}}";
         public const string Confirm = $"{Base}/{{id}}/confirm";
+        public const string BulkConfirm = $"{Base}/bulk-confirm";
         public const string Grade = $"{Base}/{{id}}/grade";
     }
     public static class Notification
@@ -187,5 +188,17 @@ public static class ApiEndPoints
         private const string Base = $"{ApiBase}/notifications";
         public const string Create = $"{Base}";
         public const string MarkAsRead = $"{Base}/{{id}}/mark-as-read";
+    }
+
+    public static class LibraryBooks
+    {
+        private const string Base = $"{ApiBase}/library/books";
+        public const string GetAll = $"{Base}";
+        public const string GetById = $"{Base}/{{id}}";
+        public const string Create = $"{Base}";
+        public const string Update = $"{Base}/{{id}}";
+        public const string Delete = $"{Base}/{{id}}";
+        public const string Cover = $"{Base}/{{id}}/cover";
+        public const string Read = $"{Base}/{{id}}/read";
     }
 }

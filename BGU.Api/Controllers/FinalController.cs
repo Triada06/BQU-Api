@@ -68,6 +68,16 @@ public class FinalController(IFinalService finalService) : ControllerBase
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }
+
+    [Authorize(Roles = "Dean")]
+    [HttpPut(ApiEndPoints.Finals.BulkConfirm)]
+    public async Task<IActionResult> BulkConfirmFinals([FromBody] BulkConfirmFinalsRequest request)
+    {
+        var res = await finalService.BulkConfirmAsync(request);
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
+    }
+
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Finals.FinalsToConfirm)]
     public async Task<IActionResult> FinalsToConfirm()

@@ -1176,29 +1176,28 @@ public class StudentService(
         return ApiResult<GetStudentFinals>.Success(new GetStudentFinals(returnData));
     }
 
-    public async Task<ApiResult<bool>> DeleteAsync(string id)
+    public async Task<ApiResult> DeleteAsync(string id)
     {
         var student = await studentRepository.GetByIdAsync(id, include: x => x.Include(s => s.AppUser));
 
         if (student is null)
         {
-            return ApiResult<bool>.NotFound("Student not found");
+            return ApiResult.NotFound("Student not found");
         }
 
         var res = await userManager.DeleteAsync(student.AppUser);
 
         if (!res.Succeeded)
         {
-            return new ApiResult<bool>
+            return new ApiResult
             {
-                Data = res.Succeeded,
                 Message = string.Join(", ", res.Errors.Select(e => e.Description)),
                 IsSucceeded = res.Succeeded,
                 StatusCode = res.Succeeded ? 200 : 500
             };
         }
 
-        return ApiResult<bool>.Success(true);
+        return ApiResult.Success();
     }
 
     //TODO: GPA IS NOT BEING STORED IN THE DATABASE, FIX REQUIRED

@@ -1,0 +1,26 @@
+namespace BGU.Application.Dtos.Library;
+
+public sealed record LibraryBookDto(
+    string Id,
+    string Title,
+    string[] Authors,
+    string? Description,
+    string? Isbn,
+    string Category,
+    string Language,
+    string? Publisher,
+    int? PublishedYear,
+    string? Edition,
+    string[] Tags,
+    string Format,
+    string Status,
+    string? CoverImageUrl,
+    string? FileName,
+    long? FileSizeBytes,
+    string? FileContentType,
+    string? FileUrl,
+    int ViewCount,
+    string? CreatedById,
+    string? CreatedByFullName,
+    string? CreatedAt,
+    string? UpdatedAt);
