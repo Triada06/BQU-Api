@@ -14,7 +14,7 @@ public class UpdateExamDtoValidator : AbstractValidator<UpdateExamDto>
             .Must(x => x.Date >= DateTime.UtcNow)
             .WithMessage("Date must be in the future");
         RuleFor(x => x.Grade)
-            .GreaterThan(0)
+            .GreaterThanOrEqualTo(-1)
             .WithMessage("Grade must be greater than 0")
             .LessThanOrEqualTo(50)
             .WithMessage("Grade must be less than or equal 50");
