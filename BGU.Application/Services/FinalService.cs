@@ -161,7 +161,7 @@ public class FinalService(
             {
                 StudentId = exam.StudentId,
                 TaughtSubjectId = exam.TaughtSubjectId,
-                ExamGrade = exam.Grade,
+                ExamGrade = exam.Grade is -1 ? 0 : exam.Grade,
                 IsFinalized = exam.IsConfirmed
             };
 
@@ -175,7 +175,7 @@ public class FinalService(
         else
         {
             var result = results[0];
-            result.ExamGrade = exam.Grade;
+            result.ExamGrade = exam.Grade is -1 ? 0 : exam.Grade;
             result.IsFinalized = exam.IsConfirmed;
 
             result.UpdateFinalGrade();
