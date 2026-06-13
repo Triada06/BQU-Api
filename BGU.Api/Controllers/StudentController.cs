@@ -40,12 +40,12 @@ public class StudentController(
 
     [Authorize(Roles = "Student")]
     [HttpGet(ApiEndPoints.Student.Grades)]
-    public async Task<IActionResult> Grades([FromQuery] string grade = "courses")
+    public async Task<IActionResult> Grades()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId == null)
             return Unauthorized();
-        var data = await studentService.GetGrades(userId, new StudentGradesRequest(grade));
+        var data = await studentService.GetGrades(userId);
         return Ok(data);
     }
 

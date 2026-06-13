@@ -26,4 +26,6 @@ public sealed record AcademicPerformanceDto(
     IEnumerable<int> Colloquium,
     IEnumerable<GetIndependentWorkDto> IndependentWorks,
     IEnumerable<bool> Attendances,
-    int ClassCount);
+    int ClassCount,
+    int? ExamGrade,
+    char? ExamGradeLetter);

@@ -206,7 +206,7 @@ public class StudentService(
             "Found", true, 200);
     }
 
-    public async Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request)
+    public async Task<ApiResult<StudentGradesDto?>> GetGrades(string userId)
     {
         var student = await context.Students
             .Where(s => s.AppUserId == userId)
@@ -214,7 +214,9 @@ public class StudentService(
             .FirstOrDefaultAsync();
 
         if (student == null)
-            return new StudentGradesResponse(null, null, ResponseMessages.NotFound, false, 404);
+        {
+            return ApiResult<StudentGradesDto?>.NotFound();
+        }
 
         var taughtSubjects = await context.TaughtSubjects
             .Where(ts => ts.GroupId == student.GroupId)
@@ -231,8 +233,10 @@ public class StudentService(
             .ToListAsync();
 
         if (taughtSubjects.Count == 0)
-            return new StudentGradesResponse(new StudentGradesDto(Enumerable.Empty<AcademicPerformanceDto>()), null,
-                "Ok", true, 200);
+        {
+            return ApiResult<StudentGradesDto?>.Success(
+                new StudentGradesDto([]));
+        }
 
         var taughtSubjectIds = taughtSubjects.Select(ts => ts.Id).ToList();
         var allClassIds = taughtSubjects.SelectMany(ts => ts.ClassIds).ToList();
@@ -308,9 +312,14 @@ public class StudentService(
             var semesterExamGrade = student.Finals.FirstOrDefault(x =>
                 x.TaughtSubjectId == ts.Id && x.StudentId == student.Id && x.IsConfirmed);
 
+            int? examGrade = null; 
+            char? examLetter = null; 
+            
             if (semesterExamGrade is not null && isEligible)
             {
                 score += semesterExamGrade.Grade;
+                examLetter = semesterExamGrade.Grade < 17 ? 'F' :  ToCharGrade(score);
+                examGrade = semesterExamGrade.Grade;
             }
 
             return new AcademicPerformanceDto(
@@ -325,7 +334,9 @@ public class StudentService(
                 iwDtos,
                 happenedClasses,
                 // subjectAttendances, //TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
-                ts.ClassCount
+                ts.ClassCount,
+                examGrade,
+                examLetter
             );
         });
 
@@ -333,7 +344,7 @@ public class StudentService(
 
         // var studentOverallGpa = performance.Select(x => x.OverallScore).Sum();
 
-        return new StudentGradesResponse(new StudentGradesDto(performance), null, "Ok", true, 200);
+        return ApiResult<StudentGradesDto?>.Success(new StudentGradesDto(performance));
     }
 
     public async Task<StudentProfileResponse> GetProfile(string userId)
@@ -443,7 +454,7 @@ public class StudentService(
             MatchesSearch(u.Name, searchString) ||
             MatchesSearch(u.Surname, searchString) ||
             MatchesSearch(u.MiddleName, searchString));
-        
+
         var userIds = filteredUsers.Select(u => u.Id).ToList();
 
         var students = await studentRepository.FindAsync(
@@ -501,143 +512,146 @@ public class StudentService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var student =
-            await studentRepository.GetByIdAsync(studentId, include: x => x
-                .Include(e => e.Group)
-                .Include(e => e.Attendances), tracking: true);
-        if (student is null)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
-                $"Student with id {studentId} not found ");
-        }
-
-        var attendance = student.Attendances.FirstOrDefault(x => x.ClassId == classId);
-        if (attendance is null)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
-        }
-
-
-        var res = await attendanceService.UpdateAttendanceAsync(attendance);
-        if (!res.IsSucceeded)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
-                $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
-        }
-
-        var attendanceClass =
-            await classRepository.GetByIdAsync(classId, i => i.Include(x => x.ClassTime), tracking: true);
-
-        if (attendanceClass is null)
-        {
-            //todo: handle this, the case is unlikely but is written so the compiler would stfu :(
-            return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Class with id {classId} not found ");
-        }
-
-        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
-            NotificationType.Info,
-            $"{attendanceClass.ClassTime.ClassDate:dddd, MMM dd} tarixindəki dərsinizə davamiyyətiniz {(attendance.IsPresent ? "iştirak etdi" : "iştirak etmədi")} olaraq qeyd edildi"
-        ));
-
-
-        // remove the previous grade no matter what
-        if (seminarId is not null && attendanceClass.ClassType == ClassType.Семинар)
-        {
-            var seminar = await seminarRepository.GetByIdAsync(seminarId, tracking: true);
-
-            if (seminar is null)
+            var student =
+                await studentRepository.GetByIdAsync(studentId, include: x => x
+                    .Include(e => e.Group)
+                    .Include(e => e.Attendances), tracking: true);
+            if (student is null)
             {
-                return new MarkAbsenceStudentResponse(StatusCode.NotFound, false, $"Seminar id {seminar} not found ");
+                return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
+                    $"Student with id {studentId} not found ");
             }
 
-            seminar.Grade = Grade.None;
+            var attendance = student.Attendances.FirstOrDefault(x => x.ClassId == classId);
+            if (attendance is null)
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
+                    $"Class with id {classId} not found ");
+            }
 
-            if (!await seminarRepository.UpdateAsync(seminar))
+
+            var res = await attendanceService.UpdateAttendanceAsync(attendance);
+            if (!res.IsSucceeded)
             {
                 return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
-                    "Failed to remove previous grade fromt he calss");
+                    $"Attendance status of the student with an Id of {student.Id} couldn't be updated");
             }
-        }
 
-        var subjects = await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId));
+            var attendanceClass =
+                await classRepository.GetByIdAsync(classId, i => i.Include(x => x.ClassTime), tracking: true);
 
-        if (subjects.Count == 0)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-                $"Attendance status was updated, but exam eligibility  couldn't be updated");
-        }
-
-
-        var subject = subjects[0];
-        var score = await GetStudentSubjectScoreAsync(studentId, subject.Id);
-
-        if (score is null)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-                $"Attendance status was updated, but exam eligibility couldn't be updated. " +
-                $"Either it was not created or a system error. " +
-                $"If you sure it is created, please, contact the developers or administration");
-        }
-
-
-        //set the exma eligibility status
-        var isSucceeded =
-            await finalRepository.ToggleExamEligibilityAsync(studentId, subject.Id, score.Value.IsEligible);
-
-
-        if (!isSucceeded)
-        {
-            return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-                $"Attendance status was updated, but exam eligibility couldn't be updated. " +
-                $"Either it was not created or a system error. " +
-                $"If you sure it is created, please, contact the developers or administration");
-        }
-
-
-        //save the moment gpa
-        var studentSubjectResults =
-            (await studentSubjectResultRepository.FindAsync(x =>
-                x.StudentId == student.Id && x.TaughtSubjectId == subject.Id));
-
-
-        if (studentSubjectResults.Count == 0)
-        {
-            var sewStudentSubjectResult = new StudentSubjectResult
+            if (attendanceClass is null)
             {
-                StudentId = studentId,
-                TaughtSubjectId = subject.Id,
-                GradeBeforeExam = score.Value.score,
-                IsFinalized = false,
-                IsExamEligible = score.Value.IsEligible
-            };
+                //todo: handle this, the case is unlikely but is written so the compiler would stfu :(
+                return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
+                    $"Class with id {classId} not found ");
+            }
 
-            sewStudentSubjectResult.UpdateFinalGrade();
+            await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+                NotificationType.Info,
+                $"{attendanceClass.ClassTime.ClassDate:dddd, MMM dd} tarixindəki dərsinizə davamiyyətiniz {(attendance.IsPresent ? "iştirak etdi" : "iştirak etmədi")} olaraq qeyd edildi"
+            ));
 
-            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+
+            // remove the previous grade no matter what
+            if (seminarId is not null && attendanceClass.ClassType == ClassType.Семинар)
+            {
+                var seminar = await seminarRepository.GetByIdAsync(seminarId, tracking: true);
+
+                if (seminar is null)
+                {
+                    return new MarkAbsenceStudentResponse(StatusCode.NotFound, false,
+                        $"Seminar id {seminar} not found ");
+                }
+
+                seminar.Grade = Grade.None;
+
+                if (!await seminarRepository.UpdateAsync(seminar))
+                {
+                    return new MarkAbsenceStudentResponse(StatusCode.InternalServerError, false,
+                        "Failed to remove previous grade fromt he calss");
+                }
+            }
+
+            var subjects = await taughtSubjectRepository.FindAsync(x => x.Classes.Any(c => c.Id == classId));
+
+            if (subjects.Count == 0)
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Attendance status was updated, but exam eligibility  couldn't be updated");
             }
-        }
-        else
-        {
-            var studentSubjectResult = studentSubjectResults[0];
 
-            studentSubjectResult.GradeBeforeExam = score.Value.score;
-            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
 
-            studentSubjectResult.UpdateFinalGrade();
+            var subject = subjects[0];
+            var score = await GetStudentSubjectScoreAsync(studentId, subject.Id);
 
-            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            if (score is null)
             {
                 return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Attendance status was updated, but exam eligibility couldn't be updated. " +
+                    $"Either it was not created or a system error. " +
+                    $"If you sure it is created, please, contact the developers or administration");
             }
-        }
 
 
-        return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
-            $"Attendance status of the student with an Id of {student.Id} updated successfully");
+            //set the exma eligibility status
+            var isSucceeded =
+                await finalRepository.ToggleExamEligibilityAsync(studentId, subject.Id, score.Value.IsEligible);
+
+
+            if (!isSucceeded)
+            {
+                return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                    $"Attendance status was updated, but exam eligibility couldn't be updated. " +
+                    $"Either it was not created or a system error. " +
+                    $"If you sure it is created, please, contact the developers or administration");
+            }
+
+
+            //save the moment gpa
+            var studentSubjectResults =
+                (await studentSubjectResultRepository.FindAsync(x =>
+                    x.StudentId == student.Id && x.TaughtSubjectId == subject.Id));
+
+
+            if (studentSubjectResults.Count == 0)
+            {
+                var sewStudentSubjectResult = new StudentSubjectResult
+                {
+                    StudentId = studentId,
+                    TaughtSubjectId = subject.Id,
+                    GradeBeforeExam = score.Value.score,
+                    IsFinalized = false,
+                    IsExamEligible = score.Value.IsEligible
+                };
+
+                sewStudentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+                {
+                    return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
+            else
+            {
+                var studentSubjectResult = studentSubjectResults[0];
+
+                studentSubjectResult.GradeBeforeExam = score.Value.score;
+                studentSubjectResult.IsExamEligible = score.Value.IsEligible;
+
+                studentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+                {
+                    return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
+
+
+            return new MarkAbsenceStudentResponse(StatusCode.Ok, true,
+                $"Attendance status of the student with an Id of {student.Id} updated successfully");
         }, response => response.IsSucceeded &&
                        response.StatusCode == StatusCode.Ok &&
                        response.ResponseMessage.EndsWith("updated successfully"));
@@ -647,111 +661,112 @@ public class StudentService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
-        if (colloquium is null)
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false,
-                $"Colloquium with an Id of {request.ColloquiumId} not found");
-        }
-
-        colloquium.Grade = request.Grade;
-
-        if (!await colloquiumRepository.UpdateAsync(colloquium))
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.InternalServerError, false,
-                "An error occured while updating the grade");
-        }
-
-
-        var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: false);
-
-        if (student is null)
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false, "Student not found");
-        }
-
-        var subjects =
-            await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id));
-
-        if (subjects.Count == 0)
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
-                $"Colloquium was graded, but exam eligibility  couldn't be updated");
-        }
-
-        var subject = subjects[0];
-
-       await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
-            NotificationType.Info,
-            $"{subject.Code} fənnindən kollokvium qiymətiniz {request.Grade} olaraq qeyd edildi"
-        ));
-
-        var score = await GetStudentSubjectScoreAsync(colloquium.StudentId, subject.Id);
-
-        if (score is null)
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
-                $"Seminar was graded, but exam eligibility couldn't be updated. " +
-                $"Either it was not created or a system error. " +
-                $"If you sure it is created, please, contact the developers or administration");
-        }
-
-        //save the moment gpa
-        var studentSubjectResults =
-            await studentSubjectResultRepository.FindAsync(x =>
-                x.StudentId == colloquium.StudentId && x.TaughtSubjectId == subject.Id);
-
-
-        if (studentSubjectResults.Count == 0)
-        {
-            var sewStudentSubjectResult = new StudentSubjectResult
+            var colloquium = await colloquiumRepository.GetByIdAsync(request.ColloquiumId, tracking: true);
+            if (colloquium is null)
             {
-                StudentId = colloquium.StudentId,
-                TaughtSubjectId = subject.Id,
-                GradeBeforeExam = score.Value.score,
-                IsFinalized = false,
-                IsExamEligible = score.Value.IsEligible,
-            };
+                return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false,
+                    $"Colloquium with an Id of {request.ColloquiumId} not found");
+            }
+
+            colloquium.Grade = request.Grade;
+
+            if (!await colloquiumRepository.UpdateAsync(colloquium))
+            {
+                return new GradeStudentColloquiumResponse(StatusCode.InternalServerError, false,
+                    "An error occured while updating the grade");
+            }
 
 
-            sewStudentSubjectResult.UpdateFinalGrade();
+            var student = await studentRepository.GetByIdAsync(request.StudentId, tracking: false);
 
-            if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+            if (student is null)
+            {
+                return new GradeStudentColloquiumResponse(StatusCode.BadRequest, false, "Student not found");
+            }
+
+            var subjects =
+                await taughtSubjectRepository.FindAsync(x => x.Colloquiums.Any(c => c.Id == colloquium.Id));
+
+            if (subjects.Count == 0)
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Colloquium was graded, but exam eligibility  couldn't be updated");
             }
-        }
-        else
-        {
-            var studentSubjectResult = studentSubjectResults[0];
 
-            studentSubjectResult.GradeBeforeExam = score.Value.score;
-            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
-            
-            studentSubjectResult.UpdateFinalGrade();
+            var subject = subjects[0];
 
-            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+                NotificationType.Info,
+                $"{subject.Code} fənnindən kollokvium qiymətiniz {request.Grade} olaraq qeyd edildi"
+            ));
+
+            var score = await GetStudentSubjectScoreAsync(colloquium.StudentId, subject.Id);
+
+            if (score is null)
             {
                 return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Seminar was graded, but exam eligibility couldn't be updated. " +
+                    $"Either it was not created or a system error. " +
+                    $"If you sure it is created, please, contact the developers or administration");
             }
-        }
+
+            //save the moment gpa
+            var studentSubjectResults =
+                await studentSubjectResultRepository.FindAsync(x =>
+                    x.StudentId == colloquium.StudentId && x.TaughtSubjectId == subject.Id);
 
 
-        var isSucceeded =
-            await finalRepository.ToggleExamEligibilityAsync(colloquium.StudentId, subject.Id, score.Value.IsEligible);
+            if (studentSubjectResults.Count == 0)
+            {
+                var sewStudentSubjectResult = new StudentSubjectResult
+                {
+                    StudentId = colloquium.StudentId,
+                    TaughtSubjectId = subject.Id,
+                    GradeBeforeExam = score.Value.score,
+                    IsFinalized = false,
+                    IsExamEligible = score.Value.IsEligible,
+                };
 
-        if (!isSucceeded)
-        {
-            return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
-                $"Colloquium was graded, but exam eligibility couldn't be updated. " +
-                $"Either it was not created or a system error. " +
-                $"If you sure it is created, please, contact the developers or administration");
-        }
+
+                sewStudentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
+                {
+                    return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
+            else
+            {
+                var studentSubjectResult = studentSubjectResults[0];
+
+                studentSubjectResult.GradeBeforeExam = score.Value.score;
+                studentSubjectResult.IsExamEligible = score.Value.IsEligible;
+
+                studentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+                {
+                    return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
 
 
-        return new GradeStudentColloquiumResponse(StatusCode.Ok, true, ResponseMessages.Success);
+            var isSucceeded =
+                await finalRepository.ToggleExamEligibilityAsync(colloquium.StudentId, subject.Id,
+                    score.Value.IsEligible);
+
+            if (!isSucceeded)
+            {
+                return new GradeStudentColloquiumResponse(StatusCode.Ok, true,
+                    $"Colloquium was graded, but exam eligibility couldn't be updated. " +
+                    $"Either it was not created or a system error. " +
+                    $"If you sure it is created, please, contact the developers or administration");
+            }
+
+
+            return new GradeStudentColloquiumResponse(StatusCode.Ok, true, ResponseMessages.Success);
         }, response => response.IsSucceeded &&
                        response.StatusCode == StatusCode.Ok &&
                        response.ResponserMessage == ResponseMessages.Success);
@@ -762,127 +777,127 @@ public class StudentService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var seminar = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
+            var seminar = await seminarRepository.GetByIdAsync(request.SeminarId, tracking: true);
 
-        if (seminar is null)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
-                $"Seminar with an Id of {request.SeminarId} not found");
-        }
+            if (seminar is null)
+            {
+                return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
+                    $"Seminar with an Id of {request.SeminarId} not found");
+            }
 
-        var student = await studentRepository.GetByIdAsync(request.SeminarData.StudentId, tracking: false);
+            var student = await studentRepository.GetByIdAsync(request.SeminarData.StudentId, tracking: false);
 
-        if (student is null)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false, "Student not found");
-        }
+            if (student is null)
+            {
+                return new GradeStudentSeminarResponse(StatusCode.BadRequest, false, "Student not found");
+            }
 
 
-        var attendances = await attendanceRepository.FindAsync(x =>
-            x.ClassId == request.SeminarData.ClassId && x.StudentId == request.SeminarData.StudentId);
+            var attendances = await attendanceRepository.FindAsync(x =>
+                x.ClassId == request.SeminarData.ClassId && x.StudentId == request.SeminarData.StudentId);
 
-        if (attendances.Count == 0)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
-                $"Attendance with an Id of {request.SeminarData.ClassId} not found");
-        }
+            if (attendances.Count == 0)
+            {
+                return new GradeStudentSeminarResponse(StatusCode.BadRequest, false,
+                    $"Attendance with an Id of {request.SeminarData.ClassId} not found");
+            }
 
-        var attendance = attendances[0];
+            var attendance = attendances[0];
 
-        if (!attendance.IsPresent)
-        {
-            attendance.IsPresent = true;
+            if (!attendance.IsPresent)
+            {
+                attendance.IsPresent = true;
 
-            if (!await attendanceRepository.UpdateAsync(attendance))
+                if (!await attendanceRepository.UpdateAsync(attendance))
+                {
+                    return new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
+                        "Something went wrong while updating the presence status");
+                }
+            }
+
+            seminar.Grade = request.SeminarData.Grade;
+
+            if (!await seminarRepository.UpdateAsync(seminar))
             {
                 return new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
-                    "Something went wrong while updating the presence status");
+                    "An error occured while updating the grade");
             }
-        }
 
-        seminar.Grade = request.SeminarData.Grade;
+            var subjects =
+                await taughtSubjectRepository.FindAsync(x => x.Seminars.Any(c => c.Id == seminar.Id));
 
-        if (!await seminarRepository.UpdateAsync(seminar))
-        {
-            return new GradeStudentSeminarResponse(StatusCode.InternalServerError, false,
-                "An error occured while updating the grade");
-        }
-
-        var subjects =
-            await taughtSubjectRepository.FindAsync(x => x.Seminars.Any(c => c.Id == seminar.Id));
-
-        if (subjects.Count == 0)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.Ok, true,
-                $"Seminar was graded, but exam eligibility couldn't be updated");
-        }
-
-        var subject = subjects[0];
-
-        await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
-            NotificationType.Info,
-            $"{subject.Code} fənnindən seminar qiymətiniz {request.SeminarData.Grade} olaraq qeyd edildi"
-        ));
-
-        var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
-
-        if (score is null)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.Ok, true, "Partially done");
-        }
-
-        var studentSubjectResults =
-            (await studentSubjectResultRepository.FindAsync(x =>
-                x.StudentId == seminar.StudentId && x.TaughtSubjectId == subject.Id));
-
-
-        if (studentSubjectResults.Count == 0)
-        {
-            var newStudentSubjectResult = new StudentSubjectResult
-            {
-                StudentId = seminar.StudentId,
-                TaughtSubjectId = subject.Id,
-                GradeBeforeExam = score.Value.score,
-                IsFinalized = false,
-                IsExamEligible = score.Value.IsEligible
-            };
-
-            newStudentSubjectResult.UpdateFinalGrade();
-
-            if (!await studentSubjectResultRepository.CreateAsync(newStudentSubjectResult))
+            if (subjects.Count == 0)
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Seminar was graded, but exam eligibility couldn't be updated");
             }
-        }
-        else
-        {
-            var studentSubjectResult = studentSubjectResults[0];
 
-            studentSubjectResult.GradeBeforeExam = score.Value.score;
-            studentSubjectResult.IsExamEligible = score.Value.IsEligible;
-            studentSubjectResult.UpdateFinalGrade();
+            var subject = subjects[0];
 
-            if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+            await notificationService.SendAsync(new SendNotificationRequest("System", student.AppUserId,
+                NotificationType.Info,
+                $"{subject.Code} fənnindən seminar qiymətiniz {request.SeminarData.Grade} olaraq qeyd edildi"
+            ));
+
+            var score = await GetStudentSubjectScoreAsync(seminar.StudentId, subject.Id);
+
+            if (score is null)
+            {
+                return new GradeStudentSeminarResponse(StatusCode.Ok, true, "Partially done");
+            }
+
+            var studentSubjectResults =
+                (await studentSubjectResultRepository.FindAsync(x =>
+                    x.StudentId == seminar.StudentId && x.TaughtSubjectId == subject.Id));
+
+
+            if (studentSubjectResults.Count == 0)
+            {
+                var newStudentSubjectResult = new StudentSubjectResult
+                {
+                    StudentId = seminar.StudentId,
+                    TaughtSubjectId = subject.Id,
+                    GradeBeforeExam = score.Value.score,
+                    IsFinalized = false,
+                    IsExamEligible = score.Value.IsEligible
+                };
+
+                newStudentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.CreateAsync(newStudentSubjectResult))
+                {
+                    return new GradeStudentSeminarResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
+            else
+            {
+                var studentSubjectResult = studentSubjectResults[0];
+
+                studentSubjectResult.GradeBeforeExam = score.Value.score;
+                studentSubjectResult.IsExamEligible = score.Value.IsEligible;
+                studentSubjectResult.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
+                {
+                    return new GradeStudentSeminarResponse(StatusCode.Ok, true,
+                        "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                }
+            }
+
+
+            var isSucceeded =
+                await finalRepository.ToggleExamEligibilityAsync(seminar.StudentId, subject.Id, score.Value.IsEligible);
+
+            if (!isSucceeded)
             {
                 return new GradeStudentSeminarResponse(StatusCode.Ok, true,
-                    "Something went wrong while creating student grade result. Student Gpa might not be up to date ");
+                    $"Seminar was graded, but exam eligibility couldn't be updated. " +
+                    $"Either it was not created or a system error. " +
+                    $"If you sure it is created, please, contact the developers or administration");
             }
-        }
 
-
-        var isSucceeded =
-            await finalRepository.ToggleExamEligibilityAsync(seminar.StudentId, subject.Id, score.Value.IsEligible);
-
-        if (!isSucceeded)
-        {
-            return new GradeStudentSeminarResponse(StatusCode.Ok, true,
-                $"Seminar was graded, but exam eligibility couldn't be updated. " +
-                $"Either it was not created or a system error. " +
-                $"If you sure it is created, please, contact the developers or administration");
-        }
-
-        return new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success);
+            return new GradeStudentSeminarResponse(StatusCode.Ok, true, ResponseMessages.Success);
         }, response => response.IsSucceeded &&
                        response.StatusCode == StatusCode.Ok &&
                        response.ResponserMessage == ResponseMessages.Success);
@@ -979,11 +994,11 @@ public class StudentService(
             .OrderBy(c => c.Period)
             .ToList();
 
-        var grades = await GetGrades(student.AppUserId, new StudentGradesRequest("courses"));
+        var grades = await GetGrades(student.AppUserId);
 
         var data = new GetStudentPageDto(student.Group.Code, student.Specialization.Name, formattedAdmissionYear,
             GetYear(student.AdmissionYear.FirstYear), student.AdmissionScore, student.AppUser.Email, classesToday,
-            grades.Items);
+            grades.Data);
 
         return new ApiResult<GetStudentPageDto>
         {
@@ -1298,4 +1313,14 @@ public class StudentService(
         // Week 0, 2, 4... = upper; Week 1, 3, 5... = lower
         return weeksPassed % 2 == 0;
     }
+
+    private static char ToCharGrade(double grade) => grade switch
+    {
+        <= 50 => 'F',
+        <= 60 => 'E',
+        <= 70 => 'D',
+        <= 80 => 'C',
+        <= 90 => 'B',
+        _     => 'A'
+    };
 }

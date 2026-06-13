@@ -13,11 +13,15 @@ public class StudentSubjectResult : BaseEntity
     public double FinalGrade { get; private set; }
 
     public bool IsFinalized { get; set; }
-
+    public bool IsPassed { get; private set; }
     public bool IsExamEligible { get; set; }
 
-    public void UpdateFinalGrade()
+    public void UpdateFinalStats()
     {
         FinalGrade = ExamGrade + GradeBeforeExam;
+        if (ExamGrade >= 17 || FinalGrade >= 51)
+        {
+            IsPassed = true;
+        }
     }
 }

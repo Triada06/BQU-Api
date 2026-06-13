@@ -10,7 +10,7 @@ public interface IStudentService
 {
     Task<StudentDashboardResponse> Dashboard(string userId);
     Task<StudentScheduleResponse> GetSchedule(string userId, StudentScheduleRequest request);
-    Task<StudentGradesResponse> GetGrades(string userId, StudentGradesRequest request);
+    Task<ApiResult<StudentGradesDto?>> GetGrades(string userId);
     Task<StudentProfileResponse> GetProfile(string userId);
     Task<GetStudentResponse> FilterAsync(string? groupId, int? year);
     Task<GetStudentResponse> SearchAsync(string? searchString);

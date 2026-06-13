@@ -162,7 +162,7 @@ public class IndependentWorkService(
                     IsExamEligible = score.Value.IsEligible
                 };
 
-                sewStudentSubjectResult.UpdateFinalGrade();
+                sewStudentSubjectResult.UpdateFinalStats();
 
                 if (!await studentSubjectResultRepository.CreateAsync(sewStudentSubjectResult))
                 {
@@ -181,7 +181,7 @@ public class IndependentWorkService(
                 studentSubjectResult.GradeBeforeExam = score.Value.score;
                 studentSubjectResult.IsExamEligible = score.Value.IsEligible;
 
-                studentSubjectResult.UpdateFinalGrade();
+                studentSubjectResult.UpdateFinalStats();
 
                 if (!await studentSubjectResultRepository.UpdateAsync(studentSubjectResult))
                 {

@@ -10,9 +10,5 @@ public class SetGroupExamDtoValidator : AbstractValidator<SetGroupExamDto>
     {
         RuleFor(x=>x.GroupId).NotEmpty().WithMessage("GroupId is required");
         RuleFor(x=>x.TaughtSubjectId).NotEmpty().WithMessage("TaughtSubjectId is required");
-        
-        RuleFor(x => x.Date)
-            .Must(x => x.Date >= DateTime.UtcNow)
-            .WithMessage("Date must be in the future");
     }
 }

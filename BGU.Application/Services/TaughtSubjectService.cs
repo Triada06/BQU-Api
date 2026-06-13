@@ -86,7 +86,7 @@ public class TaughtSubjectService(
                 new GetTaughtSubjectDto(x.Id, x.Code, x.Subject.Name,
                     x.Subject.Department.Name,
                     GetYear(x.Group.AdmissionYear.FirstYear),
-                    x.Teacher.AppUser.Name, x.Group.Code,
+                    x.Teacher.AppUser.Name + " " + x.Teacher.AppUser.Surname, x.Group.Code,
                     x.Subject.CreditsNumber, x.TeacherId));
 
         return ApiResult<IEnumerable<GetTaughtSubjectDto>?>.Success(subjects);

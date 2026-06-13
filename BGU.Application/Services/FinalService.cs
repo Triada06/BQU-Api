@@ -37,12 +37,14 @@ public class FinalService(
                 .Include(g => g.TaughtSubject)
                 .ThenInclude(ts => ts.Group)
                 .Include(e => e.Student)
-                .ThenInclude(st => st.AppUser),
+                .ThenInclude(st => st.AppUser)
+                .Include(g => g.TaughtSubject)
+                .ThenInclude(ts => ts.Subject),
             filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
 
         var returnData = data.Items.Select(x =>
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
-                x.TaughtSubject.Code,
+                x.TaughtSubject.Subject.Name,
                 x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
 
         return new ApiResult<PagedResponse<GetFinalDto>>
@@ -165,7 +167,7 @@ public class FinalService(
                 IsFinalized = exam.IsConfirmed
             };
 
-            result.UpdateFinalGrade();
+            result.UpdateFinalStats();
 
             if (!await studentSubjectResultRepository.CreateAsync(result))
             {
@@ -178,7 +180,7 @@ public class FinalService(
             result.ExamGrade = exam.Grade is -1 ? 0 : exam.Grade;
             result.IsFinalized = exam.IsConfirmed;
 
-            result.UpdateFinalGrade();
+            result.UpdateFinalStats();
 
             if (!await studentSubjectResultRepository.UpdateAsync(result))
             {
@@ -308,7 +310,7 @@ public class FinalService(
 
         result.ExamGrade = exam.Grade;
         result.IsFinalized = true;
-        result.UpdateFinalGrade();
+        result.UpdateFinalStats();
 
         if (!await studentSubjectResultRepository.UpdateAsync(result))
         {
@@ -372,7 +374,7 @@ public class FinalService(
                 var result = results[0];
                 result.ExamGrade = exam.Grade;
                 result.IsFinalized = true;
-                result.UpdateFinalGrade();
+                result.UpdateFinalStats();
 
                 if (!await studentSubjectResultRepository.UpdateAsync(result))
                 {
