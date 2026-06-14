@@ -43,7 +43,8 @@ public class FinalService(
             filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
 
         var returnData = data.Items.Select(x =>
-            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
+            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
+                x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
                 x.TaughtSubject.Subject.Name,
                 x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
 
@@ -66,11 +67,11 @@ public class FinalService(
     {
         var data = await finalRepository.FindAsync(x => x.IsAllowed && x.Grade != -1 && !x.IsConfirmed, tracking: false,
             include: x => x
-            .Include(g => g.TaughtSubject)
-            .ThenInclude(ts => ts.Group)
-            .Include(e => e.Student)
-            .ThenInclude(st => st.AppUser));
-        
+                .Include(g => g.TaughtSubject)
+                .ThenInclude(ts => ts.Group)
+                .Include(e => e.Student)
+                .ThenInclude(st => st.AppUser));
+
         if (data.Count == 0)
         {
             return ApiResult<IEnumerable<GetFinalDto>>.Success([]);
@@ -134,62 +135,62 @@ public class FinalService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var exam = await finalRepository.GetByIdAsync(request.Id, tracking: true);
-        if (exam is null)
-        {
-            return ApiResult<UpdateExamResponse>.NotFound($"An exam with an Id of {request.Id} was not found");
-        }
-
-        var oldGrade = exam.Grade;
-        exam.Date = request.Dto.Date;
-        exam.Grade = request.Dto.Grade;
-        exam.TaughtSubjectId = request.Dto.TaughtSubjectId;
-        exam.StudentId = request.Dto.StudentId;
-        exam.IsAllowed = request.Dto.IsAllowed;
-
-        if (!await finalRepository.UpdateAsync(exam))
-        {
-            return ApiResult<UpdateExamResponse>.SystemError();
-        }
-
-
-        var results = await studentSubjectResultRepository.FindAsync(x =>
-            x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId);
-
-        if (results.Count == 0)
-        {
-            // this code should never be executed since by this time the object already must be created
-            var result = new StudentSubjectResult
+            var exam = await finalRepository.GetByIdAsync(request.Id, tracking: true);
+            if (exam is null)
             {
-                StudentId = exam.StudentId,
-                TaughtSubjectId = exam.TaughtSubjectId,
-                ExamGrade = exam.Grade is -1 ? 0 : exam.Grade,
-                IsFinalized = exam.IsConfirmed
-            };
-
-            result.UpdateFinalStats();
-
-            if (!await studentSubjectResultRepository.CreateAsync(result))
-            {
-                return ApiResult<UpdateExamResponse>.SystemError("Failed to create student result");
+                return ApiResult<UpdateExamResponse>.NotFound($"An exam with an Id of {request.Id} was not found");
             }
-        }
-        else
-        {
-            var result = results[0];
-            result.ExamGrade = exam.Grade is -1 ? 0 : exam.Grade;
-            result.IsFinalized = exam.IsConfirmed;
 
-            result.UpdateFinalStats();
+            var oldGrade = exam.Grade;
+            exam.Date = request.Dto.Date;
+            exam.Grade = request.Dto.Grade;
+            exam.TaughtSubjectId = request.Dto.TaughtSubjectId;
+            exam.StudentId = request.Dto.StudentId;
+            exam.IsAllowed = request.Dto.IsAllowed;
 
-            if (!await studentSubjectResultRepository.UpdateAsync(result))
+            if (!await finalRepository.UpdateAsync(exam))
             {
-                return ApiResult<UpdateExamResponse>.SystemError("Failed to update student result");
+                return ApiResult<UpdateExamResponse>.SystemError();
             }
-        }
 
-        return ApiResult<UpdateExamResponse>.Success(new UpdateExamResponse(exam.Id, exam.StudentId,
-            exam.TaughtSubjectId, exam.Date, exam.Grade, exam.IsAllowed));
+
+            var results = await studentSubjectResultRepository.FindAsync(x =>
+                x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId);
+
+            if (results.Count == 0)
+            {
+                // this code should never be executed since by this time the object already must be created
+                var result = new StudentSubjectResult
+                {
+                    StudentId = exam.StudentId,
+                    TaughtSubjectId = exam.TaughtSubjectId,
+                    ExamGrade = exam.Grade is -1 ? 0 : exam.Grade,
+                    IsFinalized = exam.IsConfirmed
+                };
+
+                result.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.CreateAsync(result))
+                {
+                    return ApiResult<UpdateExamResponse>.SystemError("Failed to create student result");
+                }
+            }
+            else
+            {
+                var result = results[0];
+                result.ExamGrade = exam.Grade is -1 ? 0 : exam.Grade;
+                result.IsFinalized = exam.IsConfirmed;
+
+                result.UpdateFinalStats();
+
+                if (!await studentSubjectResultRepository.UpdateAsync(result))
+                {
+                    return ApiResult<UpdateExamResponse>.SystemError("Failed to update student result");
+                }
+            }
+
+            return ApiResult<UpdateExamResponse>.Success(new UpdateExamResponse(exam.Id, exam.StudentId,
+                exam.TaughtSubjectId, exam.Date, exam.Grade, exam.IsAllowed));
         }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
@@ -285,39 +286,40 @@ public class FinalService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var exam = await finalRepository.GetByIdAsync(finalId, tracking: true);
-        if (exam is null)
-        {
-            return ApiResult.NotFound($"Exam with an Id of {finalId} not found");
-        }
+            var exam = await finalRepository.GetByIdAsync(finalId, tracking: true);
+            if (exam is null)
+            {
+                return ApiResult.NotFound($"Exam with an Id of {finalId} not found");
+            }
 
-        exam.IsConfirmed = true;
+            exam.IsConfirmed = true;
 
-        if (!await finalRepository.UpdateAsync(exam))
-        {
-            return ApiResult.SystemError();
-        }
+            if (!await finalRepository.UpdateAsync(exam))
+            {
+                return ApiResult.SystemError();
+            }
 
-        var results = await studentSubjectResultRepository.FindAsync(
-            x => x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId, tracking: true);
+            var results = await studentSubjectResultRepository.FindAsync(
+                x => x.StudentId == exam.StudentId && x.TaughtSubjectId == exam.TaughtSubjectId, tracking: true);
 
-        if (results.Count == 0)
-        {
-            return ApiResult.Success("Exam was confirmed but it's grade wasn't finalized since no matched data found");
-        }
+            if (results.Count == 0)
+            {
+                return ApiResult.Success(
+                    "Exam was confirmed but it's grade wasn't finalized since no matched data found");
+            }
 
-        var result = results[0];
+            var result = results[0];
 
-        result.ExamGrade = exam.Grade;
-        result.IsFinalized = true;
-        result.UpdateFinalStats();
+            result.ExamGrade = exam.Grade;
+            result.IsFinalized = true;
+            result.UpdateFinalStats();
 
-        if (!await studentSubjectResultRepository.UpdateAsync(result))
-        {
-            return ApiResult.Success("Exam was confirmed but it's grade wasn't finalized");
-        }
+            if (!await studentSubjectResultRepository.UpdateAsync(result))
+            {
+                return ApiResult.Success("Exam was confirmed but it's grade wasn't finalized");
+            }
 
-        return ApiResult.Success();
+            return ApiResult.Success();
         }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
@@ -394,36 +396,36 @@ public class FinalService(
     {
         return await transactionService.ExecuteAsync(async () =>
         {
-        var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
-            include: x => x.Include(st => st.Finals), tracking: true);
+            var students = await studentRepository.GetAllAsync(x => x.GroupId == setExamDto.GroupId,
+                include: x => x.Include(st => st.Finals), tracking: true);
 
-        if (students.Count == 0)
-        {
-            return ApiResult.NotFound($"Students in group not found");
-        }
+            if (students.Count == 0)
+            {
+                return ApiResult.NotFound($"Students in group not found");
+            }
 
-        var exams = students
-            .SelectMany(x => x.Finals)
-            .Where(x => x.TaughtSubjectId == setExamDto.TaughtSubjectId)
-            .ToList();
+            var exams = students
+                .SelectMany(x => x.Finals)
+                .Where(x => x.TaughtSubjectId == setExamDto.TaughtSubjectId)
+                .ToList();
 
-        if (exams.Count == 0)
-        {
-            return ApiResult.NotFound("Exams do not exist");
-        }
+            if (exams.Count == 0)
+            {
+                return ApiResult.NotFound("Exams do not exist");
+            }
 
-        foreach (var exam in exams.Where(exam => exam.IsAllowed))
-        {
-            exam.Date = setExamDto.Date;
-        }
+            foreach (var exam in exams.Where(exam => exam.IsAllowed))
+            {
+                exam.Date = setExamDto.Date;
+            }
 
 
-        if (await finalRepository.BulkUpdateAsync(exams) <= 0)
-        {
-            return ApiResult.SystemError("Failed to update exam");
-        }
+            if (await finalRepository.BulkUpdateAsync(exams) <= 0)
+            {
+                return ApiResult.SystemError("Failed to update exam");
+            }
 
-        return ApiResult.Success();
+            return ApiResult.Success();
         }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 }
