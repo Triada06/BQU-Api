@@ -86,4 +86,12 @@ public class FinalController(IFinalService finalService) : ControllerBase
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }
+    [Authorize(Roles = "Dean")]
+    [HttpGet(ApiEndPoints.Finals.FailedFinals)]
+    public async Task<IActionResult> FailedFinals()
+    {
+        var res = await finalService.GetAllFailedAsync();
+        Response.StatusCode = res.StatusCode;
+        return new ObjectResult(res);
+    }
 }

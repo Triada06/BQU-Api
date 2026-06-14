@@ -63,6 +63,11 @@ public class FinalService(
         };
     }
 
+    public Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllFailedAsync()
+    {
+        throw new NotImplementedException(); 
+    }
+
     public async Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync()
     {
         var data = await finalRepository.FindAsync(x => x.IsAllowed && x.Grade != -1 && !x.IsConfirmed, tracking: false,
@@ -109,26 +114,65 @@ public class FinalService(
 
     public async Task<ApiResult<string>> CreateAsync(CreateExamDto createExamDto)
     {
-        if (await finalRepository.AnyAsync(x =>
-                x.StudentId == createExamDto.StudentId && x.TaughtSubjectId == createExamDto.SubjectId))
+        return await transactionService.ExecuteAsync(async () =>
         {
-            return ApiResult<string>.BadRequest("An exam with provided student and subject already exists");
-        }
+            var oldExams = await finalRepository.FindAsync(x =>
+                x.StudentId == createExamDto.StudentId && x.TaughtSubjectId == createExamDto.SubjectId, tracking: true);
 
-        var exam = new Exam
-        {
-            Date = createExamDto.Date,
-            IsConfirmed = false,
-            StudentId = createExamDto.StudentId,
-            TaughtSubjectId = createExamDto.SubjectId,
-        };
+            
+            // this is if the student failed an exam and a new one is being created 
+            if (oldExams.Count != 0)
+            {
+                var studentExamResults = await studentSubjectResultRepository.FindAsync(x =>
+                    x.StudentId == createExamDto.StudentId && x.TaughtSubjectId == createExamDto.SubjectId);
 
-        if (!await finalRepository.CreateAsync(exam))
-        {
-            return ApiResult<string>.SystemError("Failed to create exam");
-        }
+                if (studentExamResults.Count == 0)
+                {
+                    return ApiResult<string>.BadRequest(
+                        "An exam with provided student and subject already exists and a history record not found");
+                }
 
-        return ApiResult<string>.Success(exam.Id);
+                var result = studentExamResults[0];
+                if (result is { GradeBeforeExam: >= 34, ExamGrade: >= 17 })
+                {
+                    return ApiResult<string>.BadRequest("An exam with provided student and subject already exists");
+                }
+
+                var newestExam = oldExams.OrderByDescending(x => x.CreatedAt).First();
+                newestExam.IsActual = false;
+                
+                var updateRes = await finalRepository.UpdateAsync(newestExam);
+                if (!updateRes)
+                {
+                    return ApiResult<string>.SystemError("Error while updating the old exam");
+                }
+
+                result.IsFinalized = false;
+                var updateResultResponse = await studentSubjectResultRepository.UpdateAsync(result);
+                
+                if (!updateResultResponse)
+                {
+                    return ApiResult<string>.SystemError("Error while updating the old exam");
+                }
+            }
+
+            var exam = new Exam
+            {
+                Date = createExamDto.Date,
+                IsConfirmed = false,
+                StudentId = createExamDto.StudentId,
+                TaughtSubjectId = createExamDto.SubjectId,
+                IsAllowed = true,
+                Grade = -1
+            };
+
+            if (!await finalRepository.CreateAsync(exam))
+            {
+                return ApiResult<string>.SystemError("Failed to create exam");
+            }
+
+            return ApiResult<string>.Success(exam.Id);
+        }, response => response.IsSucceeded && response.StatusCode == 200);
     }
 
     public async Task<ApiResult<UpdateExamResponse>> UpdateAsync(UpdateExamRequest request)

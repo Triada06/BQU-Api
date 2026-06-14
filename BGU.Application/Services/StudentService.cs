@@ -310,7 +310,7 @@ public class StudentService(
             var isEligible = subjectGrade.isEligible;
 
             var semesterExamGrade = student.Finals.FirstOrDefault(x =>
-                x.TaughtSubjectId == ts.Id && x.StudentId == student.Id && x.IsConfirmed);
+                x.TaughtSubjectId == ts.Id && x.StudentId == student.Id && x is { IsConfirmed: true, IsActual: true });
 
             int? examGrade = null; 
             char? examLetter = null; 

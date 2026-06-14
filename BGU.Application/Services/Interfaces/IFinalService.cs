@@ -6,7 +6,12 @@ namespace BGU.Application.Services.Interfaces;
 
 public interface IFinalService
 {
-    Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search,  string? groupId); // todo : wrap in dto
+    Task<ApiResult<PagedResponse<GetFinalDto>>>
+        GetAllAsync(int page, int pageSize, string? search, string? groupId);
+
+    Task<ApiResult<PagedResponse<GetFinalDto>>>
+        GetAllFailedAsync(); // todo: further improvements, it returns the data to ui, and the user just clicks on it to create an another take 
+
     Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync();
     Task<ApiResult> SetExamDateAsync(SetExamDto setExamDto);
     Task<ApiResult<string>> CreateAsync(CreateExamDto createExamDto);
