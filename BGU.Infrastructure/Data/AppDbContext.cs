@@ -49,6 +49,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             b.HasIndex(u => u.NormalizedUserName).IsUnique();
         });
 
+        builder.Entity<Exam>()
+            .Property(x => x.IsActual)
+            .HasDefaultValue(true);
+        
         builder.Entity<Room>()
             .Property(x => x.Name)
             .HasMaxLength(20);
