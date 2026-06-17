@@ -312,13 +312,17 @@ public class StudentService(
             var semesterExamGrade = student.Finals.FirstOrDefault(x =>
                 x.TaughtSubjectId == ts.Id && x.StudentId == student.Id && x is { IsConfirmed: true, IsActual: true });
 
-            int? examGrade = null; 
-            char? examLetter = null; 
-            
+            int? examGrade = null;
+            char? examLetter = null;
+
             if (semesterExamGrade is not null && isEligible)
             {
-                score += semesterExamGrade.Grade;
-                examLetter = semesterExamGrade.Grade < 17 ? 'F' :  ToCharGrade(score);
+                if (semesterExamGrade.Grade > 17)
+                {
+                    score += semesterExamGrade.Grade;
+                }
+
+                examLetter = semesterExamGrade.Grade < 17 ? 'F' : ToCharGrade(score);
                 examGrade = semesterExamGrade.Grade;
             }
 
@@ -1322,6 +1326,6 @@ public class StudentService(
         <= 70 => 'D',
         <= 80 => 'C',
         <= 90 => 'B',
-        _     => 'A'
+        _ => 'A'
     };
 }

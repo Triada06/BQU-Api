@@ -26,12 +26,12 @@ public class FinalService(
 
         var data = await finalRepository.GetAllPaginatedAsync(
             cleanSearch is not null
-                ? x => (x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
-                        x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
-                        x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
-                        x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
-                        x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch))
-                : null,
+                ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
+                         x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
+                         x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
+                         x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
+                         x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && x.IsActual)
+                : x => x.IsActual,
             page, pageSize, false,
             include: x => x
                 .Include(g => g.TaughtSubject)
@@ -63,9 +63,48 @@ public class FinalService(
         };
     }
 
-    public Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllFailedAsync()
+    public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllFailedAsync(int page, int pageSize, string? search,
+        string? groupId)
     {
-        throw new NotImplementedException(); 
+        var cleanSearch = search?.ToLower().Trim();
+
+        var data = await finalRepository.GetAllPaginatedAsync(
+            cleanSearch is not null
+                ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
+                         x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
+                         x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
+                         x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
+                         x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && !x.IsActual)
+                : x => !x.IsActual,
+            page, pageSize, false,
+            include: x => x
+                .Include(g => g.TaughtSubject)
+                .ThenInclude(ts => ts.Group)
+                .Include(e => e.Student)
+                .ThenInclude(st => st.AppUser)
+                .Include(g => g.TaughtSubject)
+                .ThenInclude(ts => ts.Subject),
+            filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
+
+        var returnData = data.Items.Select(x =>
+            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
+                x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
+                x.TaughtSubject.Subject.Name,
+                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
+
+        return new ApiResult<PagedResponse<GetFinalDto>>
+        {
+            Data = new PagedResponse<GetFinalDto>
+            {
+                Items = returnData,
+                Page = data.Page,
+                PageSize = data.PageSize,
+                TotalCount = data.TotalCount
+            },
+            Message = ResponseMessages.Success,
+            IsSucceeded = true,
+            StatusCode = 200
+        };
     }
 
     public async Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync()
@@ -119,7 +158,7 @@ public class FinalService(
             var oldExams = await finalRepository.FindAsync(x =>
                 x.StudentId == createExamDto.StudentId && x.TaughtSubjectId == createExamDto.SubjectId, tracking: true);
 
-            
+
             // this is if the student failed an exam and a new one is being created 
             if (oldExams.Count != 0)
             {
@@ -140,7 +179,7 @@ public class FinalService(
 
                 var newestExam = oldExams.OrderByDescending(x => x.CreatedAt).First();
                 newestExam.IsActual = false;
-                
+
                 var updateRes = await finalRepository.UpdateAsync(newestExam);
                 if (!updateRes)
                 {
@@ -149,7 +188,7 @@ public class FinalService(
 
                 result.IsFinalized = false;
                 var updateResultResponse = await studentSubjectResultRepository.UpdateAsync(result);
-                
+
                 if (!updateResultResponse)
                 {
                     return ApiResult<string>.SystemError("Error while updating the old exam");

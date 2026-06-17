@@ -13,7 +13,8 @@ public class FinalController(IFinalService finalService) : ControllerBase
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Finals.GetAll)]
     public async Task<IActionResult> GetAll(
-        [FromQuery] string? search, [FromQuery] string? groupId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] string? search, [FromQuery] string? groupId, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         var res = await finalService.GetAllAsync(page, pageSize, search, groupId);
         Response.StatusCode = res.StatusCode;
@@ -86,12 +87,15 @@ public class FinalController(IFinalService finalService) : ControllerBase
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
     }
+
     [Authorize(Roles = "Dean")]
     [HttpGet(ApiEndPoints.Finals.FailedFinals)]
-    public async Task<IActionResult> FailedFinals()
+    public async Task<IActionResult> FailedFinals([FromQuery] string? search, [FromQuery] string? groupId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+
     {
-        var res = await finalService.GetAllFailedAsync();
+        var res = await finalService.GetAllFailedAsync(page, pageSize, search, groupId);
         Response.StatusCode = res.StatusCode;
         return new ObjectResult(res);
-    }
+    } //todo: the endpoint and the functionality has not been implemented yet
 }
