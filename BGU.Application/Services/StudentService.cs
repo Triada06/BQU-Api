@@ -336,7 +336,8 @@ public class StudentService(
                 // subjectAttendances, //TODO: SWAP WITH THE  subjectAttendances, THAT IS THE ACTUAL NUMBER OF CLASSES
                 ts.ClassCount,
                 examGrade,
-                examLetter
+                examLetter,
+                subjectGrade.score
             );
         });
 
