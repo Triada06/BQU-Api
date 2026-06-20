@@ -9,4 +9,5 @@ public sealed record GetFinalDto(
     bool IsConfirmed,
     string? FormattedDate,
     int Grade,
+    double GradeBeforeExam,
     bool IsAllowed);

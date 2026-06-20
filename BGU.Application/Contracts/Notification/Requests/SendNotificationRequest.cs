@@ -11,7 +11,6 @@ public class SendNotificationValidator : AbstractValidator<SendNotificationReque
     public SendNotificationValidator()
     {
         RuleFor(x=>x.To).NotEmpty().WithMessage("To is required");
-        RuleFor(x=>x.From).NotEmpty().WithMessage("From is required");
         RuleFor(x=>x.Message)
             .NotEmpty().WithMessage("Message is required")
             .MaximumLength(200).WithMessage("Message cannot exceed 200 characters");;

@@ -1154,6 +1154,7 @@ public class StudentService(
                 x.StudentId == student.Id && x.Date.HasValue && x.Date.Value.Date >= today,
             include: x =>
                 x.Include(final => final.TaughtSubject).ThenInclude(ts => ts.Group)
+                    .Include(exam => exam.TaughtSubject).ThenInclude(ts => ts.Subject)
                     .Include(exam => exam.TaughtSubject).ThenInclude(ts => ts.Teacher)
                     .ThenInclude(t => t.AppUser));
 
@@ -1186,7 +1187,7 @@ public class StudentService(
                 x.TaughtSubjectId == final.TaughtSubjectId && x.StudentId == final.StudentId);
 
 
-            var dataToAdd = new GetStudentFinal(final.Id, final.TaughtSubject.Code,
+            var dataToAdd = new GetStudentFinal(final.Id, final.TaughtSubject.Subject.Name,
                 grade.FinalGrade, final.Date?.ToString("dd/MM/yyyy") ?? "Date not set yet", teacherFullName,
                 final.TaughtSubject.Group.Code);
 

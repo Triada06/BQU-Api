@@ -17,94 +17,108 @@ public class FinalService(
     UserManager<AppUser> userManager,
     IStudentRepository studentRepository,
     ITransactionService transactionService,
-    IStudentSubjectResultRepository studentSubjectResultRepository) : IFinalService
+    IStudentSubjectResultRepository studentSubjectResultRepository,
+    AppDbContext context) : IFinalService
 {
-    public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search,
-        string? groupId)
+   public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllAsync(int page, int pageSize, string? search,
+    string? groupId)
+{
+    var cleanSearch = search?.ToLower().Trim();
+
+    var data = await finalRepository.GetAllPaginatedAsync(
+        cleanSearch is not null
+            ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
+                     x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
+                     x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
+                     x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
+                     x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && x.IsActual)
+            : x => x.IsActual,
+        page, pageSize, false,
+        include: x => x
+            .Include(g => g.TaughtSubject)
+            .ThenInclude(ts => ts.Group)
+            .Include(e => e.Student)
+            .ThenInclude(st => st.AppUser)
+            .Include(g => g.TaughtSubject)
+            .ThenInclude(ts => ts.Subject),
+        filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
+
+    var taughtSubjectIds = data.Items.Select(x => x.TaughtSubjectId).Distinct().ToList();
+    var studentIds = data.Items.Select(x => x.StudentId).Distinct().ToList();
+
+    var gradesBeforeExamMap = await context.StudentSubjectResults.AsNoTracking()
+        .Where(x => taughtSubjectIds.Contains(x.TaughtSubjectId) && studentIds.Contains(x.StudentId))
+        .Select(x => new { x.TaughtSubjectId, x.StudentId, x.GradeBeforeExam })
+        .ToListAsync();
+
+    var gradeLookup = gradesBeforeExamMap
+        .ToDictionary(x => (x.TaughtSubjectId, x.StudentId), x => x.GradeBeforeExam);
+
+    var returnData = data.Items.Select(x =>
+        new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
+            x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
+            x.TaughtSubject.Subject.Name,
+            x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade,
+            gradeLookup.GetValueOrDefault((x.TaughtSubjectId, x.StudentId)),
+            x.IsAllowed)).ToList();
+
+    return new ApiResult<PagedResponse<GetFinalDto>>
     {
-        var cleanSearch = search?.ToLower().Trim();
-
-        var data = await finalRepository.GetAllPaginatedAsync(
-            cleanSearch is not null
-                ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
-                         x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
-                         x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
-                         x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
-                         x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && x.IsActual)
-                : x => x.IsActual,
-            page, pageSize, false,
-            include: x => x
-                .Include(g => g.TaughtSubject)
-                .ThenInclude(ts => ts.Group)
-                .Include(e => e.Student)
-                .ThenInclude(st => st.AppUser)
-                .Include(g => g.TaughtSubject)
-                .ThenInclude(ts => ts.Subject),
-            filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
-
-        var returnData = data.Items.Select(x =>
-            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
-                x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
-                x.TaughtSubject.Subject.Name,
-                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
-
-        return new ApiResult<PagedResponse<GetFinalDto>>
+        Data = new PagedResponse<GetFinalDto>
         {
-            Data = new PagedResponse<GetFinalDto>
-            {
-                Items = returnData,
-                Page = data.Page,
-                PageSize = data.PageSize,
-                TotalCount = data.TotalCount
-            },
-            Message = ResponseMessages.Success,
-            IsSucceeded = true,
-            StatusCode = 200
-        };
-    }
-
+            Items = returnData,
+            Page = data.Page,
+            PageSize = data.PageSize,
+            TotalCount = data.TotalCount
+        },
+        Message = ResponseMessages.Success,
+        IsSucceeded = true,
+        StatusCode = 200
+    };
+}
     public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllFailedAsync(int page, int pageSize, string? search,
         string? groupId)
     {
-        var cleanSearch = search?.ToLower().Trim();
-
-        var data = await finalRepository.GetAllPaginatedAsync(
-            cleanSearch is not null
-                ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
-                         x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
-                         x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
-                         x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
-                         x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && !x.IsActual)
-                : x => !x.IsActual,
-            page, pageSize, false,
-            include: x => x
-                .Include(g => g.TaughtSubject)
-                .ThenInclude(ts => ts.Group)
-                .Include(e => e.Student)
-                .ThenInclude(st => st.AppUser)
-                .Include(g => g.TaughtSubject)
-                .ThenInclude(ts => ts.Subject),
-            filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
-
-        var returnData = data.Items.Select(x =>
-            new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
-                x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
-                x.TaughtSubject.Subject.Name,
-                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
-
-        return new ApiResult<PagedResponse<GetFinalDto>>
-        {
-            Data = new PagedResponse<GetFinalDto>
-            {
-                Items = returnData,
-                Page = data.Page,
-                PageSize = data.PageSize,
-                TotalCount = data.TotalCount
-            },
-            Message = ResponseMessages.Success,
-            IsSucceeded = true,
-            StatusCode = 200
-        };
+        // var cleanSearch = search?.ToLower().Trim();
+        //
+        // var data = await finalRepository.GetAllPaginatedAsync(
+        //     cleanSearch is not null
+        //         ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
+        //                  x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
+        //                  x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
+        //                  x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
+        //                  x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && !x.IsActual)
+        //         : x => !x.IsActual,
+        //     page, pageSize, false,
+        //     include: x => x
+        //         .Include(g => g.TaughtSubject)
+        //         .ThenInclude(ts => ts.Group)
+        //         .Include(e => e.Student)
+        //         .ThenInclude(st => st.AppUser)
+        //         .Include(g => g.TaughtSubject)
+        //         .ThenInclude(ts => ts.Subject),
+        //     filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
+        //
+        // var returnData = data.Items.Select(x =>
+        //     new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
+        //         x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
+        //         x.TaughtSubject.Subject.Name,
+        //         x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
+        //
+        // return new ApiResult<PagedResponse<GetFinalDto>>
+        // {
+        //     Data = new PagedResponse<GetFinalDto>
+        //     {
+        //         Items = returnData,
+        //         Page = data.Page,
+        //         PageSize = data.PageSize,
+        //         TotalCount = data.TotalCount
+        //     },
+        //     Message = ResponseMessages.Success,
+        //     IsSucceeded = true,
+        //     StatusCode = 200
+        // };
+        throw new NotImplementedException();
     }
 
     public async Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync()
@@ -124,8 +138,10 @@ public class FinalService(
         var returnData = data.Select(x =>
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
                 x.TaughtSubject.Code,
-                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
-
+                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"),0, x.Grade, x.IsAllowed)).ToList();
+        // this shit needs to be fixed immediatly, why tf do we return 0 as a grade before exam if we dont even need it 
+        
+        
         return ApiResult<IEnumerable<GetFinalDto>>.Success(returnData);
     }
 
