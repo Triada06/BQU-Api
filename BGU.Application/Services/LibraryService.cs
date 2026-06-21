@@ -110,7 +110,7 @@ public class LibraryService(
             StoredFileName = savedBookFile?.StoredFileName,
             FileName = savedBookFile?.OriginalFileName,
             FileSizeBytes = request.BookFile?.Length,
-            FileContentType = request.BookFile?.ContentType,
+            FileContentType = GetUploadContentType(request.BookFile),
             CoverImageFileName = savedCoverFile?.StoredFileName,
             CreatedById = userId
         };
@@ -156,7 +156,7 @@ public class LibraryService(
             book.StoredFileName = savedBookFile.StoredFileName;
             book.FileName = savedBookFile.OriginalFileName;
             book.FileSizeBytes = request.BookFile?.Length;
-            book.FileContentType = request.BookFile?.ContentType;
+            book.FileContentType = GetUploadContentType(request.BookFile);
             book.Format = GetFormat(request.BookFile?.FileName);
         }
 
@@ -258,7 +258,7 @@ public class LibraryService(
 
         return new LibraryBookFileDto(
             fullPath,
-            string.IsNullOrWhiteSpace(book.FileContentType) ? DefaultContentType : book.FileContentType,
+            GetBookContentType(book),
             book.FileName ?? book.StoredFileName);
     }
 
@@ -376,10 +376,37 @@ public class LibraryService(
     private static string? CleanOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    private static string? GetUploadContentType(IFormFile? file)
+    {
+        if (file is null)
+        {
+            return null;
+        }
+
+        var contentTypeFromFileName = GetContentType(file.FileName);
+        if (!string.Equals(contentTypeFromFileName, DefaultContentType, StringComparison.OrdinalIgnoreCase))
+        {
+            return contentTypeFromFileName;
+        }
+
+        return string.IsNullOrWhiteSpace(file.ContentType) ? DefaultContentType : file.ContentType;
+    }
+
+    private static string GetBookContentType(LibraryBook book)
+    {
+        var contentTypeFromFileName = GetContentType(book.FileName ?? book.StoredFileName ?? string.Empty);
+        if (!string.Equals(contentTypeFromFileName, DefaultContentType, StringComparison.OrdinalIgnoreCase))
+        {
+            return contentTypeFromFileName;
+        }
+
+        return string.IsNullOrWhiteSpace(book.FileContentType) ? DefaultContentType : book.FileContentType;
+    }
+
     private static string GetFormat(string? fileName)
     {
         var extension = Path.GetExtension(fileName ?? string.Empty).TrimStart('.').ToLowerInvariant();
-        return extension is "pdf" or "epub" or "doc" or "docx" or "ppt" or "pptx"
+        return extension is "pdf"
             ? extension
             : "other";
     }
@@ -389,6 +416,7 @@ public class LibraryService(
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         return extension switch
         {
+            ".pdf" => "application/pdf",
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",
             ".webp" => "image/webp",

@@ -185,28 +185,6 @@ public class StudentController(
 
         return File(res.Data,
             "application/pdf",
-            "transcript");
-    }
-
-    [Authorize(Roles = "Student")]
-    [HttpGet(ApiEndPoints.Student.GetTranscriptExcel)]
-    public async Task<IActionResult> GenerateTranscriptExcel()
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
-            return Unauthorized();
-
-        var res = await transcriptService.GenerateExcelAsync(userId);
-
-
-        if (res.Data is null)
-        {
-            Response.StatusCode = res.StatusCode;
-            return new ObjectResult(res);
-        }
-
-        return File(res.Data,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "transcript");
+            "transcript.pdf");
     }
 }

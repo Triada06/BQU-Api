@@ -6,7 +6,7 @@ namespace BGU.Application.Validators.Library;
 public class UpsertLibraryBookRequestValidator : AbstractValidator<UpsertLibraryBookRequest>
 {
     private static readonly string[] AllowedStatuses = ["available", "draft", "archived"];
-    private static readonly string[] AllowedBookExtensions = [".pdf", ".epub", ".doc", ".docx", ".ppt", ".pptx"];
+    private static readonly string[] AllowedBookExtensions = [".pdf"];
     private static readonly string[] AllowedCoverExtensions = [".jpg", ".jpeg", ".png", ".webp"];
 
     public UpsertLibraryBookRequestValidator()
@@ -59,7 +59,7 @@ public class UpsertLibraryBookRequestValidator : AbstractValidator<UpsertLibrary
 
             RuleFor(x => Path.GetExtension(x.BookFile!.FileName).ToLowerInvariant())
                 .Must(x => AllowedBookExtensions.Contains(x))
-                .WithMessage("Book file must be pdf, epub, doc, docx, ppt, or pptx.");
+                .WithMessage("Book file must be a PDF.");
         });
 
         When(x => x.CoverImage is not null, () =>

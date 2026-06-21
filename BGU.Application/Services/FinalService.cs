@@ -76,49 +76,95 @@ public class FinalService(
         StatusCode = 200
     };
 }
-    public async Task<ApiResult<PagedResponse<GetFinalDto>>> GetAllFailedAsync(int page, int pageSize, string? search,
+    public async Task<ApiResult<PagedResponse<FailedFinalExamDto>>> GetAllFailedAsync(int page, int pageSize, string? search,
         string? groupId)
     {
-        // var cleanSearch = search?.ToLower().Trim();
-        //
-        // var data = await finalRepository.GetAllPaginatedAsync(
-        //     cleanSearch is not null
-        //         ? x => ((x.Student.AppUser.Name.ToLower().Trim().Contains(cleanSearch) ||
-        //                  x.Student.AppUser.Surname.ToLower().Trim().Contains(cleanSearch) ||
-        //                  x.Student.AppUser.MiddleName.ToLower().Trim().Contains(cleanSearch) ||
-        //                  x.TaughtSubject.Code.ToLower().Trim().Contains(cleanSearch) ||
-        //                  x.TaughtSubject.Subject.Name.ToLower().Trim().Contains(cleanSearch)) && !x.IsActual)
-        //         : x => !x.IsActual,
-        //     page, pageSize, false,
-        //     include: x => x
-        //         .Include(g => g.TaughtSubject)
-        //         .ThenInclude(ts => ts.Group)
-        //         .Include(e => e.Student)
-        //         .ThenInclude(st => st.AppUser)
-        //         .Include(g => g.TaughtSubject)
-        //         .ThenInclude(ts => ts.Subject),
-        //     filterBy: groupId is not null ? x => x.TaughtSubject.GroupId == groupId : null);
-        //
-        // var returnData = data.Items.Select(x =>
-        //     new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId,
-        //         x.Student.AppUser.Name + " " + x.Student.AppUser.Surname,
-        //         x.TaughtSubject.Subject.Name,
-        //         x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"), x.Grade, x.IsAllowed)).ToList();
-        //
-        // return new ApiResult<PagedResponse<GetFinalDto>>
-        // {
-        //     Data = new PagedResponse<GetFinalDto>
-        //     {
-        //         Items = returnData,
-        //         Page = data.Page,
-        //         PageSize = data.PageSize,
-        //         TotalCount = data.TotalCount
-        //     },
-        //     Message = ResponseMessages.Success,
-        //     IsSucceeded = true,
-        //     StatusCode = 200
-        // };
-        throw new NotImplementedException();
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var failedResults = context.StudentSubjectResults
+            .AsNoTracking()
+            .Where(result =>
+                result.IsFinalized &&
+                (result.GradeBeforeExam < 34 || result.ExamGrade < 17) &&
+                context.Exams.Any(exam =>
+                    exam.StudentId == result.StudentId &&
+                    exam.TaughtSubjectId == result.TaughtSubjectId &&
+                    exam.IsActual));
+
+        var cleanGroupId = groupId?.Trim();
+        if (!string.IsNullOrWhiteSpace(cleanGroupId))
+        {
+            failedResults = failedResults.Where(result => result.TaughtSubject.GroupId == cleanGroupId);
+        }
+
+        var cleanSearch = search?.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(cleanSearch))
+        {
+            failedResults = failedResults.Where(result =>
+                result.Student.AppUser.Name.ToLower().Contains(cleanSearch) ||
+                result.Student.AppUser.Surname.ToLower().Contains(cleanSearch) ||
+                (result.Student.AppUser.MiddleName ?? string.Empty).ToLower().Contains(cleanSearch) ||
+                (result.Student.AppUser.UserName ?? string.Empty).ToLower().Contains(cleanSearch) ||
+                result.TaughtSubject.Code.ToLower().Contains(cleanSearch) ||
+                result.TaughtSubject.Subject.Name.ToLower().Contains(cleanSearch) ||
+                result.TaughtSubject.Group.Code.ToLower().Contains(cleanSearch));
+        }
+
+        var totalCount = await failedResults.CountAsync();
+
+        var items = await failedResults
+            .OrderBy(result => result.TaughtSubject.Group.Code)
+            .ThenBy(result => result.Student.AppUser.Surname)
+            .ThenBy(result => result.Student.AppUser.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(result => new FailedFinalExamDto(
+                context.Exams
+                    .Where(exam =>
+                        exam.StudentId == result.StudentId &&
+                        exam.TaughtSubjectId == result.TaughtSubjectId &&
+                        exam.IsActual)
+                    .OrderByDescending(exam => exam.CreatedAt)
+                    .Select(exam => exam.Id)
+                    .FirstOrDefault() ?? string.Empty,
+                result.StudentId,
+                (result.Student.AppUser.Name + " " + result.Student.AppUser.Surname + " " +
+                 (result.Student.AppUser.MiddleName ?? string.Empty)).Trim(),
+                result.TaughtSubject.GroupId,
+                result.TaughtSubject.Group.Code,
+                result.TaughtSubjectId,
+                result.TaughtSubject.SubjectId,
+                result.TaughtSubject.Code,
+                result.TaughtSubject.Subject.Name,
+                result.GradeBeforeExam,
+                result.ExamGrade,
+                result.FinalGrade,
+                context.Exams
+                    .Where(exam =>
+                        exam.StudentId == result.StudentId &&
+                        exam.TaughtSubjectId == result.TaughtSubjectId &&
+                        exam.IsActual)
+                    .OrderByDescending(exam => exam.CreatedAt)
+                    .Select(exam => exam.Date)
+                    .FirstOrDefault(),
+                context.Exams
+                    .Where(exam =>
+                        exam.StudentId == result.StudentId &&
+                        exam.TaughtSubjectId == result.TaughtSubjectId &&
+                        exam.IsActual)
+                    .OrderByDescending(exam => exam.CreatedAt)
+                    .Select(exam => (int?)exam.Grade)
+                    .FirstOrDefault()))
+            .ToListAsync();
+
+        return ApiResult<PagedResponse<FailedFinalExamDto>>.Success(new PagedResponse<FailedFinalExamDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        });
     }
 
     public async Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync()
@@ -139,7 +185,7 @@ public class FinalService(
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
                 x.TaughtSubject.Code,
                 x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"),0, x.Grade, x.IsAllowed)).ToList();
-        // this shit needs to be fixed immediatly, why tf do we return 0 as a grade before exam if we dont even need it 
+        // todo:  this shit needs to be fixed immediatly, why tf do we return 0 as a grade before exam if we dont even need it 
         
         
         return ApiResult<IEnumerable<GetFinalDto>>.Success(returnData);

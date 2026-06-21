@@ -1,10 +1,10 @@
+using System.Globalization;
+using System.Reflection;
 using BGU.Application.Common;
 using BGU.Application.Dtos.Transcript;
 using BGU.Application.Services.Interfaces;
 using BGU.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -13,59 +13,74 @@ namespace BGU.Application.Services;
 
 public class TranscriptService(AppDbContext context) : ITranscriptService
 {
+    private const string BorderColor = "#111111";
+    private const float BorderWidth = 0.45f;
+
+    private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
+    private static readonly SvgImage? AzerbaijanEmblem = LoadAzerbaijanEmblem();
+
     private async Task<TranscriptQueryResult?> GetDataAsync(string userId)
     {
-        var studentId = await context.Students.AsNoTracking().Where(s => s.AppUserId == userId).Select(x => x.Id)
-            .FirstOrDefaultAsync();
-
-        if (studentId is null)
-        {
-            return null;
-        }
-
         var student = await context.Students
             .AsNoTracking()
-            .Where(s => s.Id ==studentId)
+            .Where(s => s.AppUserId == userId)
             .Select(s => new
             {
                 s.Id,
                 s.Gpa,
-                FullName = $"{s.AppUser.Surname} {s.AppUser.Name} {s.AppUser.MiddleName}",
-                // BirthDate = s.AppUser.BirthDate,
+                StudentNumber = s.AppUser.UserName,
+                FullName = (s.AppUser.Surname + " " + s.AppUser.Name + " " + s.AppUser.MiddleName).Trim(),
                 Faculty = s.Faculty.Name,
                 Specialization = s.Specialization.Name,
                 Group = s.Group.Code,
                 EducationLanguage = s.Group.EducationLanguage.ToString(),
                 EducationLevel = s.Group.EducationLevel.ToString(),
-                // AdmissionYear = s.AdmissionYear.Year,
-                Results = context.StudentSubjectResults
-                    .Where(r => r.StudentId == studentId && r.IsFinalized)
-                    .Select(r => new
-                    {
-                        SubjectName = r.TaughtSubject.Subject.Name,
-                        SubjectCode = r.TaughtSubject.Code,
-                        Credits = r.TaughtSubject.Subject.CreditsNumber,
-                        Semester = r.TaughtSubject.Semester, 
-                        r.FinalGrade
-                    })
-                    .OrderBy(r => r.Semester)
-                    .ToList()
+                AdmissionYear = s.AdmissionYear.FirstYear
             })
             .FirstOrDefaultAsync();
 
-        return student is null
-            ? null
-            : new TranscriptQueryResult(student.FullName,
-                // student.BirthDate,
-                student.Faculty, student.Specialization, student.Group, student.EducationLanguage,
-                student.EducationLevel,
-                // student.AdmissionYear,
-                student.Gpa, student.Results
-                    .Select(r => new TranscriptRow(r.SubjectName, r.SubjectCode, r.Credits,
-                        r.Semester, r.FinalGrade, ToLetter(r.FinalGrade)))
-                    .ToList());
-    }
+        if (student is null)
+        {
+            return null;
+        }
 
+        var results = await context.StudentSubjectResults
+            .AsNoTracking()
+            .Where(r => r.StudentId == student.Id && r.IsFinalized)
+            .OrderBy(r => r.TaughtSubject.Semester)
+            .ThenBy(r => r.TaughtSubject.Subject.Name)
+            .Select(r => new
+            {
+                SubjectName = r.TaughtSubject.Subject.Name,
+                SubjectCode = r.TaughtSubject.Code,
+                Credits = r.TaughtSubject.Subject.CreditsNumber,
+                Semester = r.TaughtSubject.Semester,
+                r.FinalGrade
+            })
+            .ToListAsync();
+
+        var rows = results
+            .Select(r => new TranscriptRow(
+                r.SubjectName,
+                r.SubjectCode,
+                r.Credits,
+                r.Semester,
+                r.FinalGrade,
+                ToLetter(r.FinalGrade)))
+            .ToList();
+
+        return new TranscriptQueryResult(
+            student.FullName,
+            student.StudentNumber ?? student.Id,
+            student.Faculty,
+            student.Specialization,
+            student.Group,
+            ToEducationLanguage(student.EducationLanguage),
+            ToEducationLevel(student.EducationLevel),
+            student.AdmissionYear,
+            student.Gpa,
+            rows);
+    }
 
     public async Task<ApiResult<byte[]>> GeneratePdfAsync(string studentId)
     {
@@ -80,167 +95,21 @@ public class TranscriptService(AppDbContext context) : ITranscriptService
             doc.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                page.Margin(15, Unit.Millimetre);
-                page.DefaultTextStyle(x => x.FontFamily("Arial").FontSize(9));
+                page.MarginHorizontal(8, Unit.Millimetre);
+                page.MarginVertical(8, Unit.Millimetre);
+                page.DefaultTextStyle(x => x.FontFamily("Arial").FontSize(7.4f));
 
                 page.Content().Column(col =>
                 {
-                    // header
-                    col.Item().AlignCenter().Text("Bakı Qızlar Universiteti")
-                        .Bold().FontSize(13);
-                    col.Item().AlignCenter().Text("AKADEMİK TRANSKRİPT")
-                        .Bold().FontSize(11);
-                    col.Item().AlignCenter().Text("FORMA 3")
-                        .Bold().FontSize(11);
-                    col.Item().Height(6, Unit.Millimetre);
+                    col.Spacing(3);
 
-                    // student info grid
-                    col.Item().Table(t =>
-                    {
-                        t.ColumnsDefinition(c =>
-                        {
-                            c.RelativeColumn();
-                            c.RelativeColumn();
-                        });
-
-                        void InfoRow(string left, string right)
-                        {
-                            t.Cell().PaddingBottom(2).Text(left);
-                            t.Cell().PaddingBottom(2).Text(right);
-                        }
-
-                        InfoRow($"Fakültə: {data.Faculty}", $"Qrup №: {data.Group}");
-                        InfoRow($"Təhsil səviyyəsi: {data.EducationLevel}", $"Tədris dili: {data.EducationLanguage}");
-                        InfoRow($"İxtisaslaşma: {data.Specialization}", "Təhsilalma forması: Əyani");
-                        InfoRow($"Soyadı, adı və ata adı: {data.FullName}", ""); // todo: add birthday later on
-                        // $"Doğum tarixi: {data.BirthDate:dd/MM/yyyy}");
-                    });
-
-                    col.Item().Height(5, Unit.Millimetre);
-
-                    // group rows by academic year
-                    var byYear = data.Rows
-                        .GroupBy(r => ToAcademicYear(r.Semester))
-                        .OrderBy(g => g.Key);
-
-                    foreach (var yearGroup in byYear)
-                    {
-                        col.Item().Text($"Akademik il: {yearGroup.Key}").Bold();
-                        col.Item().Height(2, Unit.Millimetre);
-
-                        col.Item().Table(t =>
-                        {
-                            t.ColumnsDefinition(c =>
-                            {
-                                c.ConstantColumn(20, Unit.Millimetre); // sem
-                                c.RelativeColumn(); // name
-                                c.ConstantColumn(28, Unit.Millimetre); // code
-                                c.ConstantColumn(16, Unit.Millimetre); // credit
-                                c.ConstantColumn(12, Unit.Millimetre); // grade
-                                c.ConstantColumn(12, Unit.Millimetre); // letter
-                            });
-
-                            t.Header(h =>
-                            {
-                                void Th(string text) =>
-                                    h.Cell().Background("#2c3e50").Padding(3)
-                                        .Text(text).FontColor("#ffffff").Bold().FontSize(8);
-
-                                Th("Sem");
-                                Th("Fənnin adı");
-                                Th("Kod");
-                                Th("Kredit");
-                                Th("Bal");
-                                Th("Hərf");
-                            });
-
-                            var rowIndex = 0;
-                            foreach (var row in yearGroup.OrderBy(r => r.Semester))
-                            {
-                                var bg = rowIndex++ % 2 == 0 ? "#ffffff" : "#f5f5f5";
-
-                                void Td(string text, bool center = false)
-                                {
-                                    var cell = t.Cell().Background(bg).Border(0.3f)
-                                        .BorderColor("#cccccc").Padding(3);
-                                    var txt = cell.Text(text).FontSize(8);
-                                    if (center) txt.AlignCenter();
-                                }
-
-                                var semCode = row.Semester % 2 == 1
-                                    ? $"PY-{row.Semester}"
-                                    : $"YZ-{row.Semester}";
-
-                                Td(semCode, center: true);
-                                Td(row.SubjectName);
-                                Td(row.SubjectCode, center: true);
-                                Td(row.Credits.ToString(), center: true);
-                                Td(row.FinalGrade.ToString("F0"), center: true);
-                                Td(row.Letter, center: true);
-                            }
-                        });
-
-                        // year summary
-                        var totalCredits = yearGroup.Sum(r => r.Credits);
-                        var gpa = yearGroup.Sum(r => r.FinalGrade * r.Credits) / totalCredits;
-
-                        col.Item().Table(t =>
-                        {
-                            t.ColumnsDefinition(c =>
-                            {
-                                c.RelativeColumn();
-                                c.ConstantColumn(40, Unit.Millimetre);
-                            });
-                            t.Cell().Border(0.3f).BorderColor("#cccccc").Padding(3)
-                                .Text($"Kreditlərin sayı: {totalCredits}/{totalCredits}").Bold().FontSize(8);
-                            t.Cell().Border(0.3f).BorderColor("#cccccc").Padding(3)
-                                .AlignCenter().Text($"ÜOMG: {gpa:F4}").Bold().FontSize(8);
-                        });
-
-                        col.Item().Height(5, Unit.Millimetre);
-                    }
-
-                    // overall GPA
-                    var totalAll = data.Rows.Sum(r => r.Credits);
-                    var overallGpa = totalAll > 0
-                        ? data.Rows.Sum(r => r.FinalGrade * r.Credits) / totalAll
-                        : 0;
-
-                    col.Item().Table(t =>
-                    {
-                        t.ColumnsDefinition(c =>
-                        {
-                            c.RelativeColumn();
-                            c.ConstantColumn(40, Unit.Millimetre);
-                        });
-                        t.Cell().Border(0.3f).BorderColor("#cccccc").Padding(3)
-                            .Text($"Ümumi kreditlər: {totalAll}/{totalAll}").Bold().FontSize(8);
-                        t.Cell().Border(0.3f).BorderColor("#cccccc").Padding(3)
-                            .AlignCenter().Text($"Ümumi ÜOMG: {overallGpa:F4}").Bold().FontSize(8);
-                    });
-
-                    col.Item().Height(10, Unit.Millimetre);
-
-                    // signatures
-                    col.Item().Table(t =>
-                    {
-                        t.ColumnsDefinition(c =>
-                        {
-                            c.RelativeColumn();
-                            c.RelativeColumn();
-                        });
-
-                        void SigRow(string label)
-                        {
-                            t.Cell().PaddingBottom(8).Text(label).FontSize(8);
-                            t.Cell().PaddingBottom(8).Text("_________________________").FontSize(8);
-                        }
-
-                        SigRow("Dekan");
-                        SigRow("Dekan müavini");
-                        SigRow("Tyutor");
-                        SigRow("Verilmə tarixi");
-                    });
+                    col.Item().Element(ComposeHeader);
+                    col.Item().Element(container => ComposeStudentInfo(container, data));
+                    col.Item().PaddingTop(1).AlignCenter().Text("AKADEMİK TRANSKRİPT")
+                        .Bold().FontSize(12);
+                    col.Item().Element(container => ComposeYearsGrid(container, data));
+                    col.Item().Height(3, Unit.Millimetre);
+                    col.Item().Element(ComposeSignatures);
                 });
             });
         }).GeneratePdf();
@@ -248,133 +117,329 @@ public class TranscriptService(AppDbContext context) : ITranscriptService
         return ApiResult<byte[]>.Success(bytes);
     }
 
-    public async Task<ApiResult<byte[]>> GenerateExcelAsync(string studentId)
+    private static void ComposeHeader(IContainer container)
     {
-        var data = await GetDataAsync(studentId);
-        if (data is null)
+        container.Column(col =>
         {
-            return ApiResult<byte[]>.BadRequest($"Student {studentId} not found");
-        }
-
-        ExcelPackage.License.SetNonCommercialOrganization("BQU LMS");
-
-        using var package = new ExcelPackage();
-        var ws = package.Workbook.Worksheets.Add("Akademik Transkript");
-
-        // header
-        ws.Cells["A1"].Value = "Bakı Qızlar Universiteti - Akademik Transkript";
-        ws.Cells["A1:F1"].Merge = true;
-        ws.Cells["A1"].Style.Font.Bold = true;
-        ws.Cells["A1"].Style.Font.Size = 14;
-        ws.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-
-        // student info
-        var infoStart = 3;
-
-        void InfoRow(int row, string label, string value)
-        {
-            ws.Cells[row, 1].Value = label;
-            ws.Cells[row, 1].Style.Font.Bold = true;
-            ws.Cells[row, 2, row, 4].Merge = true;
-            ws.Cells[row, 2].Value = value;
-        }
-
-        InfoRow(infoStart, "Ad, soyad:", data.FullName);
-        // InfoRow(infoStart + 1, "Doğum tarixi:", data.BirthDate.ToString("dd/MM/yyyy"));
-        InfoRow(infoStart + 2, "Fakültə:", data.Faculty);
-        InfoRow(infoStart + 3, "İxtisaslaşma:", data.Specialization);
-        InfoRow(infoStart + 4, "Qrup:", data.Group);
-        InfoRow(infoStart + 5, "Ümumi GPA:", data.Gpa.ToString("F4"));
-
-        var currentRow = infoStart + 7;
-
-        var byYear = data.Rows
-            .GroupBy(r => ToAcademicYear(r.Semester))
-            .OrderBy(g => g.Key);
-
-        var headerColor = System.Drawing.Color.FromArgb(44, 62, 80);
-        var altColor = System.Drawing.Color.FromArgb(245, 245, 245);
-
-        foreach (var yearGroup in byYear)
-        {
-            // year title
-            ws.Cells[currentRow, 1, currentRow, 6].Merge = true;
-            ws.Cells[currentRow, 1].Value = $"Akademik il: {yearGroup.Key}";
-            ws.Cells[currentRow, 1].Style.Font.Bold = true;
-            ws.Cells[currentRow, 1].Style.Font.Size = 11;
-            ws.Cells[currentRow, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            ws.Cells[currentRow, 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(236, 240, 241));
-            currentRow++;
-
-            // table header
-            string[] headers = ["Sem", "Fənnin adı", "Kod", "Kredit", "Bal", "Hərf"];
-            for (var i = 0; i < headers.Length; i++)
+            col.Spacing(2);
+            col.Item().Table(table =>
             {
-                var cell = ws.Cells[currentRow, i + 1];
-                cell.Value = headers[i];
-                cell.Style.Font.Bold = true;
-                cell.Style.Font.Color.SetColor(System.Drawing.Color.White);
-                cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                cell.Style.Fill.BackgroundColor.SetColor(headerColor);
-                cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                cell.Style.Border.BorderAround(ExcelBorderStyle.Thin, System.Drawing.Color.Gray);
-            }
-
-            currentRow++;
-
-            var rowIndex = 0;
-            foreach (var row in yearGroup.OrderBy(r => r.Semester))
-            {
-                var bg = rowIndex++ % 2 == 0 ? System.Drawing.Color.White : altColor;
-                var semCode = row.Semester % 2 == 1 ? $"PY-{row.Semester}" : $"YZ-{row.Semester}";
-
-                object[] values = [semCode, row.SubjectName, row.SubjectCode, row.Credits, row.FinalGrade, row.Letter];
-                for (var i = 0; i < values.Length; i++)
+                table.ColumnsDefinition(columns =>
                 {
-                    var cell = ws.Cells[currentRow, i + 1];
-                    cell.Value = values[i];
-                    cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    cell.Style.Fill.BackgroundColor.SetColor(bg);
-                    cell.Style.Border.BorderAround(ExcelBorderStyle.Thin, System.Drawing.Color.LightGray);
-                    if (i != 1) cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                }
+                    columns.RelativeColumn();
+                    columns.RelativeColumn();
+                });
 
-                currentRow++;
+                table.Cell().Text("Ünvan: Möhsün Sənani 14").FontSize(7.5f);
+                table.Cell().AlignRight().Text("Tel: 012 5946986").FontSize(7.5f);
+            });
+
+            if (AzerbaijanEmblem is not null)
+            {
+                col.Item()
+                    .AlignCenter()
+                    .Width(16, Unit.Millimetre)
+                    .Height(18, Unit.Millimetre)
+                    .Svg(AzerbaijanEmblem)
+                    .FitArea();
             }
 
-            // year summary
-            var totalCredits = yearGroup.Sum(r => r.Credits);
-            var gpa = yearGroup.Sum(r => r.FinalGrade * r.Credits) / totalCredits;
+            col.Item().Table(table =>
+            {
+                table.ColumnsDefinition(columns =>
+                {
+                    columns.RelativeColumn();
+                    columns.RelativeColumn();
+                });
 
-            ws.Cells[currentRow, 1, currentRow, 3].Merge = true;
-            ws.Cells[currentRow, 1].Value = $"Kreditlərin sayı: {totalCredits}/{totalCredits}";
-            ws.Cells[currentRow, 1].Style.Font.Bold = true;
-            ws.Cells[currentRow, 4, currentRow, 6].Merge = true;
-            ws.Cells[currentRow, 4].Value = $"ÜOMG: {gpa:F4}";
-            ws.Cells[currentRow, 4].Style.Font.Bold = true;
-            ws.Cells[currentRow, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-            currentRow += 2;
-        }
-
-        ws.Cells[ws.Dimension.Address].AutoFitColumns();
-        ws.Column(2).Width = 45; // subject name col fixed width
-
-        var bytes = await package.GetAsByteArrayAsync();
-
-        return bytes is null
-            ? ApiResult<byte[]>.SystemError("Failed to generate an excel sheet")
-            : ApiResult<byte[]>.Success(bytes);
+                table.Cell().AlignCenter().Text("Azərbaycan Respublikası Təhsil Nazirliyi").FontSize(8.2f);
+                table.Cell().AlignCenter().Text("The Ministry of Education of Azerbaijan Republic").FontSize(8.2f);
+                table.Cell().AlignCenter().Text("BAKI QIZLAR UNİVERSİTETİ").Bold().FontSize(9.2f);
+                table.Cell().AlignCenter().Text("Baku Girls University").Bold().FontSize(9.2f);
+            });
+        });
     }
 
-    private static string ToLetter(double grade) => grade switch
+    private static void ComposeStudentInfo(IContainer container, TranscriptQueryResult data)
     {
-        >= 91 => "A",
-        >= 81 => "B",
-        >= 71 => "C",
-        >= 61 => "D",
-        >= 51 => "E",
-        _ => "F"
-    };
+        container.Column(col =>
+        {
+            col.Spacing(2);
+
+            void InfoLine(string left, string right)
+            {
+                col.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                    });
+
+                    table.Cell().Text(left).FontSize(7.6f);
+                    table.Cell().Text(right).FontSize(7.6f);
+                });
+            }
+
+            InfoLine($"Fakültə: {data.Faculty}", $"İxtisas: {data.Specialization}");
+            InfoLine($"Tələbə № {data.StudentNumber}", "İxtisaslaşma:");
+            InfoLine($"Soyadı və adı: {data.FullName}", $"Təhsil pilləsi: {data.EducationLevel}");
+            InfoLine("Doğum tarixi:", $"Tədris dili: {data.EducationLanguage}");
+        });
+    }
+
+    private static void ComposeYearsGrid(IContainer container, TranscriptQueryResult data)
+    {
+        container.Column(column =>
+        {
+            column.Spacing(3);
+            column.Item().Row(row => ComposeYearGridRow(row, data, 1, 2));
+            column.Item().Row(row => ComposeYearGridRow(row, data, 3, 4));
+        });
+    }
+
+    private static void ComposeYearGridRow(RowDescriptor row, TranscriptQueryResult data, int leftYear, int rightYear)
+    {
+        row.RelativeItem().Element(container => ComposeYearTable(container, data, leftYear));
+        row.ConstantItem(3, Unit.Millimetre);
+        row.RelativeItem().Element(container => ComposeYearTable(container, data, rightYear));
+    }
+
+    private static void ComposeYearTable(IContainer container, TranscriptQueryResult data, int year)
+    {
+        var rows = data.Rows
+            .Where(row => ToAcademicYear(row.Semester) == year)
+            .OrderBy(row => row.Semester)
+            .ThenBy(row => row.SubjectName)
+            .ToList();
+
+        var yearCredits = rows.Sum(row => row.Credits);
+        var yearAverage = CalculateWeightedAverage(rows);
+
+        container.Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.ConstantColumn(12, Unit.Millimetre);
+                columns.RelativeColumn();
+                columns.ConstantColumn(15, Unit.Millimetre);
+                columns.ConstantColumn(19, Unit.Millimetre);
+            });
+
+            TitleCell(table.Cell().ColumnSpan(4))
+                .AlignCenter()
+                .Text($"{year}-ci tədris ili")
+                .Bold();
+
+            table.Header(header =>
+            {
+                HeaderCell(header.Cell()).AlignCenter().Text("Semestr").Bold();
+                HeaderCell(header.Cell()).AlignCenter().Text("Fənnin adı").Bold();
+                HeaderCell(header.Cell()).AlignCenter().Text("Kreditin miqdarı").Bold();
+                HeaderCell(header.Cell()).AlignCenter().Text("Topladığı bal").Bold();
+            });
+
+            if (rows.Count == 0)
+            {
+                BodyCell(table.Cell()).AlignCenter().Text("1-2");
+                BodyCell(table.Cell()).Text("Fənn yoxdur");
+                BodyCell(table.Cell()).AlignCenter().Text("0");
+                BodyCell(table.Cell()).AlignCenter().Text("-");
+            }
+            else
+            {
+                foreach (var semester in new[] { (year * 2) - 1, year * 2 })
+                {
+                    var semesterRows = rows
+                        .Where(row => row.Semester == semester)
+                        .OrderBy(row => row.SubjectName)
+                        .ToList();
+
+                    if (semesterRows.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    BodyCell(table.Cell().RowSpan((uint)semesterRows.Count))
+                        .AlignMiddle()
+                        .AlignCenter()
+                        .Text(ToSemesterWithinYear(semester).ToString(InvariantCulture))
+                        .Bold();
+
+                    foreach (var row in semesterRows)
+                    {
+                        BodyCell(table.Cell()).Text(row.SubjectName);
+                        BodyCell(table.Cell()).AlignCenter().Text(row.Credits.ToString(InvariantCulture));
+                        BodyCell(table.Cell()).AlignCenter().Text($"{FormatScore(row.FinalGrade)} {row.Letter}");
+                    }
+                }
+            }
+
+            SummaryCell(table.Cell().ColumnSpan(4))
+                .AlignCenter()
+                .Column(summary =>
+                {
+                    summary.Spacing(1);
+                    summary.Item().Text($"Kredit: {yearCredits}    ÜOMG: {FormatAverage(yearAverage)}").Bold();
+
+                    if (year == 4)
+                    {
+                        var totalCredits = data.Rows.Sum(row => row.Credits);
+                        var totalAverage = CalculateWeightedAverage(data.Rows);
+                        summary.Item().Text(
+                                $"Cəmi kredit sayı: {totalCredits}    Cəmi ÜOMG: {FormatAverage(totalAverage)}")
+                            .Bold();
+                    }
+                });
+        });
+    }
+
+    private static IContainer TitleCell(IContainer container)
+    {
+        return container
+            .Border(BorderWidth)
+            .BorderColor(BorderColor)
+            .Background(Colors.Grey.Lighten5)
+            .MinHeight(10)
+            .PaddingHorizontal(2)
+            .PaddingVertical(1)
+            .DefaultTextStyle(style => style.FontSize(7).Bold());
+    }
+
+    private static void ComposeSignatures(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Spacing(11);
+            col.Item().Table(table =>
+            {
+                table.ColumnsDefinition(columns =>
+                {
+                    columns.RelativeColumn();
+                    columns.ConstantColumn(45, Unit.Millimetre);
+                });
+
+                table.Cell().Text("Rektor:").FontSize(9);
+                table.Cell().Text("S.A.Rəhimova").FontSize(9);
+            });
+
+            col.Item().Text($"Verilmə tarixi {DateTime.Now:dd.MM.yyyy}").FontSize(9);
+        });
+    }
+
+    private static IContainer HeaderCell(IContainer container)
+    {
+        return container
+            .Border(BorderWidth)
+            .BorderColor(BorderColor)
+            .Background(Colors.Grey.Lighten4)
+            .MinHeight(10)
+            .PaddingHorizontal(2)
+            .PaddingVertical(1)
+            .DefaultTextStyle(style => style.FontSize(6.2f).Bold());
+    }
+
+    private static IContainer BodyCell(IContainer container)
+    {
+        return container
+            .Border(BorderWidth)
+            .BorderColor(BorderColor)
+            .MinHeight(8)
+            .PaddingHorizontal(2)
+            .PaddingVertical(1)
+            .DefaultTextStyle(style => style.FontSize(6.1f));
+    }
+
+    private static IContainer SummaryCell(IContainer container)
+    {
+        return container
+            .Border(BorderWidth)
+            .BorderColor(BorderColor)
+            .MinHeight(10)
+            .PaddingHorizontal(2)
+            .PaddingVertical(1)
+            .DefaultTextStyle(style => style.FontSize(6.2f));
+    }
+
+    private static double CalculateWeightedAverage(IEnumerable<TranscriptRow> rows)
+    {
+        var rowList = rows.ToList();
+        var credits = rowList.Sum(row => row.Credits);
+        return credits == 0 ? 0 : rowList.Sum(row => row.FinalGrade * row.Credits) / credits;
+    }
+
+    private static string ToEducationLanguage(string value)
+    {
+        return value switch
+        {
+            "Azerbaijani" => "Azərbaycan",
+            "Russian" => "Rus",
+            "English" => "İngilis",
+            _ => value
+        };
+    }
+
+    private static string ToEducationLevel(string value)
+    {
+        return value switch
+        {
+            "Bachelor" => "bakalavr",
+            "Master" => "magistr",
+            _ => value
+        };
+    }
+
+    private static string FormatScore(double value)
+    {
+        return Math.Abs(value - Math.Round(value)) < 0.001
+            ? Math.Round(value).ToString("0", InvariantCulture)
+            : value.ToString("0.##", InvariantCulture).Replace('.', ',');
+    }
+
+    private static string FormatAverage(double value)
+    {
+        return value.ToString("0.00", InvariantCulture).Replace('.', ',');
+    }
+
+    private static string ToLetter(double grade)
+    {
+        return grade switch
+        {
+            >= 91 => "A",
+            >= 81 => "B",
+            >= 71 => "C",
+            >= 61 => "D",
+            >= 51 => "E",
+            _ => "F"
+        };
+    }
+
+    private static int ToSemesterWithinYear(int semester)
+    {
+        return semester % 2 == 0 ? 2 : 1;
+    }
 
     private static int ToAcademicYear(int semester) => (int)Math.Ceiling(semester / 2.0);
+
+    private static SvgImage? LoadAzerbaijanEmblem()
+    {
+        var assembly = typeof(TranscriptService).Assembly;
+        var resourceName = assembly
+            .GetManifestResourceNames()
+            .FirstOrDefault(name => name.EndsWith("Assets.azerbaijan-emblem.svg", StringComparison.Ordinal));
+
+        if (resourceName is null)
+        {
+            return null;
+        }
+
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+        {
+            return null;
+        }
+
+        using var reader = new StreamReader(stream);
+        return SvgImage.FromText(reader.ReadToEnd());
+    }
 }

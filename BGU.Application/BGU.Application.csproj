@@ -32,4 +32,8 @@
       <ProjectReference Include="..\BGU.Infrastructure\BGU.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <EmbeddedResource Include="Assets\azerbaijan-emblem.svg" />
+    </ItemGroup>
+
 </Project>

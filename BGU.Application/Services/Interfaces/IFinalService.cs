@@ -9,9 +9,9 @@ public interface IFinalService
     Task<ApiResult<PagedResponse<GetFinalDto>>>
         GetAllAsync(int page, int pageSize, string? search, string? groupId);
 
-    Task<ApiResult<PagedResponse<GetFinalDto>>>
+    Task<ApiResult<PagedResponse<FailedFinalExamDto>>>
         GetAllFailedAsync(int page, int pageSize, string? search,
-            string? groupId); // todo: further improvements, it returns the data to ui, and the user just clicks on it to create an another take 
+            string? groupId);
 
     Task<ApiResult<IEnumerable<GetFinalDto>>> GetAllToConfirmAsync();
     Task<ApiResult> SetExamDateAsync(SetExamDto setExamDto);
