@@ -184,7 +184,7 @@ public class FinalService(
         var returnData = data.Select(x =>
             new GetFinalDto(x.Id, x.TaughtSubject.Group.Code, x.StudentId, x.Student.AppUser.Name,
                 x.TaughtSubject.Code,
-                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"),0, x.Grade, x.IsAllowed)).ToList();
+                x.IsConfirmed, x.Date?.ToString("yyyy MMMM dd"),x.Grade, 0, x.IsAllowed)).ToList();
         // todo:  this shit needs to be fixed immediatly, why tf do we return 0 as a grade before exam if we dont even need it 
         
         
