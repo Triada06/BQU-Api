@@ -1061,10 +1061,10 @@ public class StudentService(
                     .LastOrDefault()?.ClassTime.ClassDate.DateTime
                     .ToString("dd/MM/yyyy") ?? "Unable to load end date";
 
-                var teacherName = course.Teacher.AppUser.Name;
+                var teacherName = course.Teacher.AppUser.Name + " " + course.Teacher.AppUser.Surname;
 
                 return new GetAcademicHistoryDto(
-                    course.Id, course.Code, startDate, endDate, teacherName);
+                    course.Id, course.Subject.Name, startDate, endDate, teacherName);
             })
             .ToList();
 
